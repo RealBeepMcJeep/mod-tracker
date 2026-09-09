@@ -23,7 +23,7 @@ Defaults:
 
 - output root: current directory
 - Nexus key: `~/.config/nexus-mods/api-key`
-- report: `report.html`
+- report: `report.html` (and `report-hotlinked.html` when thumbnails are not embedded)
 - normalized store: `data/mods.json`
 
 Useful manual commands:
@@ -70,7 +70,7 @@ Generated output is deliberately ignored by Git:
 - `raw/nexus/mods/` — cached v1 detail JSON for newly observed mods
 - `raw/nexus/pages/` — optional authenticated page HTML
 - `snapshots/latest.json` — latest run manifest
-- `report.html` — sortable, searchable combined report
+- `report.html` and `report-hotlinked.html` — sortable, searchable combined report (the latter is the explicit externally hotlinked-image artifact)
 
 Writes use a same-directory temporary file followed by `os.replace`, so interrupted writes do not leave partially serialized canonical files.
 
@@ -85,7 +85,7 @@ The current-version rate remains unknown until two observations for that version
 
 ## Report behavior
 
-`report.html` combines both sources and includes source filtering, text search, and client-side sorting by updated time, downloads, lifetime rate, or observed current-version rate. Thunderstore pinned entries remain in a separate fixed group. Optional thumbnail embedding removes report-time image dependencies.
+`report.html` combines both sources into canonical cards: explicit mappings are rendered once with a prominent `Both` badge and separate Thunderstore/Nexus links; unmapped records remain source-specific cards. Source badges are in the card body, source metrics stay labeled, and the NSFW toggle defaults off (adult cards are also hidden by static CSS when JavaScript is disabled). Search, source filter (`Thunderstore`, `Nexus Mods`, or `Both`), NSFW visibility, updated-date filter, and sorting compose together. Thunderstore pinned entries remain in a separate fixed group. Optional thumbnail embedding removes report-time image dependencies.
 
 ## Verification
 

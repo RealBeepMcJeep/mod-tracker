@@ -555,67 +555,44 @@ def _sort_number(value) -> str:
     return str(value if value is not None else -1)
 
 
-def render_report(
-    mods: list[dict],
-    generated_at: str,
-    *,
-    embed_thumbnails: bool = False,
-    thumbnail_fetch=http_fetch,
-) -> str:
-    """Render a standalone searchable, sortable, cross-source HTML report."""
+def _report_groups(mods):
+    groups = {}
+    singles = []
+    for mod in mods:
+        gid = mod.get('canonical_group_id')
+        if gid: groups.setdefault(gid, []).append(mod)
+        else: singles.append([mod])
+    return singles + [groups[k] for k in sorted(groups)]
+
+
+def render_report(mods, generated_at, *, embed_thumbnails=False, thumbnail_fetch=http_fetch):
     now = parse_datetime(generated_at)
-
-    def card(mod: dict) -> str:
-        rates = compute_rates(mod, now)
-        src = "Thunderstore" if mod["source"] == "thunderstore" else "Nexus Mods"
-        image = _thumbnail_src(mod, embed_thumbnails, thumbnail_fetch)
-        categories = ", ".join(mod.get("categories", []))
-        updated = mod.get("updated_at") or ""
-        search = " ".join((mod.get("title", ""), mod.get("author", ""), categories)).lower()
-        version_rate = rates["current_version_observed_downloads_per_day"]
-        rate_label = "—" if version_rate is None else f"{version_rate:,.1f}"
-        canonical = escape(mod["canonical_url"], quote=True)
-        engagement = mod.get("endorsements") if mod.get("endorsements") is not None else mod.get("likes")
-        tags = "".join(f'<span class="tag">{escape(value)}</span>' for value in mod.get("categories", []))
-        return f'''<article class="mod-card{' pinned' if mod.get('pinned') else ''}"
- data-source="{escape(mod['source'])}" data-search="{escape(search, quote=True)}"
- data-url="{canonical}" tabindex="0" role="link"
- data-sort-lifetime-rate="{_sort_number(rates['lifetime_downloads_per_day'])}"
- data-sort-version-rate="{_sort_number(version_rate)}"
- data-sort-updated="{escape(updated, quote=True)}"
- data-sort-downloads="{_sort_number(mod.get('total_downloads'))}">
- <div class="media"><img class="thumb" src="{escape(image, quote=True)}" alt="" loading="lazy"><div class="badges"><span class="source {escape(mod['source'])}">{src}</span>{'<span class="pin">Pinned</span>' if mod.get('pinned') else ''}</div></div>
- <div class="body">
- <h2><a href="{canonical}">{escape(mod.get('title', ''))}</a></h2>
- <p class="by">by {escape(mod.get('author', ''))} · v{escape(str(mod.get('version') or '—'))}</p>
- <p class="summary">{escape(mod.get('summary') or '')}</p><div class="tags">{tags}</div>
- <p class="dates"><span>Updated <time>{escape(updated[:10] if updated else 'unknown')}</time></span><span>Uploaded <time>{escape((mod.get('created_at') or '')[:10] or 'unknown')}</time></span></p></div>
- <dl class="metrics"><div><dt>Total downloads</dt><dd>{int(mod.get('total_downloads') or 0):,}</dd></div>
- <div><dt>Lifetime / day</dt><dd>{rates['lifetime_downloads_per_day']:,.1f}</dd></div>
- <div title="Observed delta/day between first and latest stored observations for this version"><dt>Current version / day</dt><dd>{rate_label}</dd></div>
- <div><dt>Last updated</dt><dd>{escape(updated[:10] if updated else 'unknown')}</dd></div>
- <div><dt>Endorsements / likes</dt><dd>{int(engagement or 0):,}</dd></div></dl></article>'''
-
-    pinned = "".join(card(mod) for mod in mods if mod.get("pinned"))
-    regular = "".join(card(mod) for mod in mods if not mod.get("pinned"))
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title>
-<style>
-:root{{--bg:#090b0e;--panel:#171a1f;--footer:#20242a;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts:#d95f2a;--nx:#d79a2d}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,"Segoe UI",sans-serif}}header,main{{max-width:1320px;margin:auto;padding:28px}}header{{background:var(--bg);border-bottom:1px solid var(--line)}}h1{{font-size:clamp(30px,5vw,52px);margin:0}}.subtitle{{font-size:17px;color:var(--muted);margin:8px 0 24px}}.toolbar{{border-top:1px solid var(--line);padding-top:18px;display:flex;align-items:end;gap:12px;flex-wrap:wrap}}.results{{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}}.control{{display:grid;gap:4px;color:var(--muted);font-size:12px}}input,select{{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px 12px;font:inherit}}input{{min-width:min(330px,80vw)}}.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-bottom:34px}}.mod-card{{position:relative;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer;min-width:0}}.mod-card:hover{{border-color:#59616d;transform:translateY(-1px)}}.mod-card:focus{{outline:2px solid #7cb7ff;outline-offset:2px}}.media{{position:relative;aspect-ratio:16/8;background:#222;overflow:hidden}}.thumb{{width:100%;height:100%;object-fit:cover;display:block}}.badges{{position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px}}.body{{min-width:0;padding:15px}}h2{{font-size:19px;line-height:1.25;margin:0 0 5px}}h2 a{{color:var(--text)}}p{{margin:6px 0;color:var(--muted)}}.summary{{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45;min-height:4.35em}}.source,.pin,.tag{{display:inline-block;padding:4px 8px;border-radius:99px;font-size:11px;font-weight:750}}.source.thunderstore{{background:var(--ts)}}.source.nexus{{background:var(--nx);color:#17100a}}.pin{{background:#7c4dcc}}.tags{{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;overflow:hidden}}.tag{{background:#292e36;color:#cbd1d9;max-width:100%;overflow-wrap:anywhere}}.dates{{display:flex;justify-content:space-between;gap:8px;font-size:12px}}.metrics{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin:0;background:var(--footer);border-top:1px solid var(--line)}}.metrics div{{padding:10px 8px;min-width:0;border-right:1px solid var(--line)}}.metrics div:last-child{{border:0}}dt{{font-size:10px;line-height:1.2;color:var(--muted)}}dd{{margin:4px 0 0;font-size:12px;font-weight:750;overflow-wrap:anywhere}}section>h2{{font-size:20px;margin:12px 0 14px}}[hidden]{{display:none!important}}
-@media(max-width:520px){{header,main{{padding:18px 14px}}.toolbar{{align-items:stretch}}.control,input{{width:100%}}.grid{{display:block}}.mod-card{{display:grid;grid-template-columns:88px 1fr;margin-bottom:12px;overflow:hidden}}.media{{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px;border-radius:6px}}.badges{{position:absolute;left:102px;top:12px;width:calc(100vw - 146px)}}.source,.pin{{font-size:10px}}.body{{grid-column:2;grid-row:1;padding:48px 12px 12px 0}}.body h2{{font-size:17px}}.summary,.tags,.dates{{grid-column:1/-1}}.summary{{margin-left:calc(-88px - 12px);padding:0 12px;min-height:0;-webkit-line-clamp:3}}.tags,.dates{{margin-left:calc(-88px - 12px);padding:0 12px}}.dates{{flex-wrap:wrap}}.metrics{{grid-column:1/-1;grid-template-columns:repeat(2,1fr)}}.metrics div{{border-bottom:1px solid var(--line)}}.metrics div:last-child{{grid-column:1/-1}}}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1>
-<p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">{len(mods)} results</span>
-<label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label>
-<label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option></select></label>
-<label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header>
-<main><p>Generated {escape(generated_at)}. “Current version / day” is the observed download delta/day between the first and latest stored observations with the current version; it is unavailable on the first observation.</p>
-<section id="pinned-section"{' hidden' if not pinned else ''}><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">{pinned}</div></section>
-<section><h2>All other mods</h2><div class="grid" id="regular-group">{regular}</div></section></main>
-<script>
-const cards=[...document.querySelectorAll('.mod-card')], search=document.querySelector('#search'), source=document.querySelector('#source-filter'), sort=document.querySelector('#sort'), count=document.querySelector('#results-count');
-function update(){{let q=search.value.toLowerCase(), visible=0; cards.forEach(c=>{{c.hidden=!(c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value));if(!c.hidden)visible++;}});count.textContent=visible+' result'+(visible===1?'':'s'); for(const id of ['pinned-group','regular-group']){{let g=document.getElementById(id), key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join(''); [...g.children].sort((a,b)=>{{let av=a.dataset[key],bv=b.dataset[key]; return sort.value==='updated'?bv.localeCompare(av):(Number(bv)-Number(av));}}).forEach(c=>g.appendChild(c));}}}}
-[search,source,sort].forEach(x=>x.addEventListener('input',update)); cards.forEach(c=>{{c.addEventListener('click',e=>{{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url;}});c.addEventListener('keydown',e=>{{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('a,button,input,select')){{e.preventDefault();location.href=c.dataset.url;}}}})}});update();
-</script></body></html>'''
+    def card(members):
+        members = sorted(members, key=lambda m: m['source'])
+        primary = max(members, key=lambda m: (m.get('updated_at') or '', m.get('key','')))
+        sources = {m['source'] for m in members}; both = len(sources) > 1
+        source = 'both' if both else next(iter(sources)); label = 'Both' if both else ('Thunderstore' if source == 'thunderstore' else 'Nexus Mods')
+        rates = [compute_rates(m, now) for m in members]
+        updated = max((m.get('updated_at') or '' for m in members), default='')
+        created = min((m.get('created_at') or '' for m in members if m.get('created_at')), default='')
+        lifetime = max(r['lifetime_downloads_per_day'] for r in rates)
+        vr = [r['current_version_observed_downloads_per_day'] for r in rates if r['current_version_observed_downloads_per_day'] is not None]
+        version_rate = max(vr) if vr else None
+        adult = any(m.get('adult_content') for m in members)
+        pinned = any(m.get('pinned') for m in members)
+        cats = sorted({x for m in members for x in m.get('categories',[])})
+        search = ' '.join([x for m in members for x in [m.get('title',''),m.get('author','')]+m.get('categories',[])]).lower()
+        links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
+        metrics = ''.join('<div><dt>%s downloads</dt><dd>%d</dd></div><div><dt>Endorsements / likes</dt><dd>%d / %d</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', int(m.get('total_downloads') or 0), int(m.get('endorsements') or 0), int(m.get('likes') or 0)) for m in members)
+        images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
+        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-v1="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
+<div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><p class="dates">Updated <time>%s</time> · Uploaded <time>%s</time></p></div><dl class="metrics">%s<div><dt>Max lifetime / day</dt><dd>%.1f</dd></div></dl></article>''' % (
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(updated >= '2026-09-08T00:00:00Z').lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(max(int(m.get('total_downloads') or 0) for m in members)), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated[:10] or 'unknown'), escape(created[:10] or 'unknown'), metrics, lifetime)
+    groups = _report_groups(mods)
+    pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
+    return '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
+:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px}.badges{display:flex;gap:6px;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tag{background:#252a31;color:var(--muted);margin:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.metrics{display:grid;grid-template-columns:repeat(3,1fr);margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{align-items:stretch}.control,input{width:100%%}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px 1fr;margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,1fr)}}
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control"><input id="nsfw-toggle" type="checkbox"> Show NSFW mods</label><label class="control"><input id="v1-toggle" type="checkbox"> Updated Sep 8, 2026 or later</label><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s. NSFW mods are hidden by default. The v1 filter means updated on or after 2026-09-08 (not a semantic version).</p><section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),v1=document.querySelector('#v1-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!v1.checked||c.dataset.v1==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,v1].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (len(groups), escape(generated_at), '' if pinned else ' hidden', pinned, regular)
 
 
 class ReportVerifier(HTMLParser):
@@ -631,7 +608,7 @@ class ReportVerifier(HTMLParser):
             self.ids.add(attrs["id"])
         if tag == "article" and "mod-card" in (attrs.get("class") or "").split():
             self.cards += 1
-            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source"}
+            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-v1"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
 
@@ -642,7 +619,7 @@ def verify_report(path: Path, expected_cards: int | None = None) -> dict:
     errors = []
     if expected_cards is not None and parser.cards != expected_cards:
         errors.append(f"expected {expected_cards} cards, found {parser.cards}")
-    if not {"pinned-group", "regular-group", "search", "source-filter", "sort"}.issubset(parser.ids):
+    if not {"pinned-group", "regular-group", "search", "source-filter", "sort", "nsfw-toggle", "v1-toggle"}.issubset(parser.ids):
         errors.append("missing report controls or fixed groups")
     if parser.missing_sort:
         errors.append(f"{parser.missing_sort} cards lack sort/navigation attributes")
@@ -671,13 +648,16 @@ def generate_report(
 ) -> dict:
     mods_path = root / "data/mods.json"
     mods = _load_json(mods_path, [])
+    mods = apply_manual_mappings(mods, _load_json(root / "mappings.json", {}))
     now = parse_datetime(generated_at)
     for mod in mods:
         mod["rates"] = compute_rates(mod, now)
     atomic_write_json(mods_path, mods)
     page = render_report(mods, generated_at, embed_thumbnails=embed_thumbnails)
     atomic_write_bytes(root / "report.html", page.encode("utf-8"))
-    result = verify_report(root / "report.html", expected_cards=len(mods))
+    if not embed_thumbnails:
+        atomic_write_bytes(root / "report-hotlinked.html", page.encode("utf-8"))
+    result = verify_report(root / "report.html", expected_cards=len(_report_groups(mods)))
     if not result["ok"]:
         raise RuntimeError("generated report failed verification: " + "; ".join(result["errors"]))
     return result
@@ -733,7 +713,7 @@ def verify_output(
         errors.append(f"{len(incomplete)} records lack common fields")
     report_result = None
     if (root / "report.html").exists():
-        report_result = verify_report(root / "report.html", expected_cards=len(mods))
+        report_result = verify_report(root / "report.html", expected_cards=len(_report_groups(mods)))
         errors.extend(report_result["errors"])
     return {
         "ok": not errors,
@@ -790,6 +770,8 @@ def run_collection(args) -> dict:
     mods = merge_mods(_load_json(mods_path, []), fresh, collected_at)
     if args.mappings:
         mods = apply_manual_mappings(mods, _load_json(args.mappings, {}))
+    else:
+        mods = apply_manual_mappings(mods, _load_json(root / "mappings.json", {}))
     atomic_write_json(mods_path, mods)
     manifest = {
         "collected_at": collected_at,

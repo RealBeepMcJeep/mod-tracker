@@ -73,6 +73,50 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(mapped[0]["match"]["method"], "manual")
         self.assertIsNone(mods[0]["canonical_group_id"])
 
+    def test_mapped_sources_render_as_one_both_card_with_two_links(self):
+        thunderstore = sample("thunderstore", "A/B", title="Shared")
+        nexus = sample("nexus", "79", title="Shared")
+        for mod, group, match in ((thunderstore, "shared", "nexus:79"), (nexus, "shared", "thunderstore:A/B")):
+            mod["canonical_group_id"] = group
+            mod["match"] = {"method": "manual", "matched_to": [match]}
+
+        page = tracker.render_report([thunderstore, nexus], "2026-09-09T20:00:00Z")
+
+        self.assertEqual(page.count('class="mod-card'), 1)
+        self.assertIn(">Both</span>", page)
+        self.assertIn('>Thunderstore</a>', page)
+        self.assertIn('>Nexus Mods</a>', page)
+
+    def test_report_has_static_nsfw_default_and_v1_boundary_metadata(self):
+        adult = sample("nexus", "adult", title="Adult")
+        adult["adult_content"] = True
+        boundary = sample("nexus", "boundary", title="Boundary")
+        boundary["updated_at"] = "2026-09-08T00:00:00Z"
+        old = sample("thunderstore", "old", title="Old")
+        old["updated_at"] = "2026-09-07T23:59:59Z"
+        page = tracker.render_report([adult, boundary, old], "2026-09-09T20:00:00Z")
+        self.assertIn('.mod-card[data-nsfw="true"]{display:none}', page)
+        self.assertIn('id="nsfw-toggle"', page)
+        self.assertIn('id="v1-toggle"', page)
+        self.assertIn('data-v1="true"', page)
+        self.assertIn('data-v1="false"', page)
+        self.assertIn('Updated Sep 8, 2026 or later', page)
+
+    def test_nsfw_toggle_can_override_static_default_hiding(self):
+        adult = sample("nexus", "adult", title="Adult")
+        adult["adult_content"] = True
+
+        page = tracker.render_report([adult], "2026-09-09T20:00:00Z")
+
+        self.assertIn('.show-nsfw .mod-card[data-nsfw="true"]{display:grid}', page)
+        self.assertIn("document.body.classList.toggle('show-nsfw',nsfw.checked)", page)
+
+    def test_report_cards_have_whole_card_source_tints(self):
+        page = tracker.render_report([sample("thunderstore", "ts"), sample("nexus", "nx")], "2026-09-09T20:00:00Z")
+        self.assertIn('.mod-card.source-thunderstore{background:var(--ts-bg)', page)
+        self.assertIn('.mod-card.source-nexus{background:var(--nx-bg)', page)
+        self.assertIn('.mod-card.source-both{background:linear-gradient', page)
+
     def test_verifier_checks_card_count_groups_and_sort_attributes(self):
         page = tracker.render_report([sample("nexus", "79")], "2026-09-09T20:00:00Z")
         with tempfile.TemporaryDirectory() as tmp:

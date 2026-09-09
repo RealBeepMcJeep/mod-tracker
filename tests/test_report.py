@@ -118,6 +118,18 @@ class ReportTests(unittest.TestCase):
         self.assertIn('.mod-card.source-nexus{background:var(--nx-bg)', page)
         self.assertIn('.mod-card.source-both{background:linear-gradient', page)
 
+    def test_mobile_toggles_stay_inline_and_title_links_inherit_card_color(self):
+        page = tracker.render_report([sample("nexus", "79", title="White title")], "2026-09-09T20:00:00Z")
+
+        self.assertIn('<div class="toggle-row">', page)
+        self.assertIn('<label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>', page)
+        self.assertIn('<label class="toggle-control"><input id="v1-toggle" type="checkbox"><span>Updated Sep 8, 2026 or later</span></label>', page)
+        self.assertIn('.toggle-row{display:flex', page)
+        self.assertIn('.toggle-control{display:flex;align-items:center', page)
+        self.assertIn('.toggle-control input{width:18px;height:18px;min-height:0', page)
+        self.assertIn('.body h2 a,.body h2 a:visited{color:var(--text)', page)
+        self.assertNotIn('.control,input{width:100%}', page)
+
     def test_verifier_checks_card_count_groups_and_sort_attributes(self):
         page = tracker.render_report([sample("nexus", "79")], "2026-09-09T20:00:00Z")
         with tempfile.TemporaryDirectory() as tmp:

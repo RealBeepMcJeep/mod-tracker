@@ -100,7 +100,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn('id="v1-toggle"', page)
         self.assertIn('data-v1="true"', page)
         self.assertIn('data-v1="false"', page)
-        self.assertIn('Updated Sep 8, 2026 or later', page)
+        self.assertIn('<span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span>', page)
+        self.assertIn('<p>Generated 2026-09-09T20:00:00Z.</p>', page)
+        self.assertNotIn('NSFW mods are hidden by default.', page)
+        self.assertNotIn('The v1 filter means', page)
 
     def test_nsfw_toggle_can_override_static_default_hiding(self):
         adult = sample("nexus", "adult", title="Adult")
@@ -166,7 +169,7 @@ class ReportTests(unittest.TestCase):
 
         self.assertIn('<div class="toggle-row">', page)
         self.assertIn('<label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>', page)
-        self.assertIn('<label class="toggle-control"><input id="v1-toggle" type="checkbox"><span>Updated Sep 8, 2026 or later</span></label>', page)
+        self.assertIn('<label class="toggle-control"><input id="v1-toggle" type="checkbox"><span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span></label>', page)
         self.assertIn('.toggle-row{display:flex', page)
         self.assertIn('.toggle-control{display:flex;align-items:center', page)
         self.assertIn('.toggle-control input{width:18px;height:18px;min-height:0', page)

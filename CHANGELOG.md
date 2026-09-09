@@ -6,6 +6,7 @@
 - Added four manually verified cross-source mappings for Custom Chest Name, Marsarah Tweaks, Races of Valheim, and Jotunn, bringing the report to 20 `Both` cards.
 - Added thousands separators to human-facing downloads, endorsements/likes, and rate metrics while preserving raw numeric HTML sort attributes.
 - Changed mapped-card total downloads, lifetime downloads/day, and observed current-version downloads/day to sum confirmed Nexus Mods and Thunderstore values instead of taking the larger source value.
+- Changed lifetime downloads/day to divide by age rounded up to the nearest full day, preventing sub-day hourly extrapolation; observed current-version rates still use their exact observation interval.
 - Fixed mobile NSFW/v1 toggle alignment and made card-title links inherit the report's white text color in both normal and visited states.
 
 ## Initial build

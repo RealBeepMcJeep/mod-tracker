@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import time
@@ -220,7 +221,7 @@ def compute_rates(mod: dict, now: datetime) -> dict:
     persisted observations carrying the current version string.
     """
     created = parse_datetime(mod["created_at"])
-    age_days = max((now - created).total_seconds() / 86400, 1 / 86400)
+    age_days = max(math.ceil((now - created).total_seconds() / 86400), 1)
     observations = sorted(
         (item for item in mod.get("observations", []) if item.get("version") == mod.get("version")),
         key=lambda item: item["observed_at"],

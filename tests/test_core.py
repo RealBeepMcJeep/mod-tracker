@@ -55,6 +55,26 @@ class CoreModelTests(unittest.TestCase):
         self.assertEqual(rates["current_version_observed_delta"], 300)
         self.assertEqual(rates["current_version_baseline_at"], "2026-09-07T20:00:00Z")
 
+    def test_lifetime_rate_rounds_age_up_to_full_days(self):
+        cases = (
+            ("2026-09-09T18:00:00Z", 510, 510.0),
+            ("2026-09-08T20:00:00Z", 510, 510.0),
+            ("2026-09-08T19:59:59Z", 510, 255.0),
+            ("2026-09-01T15:00:00Z", 90, 10.0),
+        )
+        for created_at, downloads, expected in cases:
+            with self.subTest(created_at=created_at):
+                mod = {
+                    "created_at": created_at,
+                    "total_downloads": downloads,
+                    "version": "1.0",
+                    "observations": [],
+                }
+                self.assertEqual(
+                    tracker.compute_rates(mod, NOW)["lifetime_downloads_per_day"],
+                    expected,
+                )
+
     def test_rate_is_unknown_until_two_current_version_observations_exist(self):
         mod = {
             "created_at": "2026-09-04T20:00:00Z", "updated_at": "2026-09-09T19:00:00Z",

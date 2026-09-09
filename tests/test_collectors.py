@@ -1,0 +1,118 @@
+import json
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import tracker
+from tests.test_tracker import CARD_PAGE
+
+
+DETAIL_HTML = r'''<html><script>"package_created\",\"2021-02-14T18:07:34.498403Z\",\"version_created\",\"2026-09-09T12:30:43.920443Z\"</script><div class="markdown-body"><h1>Read me</h1></div></html>'''
+
+
+class CollectorTests(unittest.TestCase):
+    def test_parses_and_normalizes_thunderstore_exact_metrics(self):
+        detail = tracker.parse_thunderstore_detail(DETAIL_HTML)
+        card = tracker.parse_listing(CARD_PAGE)[0]
+        metrics = {"downloads": 774617, "rating_score": 121, "latest_version": "18.4.1"}
+
+        mod = tracker.normalize_thunderstore(
+            card, detail, metrics,
+            ranks={"last-updated": 1, "most-downloaded": 4},
+            collected_at="2026-09-09T20:00:00Z",
+        )
+
+        self.assertEqual(detail["package_created"], "2021-02-14T18:07:34.498403Z")
+        self.assertEqual(detail["version_created"], "2026-09-09T12:30:43.920443Z")
+        self.assertIn("Read me", detail["readme_html"])
+        self.assertEqual(mod["key"], "thunderstore:ExampleAuthor/ExampleMod")
+        self.assertEqual(mod["source_id"], "ExampleAuthor/ExampleMod")
+        self.assertEqual(mod["total_downloads"], 774617)
+        self.assertEqual(mod["likes"], 121)
+        self.assertEqual(mod["version"], "18.4.1")
+        self.assertEqual(mod["updated_at"], "2026-09-09T12:30:43.920443Z")
+        self.assertTrue(mod["pinned"])
+
+    def test_thunderstore_collection_saves_raw_and_fetches_detail_only_for_new_version(self):
+        calls = []
+        metrics = {"downloads": 100, "rating_score": 2, "latest_version": "1.0"}
+
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if "package-metrics" in url:
+                return json.dumps(metrics).encode()
+            if "/p/ExampleAuthor/ExampleMod/" in url:
+                return DETAIL_HTML.encode()
+            return CARD_PAGE.encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = tracker.collect_thunderstore(root, pages=1, collected_at="2026-09-09T20:00:00Z", fetch=fetch, pause=lambda: None)
+            second = tracker.collect_thunderstore(root, pages=1, collected_at="2026-09-09T21:00:00Z", fetch=fetch, pause=lambda: None)
+
+            self.assertEqual(len(first), 1)
+            self.assertEqual(len(second), 1)
+            self.assertTrue((root / "raw/thunderstore/listings/last-updated/page-1.html").exists())
+            self.assertTrue((root / "raw/thunderstore/metrics/ExampleAuthor/ExampleMod.json").exists())
+            self.assertTrue((root / "raw/thunderstore/packages/ExampleAuthor/ExampleMod.html").exists())
+            detail_calls = [url for url in calls if "/p/ExampleAuthor/ExampleMod/" in url]
+            self.assertEqual(len(detail_calls), 1)
+
+    def test_nexus_collection_is_one_graphql_request_and_caches_v1_details(self):
+        calls = []
+        listing = {"data": {"mods": {"nodes": [{
+            "modId": 79, "name": "Circlet", "summary": "Light", "author": "Randy",
+            "downloads": 10737, "endorsements": 699, "adultContent": False,
+            "createdAt": "2021-02-22T06:04:51Z", "updatedAt": "2026-09-09T19:23:08Z",
+            "version": "1.0.7", "fileSize": 349, "category": "Gameplay",
+            "pictureUrl": "https://staticdelivery.nexusmods.com/79.png",
+        }]}}}
+        detail = {"unique_downloads": 7059, "views": 61114, "description": "Full"}
+
+        def fetch(url, **kwargs):
+            calls.append((url, kwargs))
+            payload = listing if url.endswith("/v2/graphql") else detail
+            return json.dumps(payload).encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = tracker.collect_nexus(root, "secret-runtime-key", "2026-09-09T20:00:00Z", fetch=fetch, pause=lambda: None)
+            second = tracker.collect_nexus(root, "secret-runtime-key", "2026-09-09T21:00:00Z", fetch=fetch, pause=lambda: None)
+
+            self.assertEqual(len(first), 1)
+            self.assertEqual(len(second), 1)
+            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 4)
+            self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url, _ in calls), 1)
+            self.assertTrue((root / "raw/nexus/listing-page-1.json").exists())
+            self.assertTrue((root / "raw/nexus/listing-page-2.json").exists())
+            self.assertTrue((root / "raw/nexus/mods/79.json").exists())
+            self.assertNotIn("secret-runtime-key", (root / "raw/nexus/listing-page-1.json").read_text())
+            graphql_calls = [kwargs for url, kwargs in calls if url.endswith("/v2/graphql")][:2]
+            self.assertIn(b"count: 80", graphql_calls[0]["data"])
+            self.assertIn(b"offset: 0", graphql_calls[0]["data"])
+            self.assertIn(b"offset: 80", graphql_calls[1]["data"])
+            self.assertEqual(graphql_calls[0]["headers"]["apikey"], "secret-runtime-key")
+
+    def test_cookie_header_detail_capture_records_success_without_persisting_cookie(self):
+        seen = {}
+
+        def fetch(url, **kwargs):
+            seen.update(kwargs["headers"])
+            return (b"<html><title>Actual mod</title><main>description</main>" + b"x" * 200 + b"</html>")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = tracker.capture_nexus_page(
+                Path(tmp), "79", cookie_header="session=private", fetch=fetch
+            )
+            saved = (Path(tmp) / "raw/nexus/pages/79.html").read_text()
+
+        self.assertEqual(result["status"], "captured")
+        self.assertEqual(seen["Cookie"], "session=private")
+        self.assertNotIn("session=private", saved)
+
+
+if __name__ == "__main__":
+    unittest.main()

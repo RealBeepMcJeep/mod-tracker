@@ -467,20 +467,21 @@ def collect_nexus(
 ) -> list[dict]:
     """Collect exactly one 80-item Nexus GraphQL listing and v1 details."""
     headers = {"Content-Type": "application/json", "apikey": api_key}
-    nodes = []
-    for page, offset in enumerate((0, 80), 1):
-        query = NEXUS_QUERY.replace("OFFSET", str(offset))
-        listing_body = fetch(
-            "https://api.nexusmods.com/v2/graphql",
-            headers=headers,
-            data=json.dumps({"query": query}, separators=(",", ":")).encode(),
-        )
-        pause()
-        listing = json.loads(listing_body)
-        if listing.get("errors"):
-            raise RuntimeError("Nexus GraphQL errors: " + json.dumps(listing["errors"]))
-        atomic_write_json(root / f"raw/nexus/listing-page-{page}.json", listing)
-        nodes.extend(listing.get("data", {}).get("mods", {}).get("nodes", []))
+    query = NEXUS_QUERY.replace("OFFSET", "0")
+    listing_body = fetch(
+        "https://api.nexusmods.com/v2/graphql",
+        headers=headers,
+        data=json.dumps({"query": query}, separators=(",", ":")).encode(),
+    )
+    pause()
+    listing = json.loads(listing_body)
+    if listing.get("errors"):
+        raise RuntimeError("Nexus GraphQL errors: " + json.dumps(listing["errors"]))
+    atomic_write_json(root / "raw/nexus/listing-page-1.json", listing)
+    for stale in (root / "raw/nexus").glob("listing-page-*.json"):
+        if stale.name != "listing-page-1.json":
+            stale.unlink()
+    nodes = listing.get("data", {}).get("mods", {}).get("nodes", [])
     normalized = []
     seen = set()
     for rank, node in enumerate(nodes, 1):
@@ -675,7 +676,7 @@ def generate_report(
 
 
 def verify_output(
-    root: Path, *, expected_thunderstore_pages: int = 4, expected_nexus_pages: int = 2
+    root: Path, *, expected_thunderstore_pages: int = 10, expected_nexus_pages: int = 1
 ) -> dict:
     errors = []
     ts_appearances = 0
@@ -690,6 +691,7 @@ def verify_output(
             if count != 20:
                 errors.append(f"{path.relative_to(root)} has {count} cards, expected 20")
     nexus_appearances = 0
+    nexus_ids = []
     for page in range(1, expected_nexus_pages + 1):
         path = root / f"raw/nexus/listing-page-{page}.json"
         listing = _load_json(path, None)
@@ -697,9 +699,15 @@ def verify_output(
             errors.append(f"missing or invalid {path.relative_to(root)}")
             continue
         count = len(listing.get("data", {}).get("mods", {}).get("nodes", []))
+        nexus_ids.extend(
+            str(node.get("modId"))
+            for node in listing.get("data", {}).get("mods", {}).get("nodes", [])
+        )
         nexus_appearances += count
         if count != 80:
             errors.append(f"{path.relative_to(root)} has {count} nodes, expected 80")
+    if len(nexus_ids) != len(set(nexus_ids)):
+        errors.append("Nexus listing does not contain 80 distinct mod IDs")
     mods = _load_json(root / "data/mods.json", None)
     if mods is None:
         errors.append("missing or invalid data/mods.json")
@@ -735,8 +743,8 @@ def build_parser() -> argparse.ArgumentParser:
     collect = subparsers.add_parser("collect", help="collect sources, persist data, and render report")
     collect.add_argument("--output-root", type=Path, default=Path("."))
     collect.add_argument("--sources", choices=("all", "thunderstore", "nexus"), default="all")
-    collect.add_argument("--thunderstore-pages", type=int, default=4)
-    collect.add_argument("--nexus-pages", type=int, default=2, choices=(2,))
+    collect.add_argument("--thunderstore-pages", type=int, default=10)
+    collect.add_argument("--nexus-pages", type=int, default=1, choices=(1,))
     collect.add_argument("--nexus-api-key-file", type=Path, default=Path.home() / ".config/nexus-mods/api-key")
     collect.add_argument("--nexus-cookie-file", type=Path)
     collect.add_argument("--mappings", type=Path)
@@ -746,8 +754,8 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--embed-thumbnails", action="store_true")
     verify = subparsers.add_parser("verify", help="verify raw inputs, normalized data, and report")
     verify.add_argument("--output-root", type=Path, default=Path("."))
-    verify.add_argument("--thunderstore-pages", type=int, default=4)
-    verify.add_argument("--nexus-pages", type=int, default=2)
+    verify.add_argument("--thunderstore-pages", type=int, default=10)
+    verify.add_argument("--nexus-pages", type=int, default=1, choices=(1,))
     return parser
 
 

@@ -1,27 +1,98 @@
-# Thunderstore Mod Tracker
+# Valheim Mod Tracker
 
-A zero-dependency Python tracker for the package cards on Thunderstore's Valheim listing.
+A deterministic, dependency-free Python CLI that collects and compares Valheim mods from Thunderstore and Nexus Mods, persists source evidence and normalized observations, and generates one sortable HTML report.
 
-The initial dataset indexes the first 10 pages sorted by **Last updated** and the first 10 pages sorted by **Most downloaded**. Duplicate packages are stored once while retaining their position in both ranked views.
+## Required scope
 
-## Card fields
+- Thunderstore: 10 pages sorted by `last-updated` and 10 pages sorted by `most-downloaded` (20 cards per page).
+- Nexus Mods: exactly one GraphQL page containing 80 mods sorted by `updatedAt` descending.
+- Runtime: Python standard library only. No package installation, service, scheduler, or cron job is required.
 
-- title, author, description, thumbnail URL
-- package URL and author URL
-- downloads (display text and parsed integer)
-- likes (display text and parsed integer)
-- last-updated display text
-- categories/tags with filter URL and category ID
-- pinned status
-- sort mode, page, page position, and overall rank
-- first/last observation timestamps and deleted status
+## Run
 
-Relative timestamps such as `7 minutes ago` are preserved exactly as observed; the snapshot timestamp provides their reference time.
+The Nexus API key is read at runtime and is never copied into project output:
 
-## Source listing
+```bash
+python3 tracker.py collect
+python3 tracker.py verify
+```
 
-https://thunderstore.io/c/valheim/
+Defaults:
 
-## Status
+- output root: current directory
+- Nexus key: `~/.config/nexus-mods/api-key`
+- report: `report.html`
+- normalized store: `data/mods.json`
 
-Implementation is tracked in [`todo.md`](todo.md).
+Useful manual commands:
+
+```bash
+# Collect just one source (the persisted store retains the other source).
+python3 tracker.py collect --sources thunderstore
+python3 tracker.py collect --sources nexus
+
+# Rebuild the report without network access.
+python3 tracker.py report
+
+# Inline fetched thumbnails as data URLs in the report.
+python3 tracker.py report --embed-thumbnails
+
+# Use a different isolated output directory.
+python3 tracker.py collect --output-root /tmp/valheim-mod-tracker
+python3 tracker.py verify --output-root /tmp/valheim-mod-tracker
+```
+
+`collect` is resumable: listing evidence is replaced atomically, per-mod detail payloads are cached, and a detail page is fetched again only when needed. JSON serialization uses sorted keys and stable indentation. Network collection timestamps are necessarily run-specific.
+
+## Nexus authentication and raw page capture
+
+The GraphQL listing and v1 detail requests use the API key from `~/.config/nexus-mods/api-key`. The key is sent only as an HTTP header and is not logged or persisted.
+
+Nexus detail-page HTML is Cloudflare-protected. For a one-time authenticated capture of each newly observed mod page, provide either a Netscape cookie jar or a file containing a browser-exported `Cookie:` header:
+
+```bash
+python3 tracker.py collect --sources nexus --nexus-cookie-file /path/outside/repo/nexus-cookies.txt
+```
+
+Cookie files and headers must remain outside Git. Without a cookie file, collection still caches the complete v1 API detail payload under `raw/nexus/mods/` and records `raw_page_capture.status` as `unavailable`. Failed HTML captures are recorded honestly as `failed`; they are never represented as successful.
+
+## Stored output
+
+Generated output is deliberately ignored by Git:
+
+- `data/mods.json` — flat normalized records with observation history and computed rates
+- `raw/thunderstore/listings/` — source listing HTML by ranking and page
+- `raw/thunderstore/packages/` — public package detail HTML
+- `raw/thunderstore/metrics/` — exact package metric JSON
+- `raw/nexus/listing-page-1.json` — exact GraphQL response for the 80-item listing
+- `raw/nexus/mods/` — cached v1 detail JSON for newly observed mods
+- `raw/nexus/pages/` — optional authenticated page HTML
+- `snapshots/latest.json` — latest run manifest
+- `report.html` — sortable, searchable combined report
+
+Writes use a same-directory temporary file followed by `os.replace`, so interrupted writes do not leave partially serialized canonical files.
+
+## Comparable rates
+
+Each source is normalized to the same two rate fields:
+
+- `lifetime_downloads_per_day`: current total downloads divided by age since creation, with a one-day minimum denominator.
+- `current_version_observed_downloads_per_day`: download delta divided by elapsed time between the first and latest stored observations of the current version.
+
+The current-version rate remains unknown until two observations for that version exist. Rates are based on observations made by this tracker; they do not claim provider-side historical precision.
+
+## Report behavior
+
+`report.html` combines both sources and includes source filtering, text search, and client-side sorting by updated time, downloads, lifetime rate, or observed current-version rate. Thunderstore pinned entries remain in a separate fixed group. Optional thumbnail embedding removes report-time image dependencies.
+
+## Verification
+
+```bash
+python3 -m unittest discover -s tests -t . -v
+python3 -m py_compile tracker.py
+python3 tracker.py verify
+```
+
+The verifier checks all 20 Thunderstore listing pages for 20 cards each, checks that the one Nexus listing contains 80 distinct mod IDs, checks normalized-record uniqueness and required fields, and validates report card count and sort metadata.
+
+Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

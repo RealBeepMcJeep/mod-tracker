@@ -79,21 +79,24 @@ class CollectorTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            stale = root / "raw/nexus/listing-page-2.json"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("{}")
             first = tracker.collect_nexus(root, "secret-runtime-key", "2026-09-09T20:00:00Z", fetch=fetch, pause=lambda: None)
             second = tracker.collect_nexus(root, "secret-runtime-key", "2026-09-09T21:00:00Z", fetch=fetch, pause=lambda: None)
 
             self.assertEqual(len(first), 1)
             self.assertEqual(len(second), 1)
-            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 4)
+            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 2)
             self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url, _ in calls), 1)
             self.assertTrue((root / "raw/nexus/listing-page-1.json").exists())
-            self.assertTrue((root / "raw/nexus/listing-page-2.json").exists())
+            self.assertFalse((root / "raw/nexus/listing-page-2.json").exists())
             self.assertTrue((root / "raw/nexus/mods/79.json").exists())
             self.assertNotIn("secret-runtime-key", (root / "raw/nexus/listing-page-1.json").read_text())
-            graphql_calls = [kwargs for url, kwargs in calls if url.endswith("/v2/graphql")][:2]
+            graphql_calls = [kwargs for url, kwargs in calls if url.endswith("/v2/graphql")]
             self.assertIn(b"count: 80", graphql_calls[0]["data"])
             self.assertIn(b"offset: 0", graphql_calls[0]["data"])
-            self.assertIn(b"offset: 80", graphql_calls[1]["data"])
+            self.assertNotIn(b"offset: 80", graphql_calls[1]["data"])
             self.assertEqual(graphql_calls[0]["headers"]["apikey"], "secret-runtime-key")
 
     def test_cookie_header_detail_capture_records_success_without_persisting_cookie(self):

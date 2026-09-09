@@ -1,20 +1,22 @@
-# Fail closed: only explicitly tracked project artifacts are allowed.
+# Fail closed: only source, tests, and documentation are tracked.
 *
 !.gitignore
 !AGENTS.md
 !README.md
-!todo.md
+!TODO.md
+!CHANGELOG.md
 !tracker.py
 !tests/
 !tests/**
-!data/
-!data/packages/
-!data/packages/*.json
-!raw/
-!raw/**/*.html
-!snapshots/
-!snapshots/*.json
-!INDEX.md
+
+# Generated datasets, source captures, reports, and secrets stay local.
+data/
+raw/
+snapshots/
+report.html
+*cookies*
+*cookie-jar*
+*.env
 
 # Never track transient writes or Python caches.
 **/*.tmp

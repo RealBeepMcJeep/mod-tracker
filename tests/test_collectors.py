@@ -50,18 +50,22 @@ class CollectorTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            stale = root / "raw/thunderstore/listings/last-updated/page-2.html"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("stale")
             first = tracker.collect_thunderstore(root, pages=1, collected_at="2026-09-09T20:00:00Z", fetch=fetch, pause=lambda: None)
             second = tracker.collect_thunderstore(root, pages=1, collected_at="2026-09-09T21:00:00Z", fetch=fetch, pause=lambda: None)
 
             self.assertEqual(len(first), 1)
             self.assertEqual(len(second), 1)
             self.assertTrue((root / "raw/thunderstore/listings/last-updated/page-1.html").exists())
+            self.assertFalse(stale.exists())
             self.assertTrue((root / "raw/thunderstore/metrics/ExampleAuthor/ExampleMod.json").exists())
             self.assertTrue((root / "raw/thunderstore/packages/ExampleAuthor/ExampleMod.html").exists())
             detail_calls = [url for url in calls if "/p/ExampleAuthor/ExampleMod/" in url]
             self.assertEqual(len(detail_calls), 1)
 
-    def test_nexus_collection_is_one_graphql_request_and_caches_v1_details(self):
+    def test_nexus_collection_uses_two_graphql_pages_and_caches_v1_details(self):
         calls = []
         listing = {"data": {"mods": {"nodes": [{
             "modId": 79, "name": "Circlet", "summary": "Light", "author": "Randy",
@@ -79,7 +83,7 @@ class CollectorTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            stale = root / "raw/nexus/listing-page-2.json"
+            stale = root / "raw/nexus/listing-page-3.json"
             stale.parent.mkdir(parents=True)
             stale.write_text("{}")
             first = tracker.collect_nexus(root, "secret-runtime-key", "2026-09-09T20:00:00Z", fetch=fetch, pause=lambda: None)
@@ -87,16 +91,17 @@ class CollectorTests(unittest.TestCase):
 
             self.assertEqual(len(first), 1)
             self.assertEqual(len(second), 1)
-            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 2)
+            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 4)
             self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url, _ in calls), 1)
             self.assertTrue((root / "raw/nexus/listing-page-1.json").exists())
-            self.assertFalse((root / "raw/nexus/listing-page-2.json").exists())
+            self.assertTrue((root / "raw/nexus/listing-page-2.json").exists())
+            self.assertFalse((root / "raw/nexus/listing-page-3.json").exists())
             self.assertTrue((root / "raw/nexus/mods/79.json").exists())
             self.assertNotIn("secret-runtime-key", (root / "raw/nexus/listing-page-1.json").read_text())
             graphql_calls = [kwargs for url, kwargs in calls if url.endswith("/v2/graphql")]
             self.assertIn(b"count: 80", graphql_calls[0]["data"])
             self.assertIn(b"offset: 0", graphql_calls[0]["data"])
-            self.assertNotIn(b"offset: 80", graphql_calls[1]["data"])
+            self.assertIn(b"offset: 80", graphql_calls[1]["data"])
             self.assertEqual(graphql_calls[0]["headers"]["apikey"], "secret-runtime-key")
 
     def test_cookie_header_detail_capture_records_success_without_persisting_cookie(self):

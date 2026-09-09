@@ -6,8 +6,8 @@ Deterministic stdlib-only collection and reporting for Valheim mods from Thunder
 
 - Thunderstore community: `https://thunderstore.io/c/valheim/`
 - Thunderstore rankings: `last-updated` and `most-downloaded`
-- Thunderstore depth: first 10 pages per ranking, 20 cards per page
-- Nexus listing: exactly one page/80 items sorted by `updatedAt` descending
+- Thunderstore depth: first 4 pages per ranking, 20 cards per page
+- Nexus listing: exactly two pages/80 items each sorted by `updatedAt` descending
 - Cross-source matching is explicit/manual only; never infer that similarly named mods are identical.
 
 ## Layout

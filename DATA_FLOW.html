@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Valheim Mod Tracker — Data Flow</title>
+<style>
+:root{--bg:#020617;--panel:#0f172a;--panel2:#111c31;--grid:#1e293b;--text:#f8fafc;--muted:#94a3b8;--cyan:#22d3ee;--emerald:#34d399;--violet:#a78bfa;--amber:#fbbf24;--rose:#fb7185;--orange:#fb923c;--slate:#64748b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;padding:clamp(16px,3vw,34px)}
+.container{max-width:1500px;margin:auto}.header{margin-bottom:22px}.title-row{display:flex;align-items:center;gap:12px}.pulse{width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 18px #22d3ee88;animation:pulse 2s infinite}@keyframes pulse{50%{opacity:.45}}h1{margin:0;font-size:clamp(23px,3vw,36px);letter-spacing:-.04em}.subtitle{color:var(--muted);font:14px/1.6 system-ui,sans-serif;margin:8px 0 0 24px}.diagram{border:1px solid var(--grid);border-radius:16px;background:#0f172a80;padding:12px;overflow:auto;box-shadow:0 20px 80px #0005}svg{display:block;width:100%;min-width:1250px;height:auto}svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-top:18px}.card{background:#0f172abf;border:1px solid var(--grid);border-radius:12px;padding:17px}.card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px}.dot{width:8px;height:8px;border-radius:50%;flex:none}.card ul{padding:0;margin:0;list-style:none;color:var(--muted);font:12px/1.55 system-ui,sans-serif}.card li+li{margin-top:6px}.card code{color:#cbd5e1}.warn{color:#fda4af}.footer{text-align:center;color:#475569;font-size:11px;margin:20px 0 4px}@media(max-width:600px){body{padding:12px}.subtitle{margin-left:0}.diagram{padding:4px}.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="header"><div class="title-row"><span class="pulse"></span><h1>Valheim Mod Tracker — Data Flow &amp; Field Lineage</h1></div><p class="subtitle">Manual, deterministic, Python-stdlib pipeline · external sources → raw evidence → normalized flat files → derived rates → single-file report</p></header>
+<div class="diagram">
+<svg viewBox="0 0 1450 1120" role="img" aria-labelledby="svg-title svg-desc">
+<title id="svg-title">Valheim mod tracker data-flow diagram</title>
+<desc id="svg-desc">Thunderstore and Nexus listing and detail sources flow through a Python collector into raw evidence, normalized JSON records, derived rate calculations, and a standalone HTML report.</desc>
+<defs>
+ <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#1e293b" stroke-width=".55"/></pattern>
+ <marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0 0L9 3.5 0 7Z" fill="#64748b"/></marker>
+ <marker id="arrowRose" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0 0L9 3.5 0 7Z" fill="#fb7185"/></marker>
+ <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1450" height="1120" fill="url(#grid)"/>
+
+<!-- boundaries -->
+<rect x="18" y="55" width="365" height="840" rx="14" fill="#0b122080" stroke="#fbbf24" stroke-dasharray="8 5"/>
+<text x="36" y="80" fill="#fbbf24" font-size="13" font-weight="700">EXTERNAL MOD SOURCES</text>
+<rect x="407" y="55" width="300" height="840" rx="14" fill="#071c1780" stroke="#34d399" stroke-dasharray="8 5"/>
+<text x="425" y="80" fill="#34d399" font-size="13" font-weight="700">COLLECTION + NORMALIZATION</text>
+<rect x="732" y="55" width="330" height="840" rx="14" fill="#170d2d70" stroke="#a78bfa" stroke-dasharray="8 5"/>
+<text x="750" y="80" fill="#a78bfa" font-size="13" font-weight="700">DURABLE FLAT-FILE STATE</text>
+<rect x="1087" y="55" width="345" height="840" rx="14" fill="#061b2470" stroke="#22d3ee" stroke-dasharray="8 5"/>
+<text x="1105" y="80" fill="#22d3ee" font-size="13" font-weight="700">REPORT ASSEMBLY + OUTPUT</text>
+
+<!-- arrows first -->
+<g fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)">
+ <path d="M348 165H450"/><path d="M348 290H450"/><path d="M348 405H450"/>
+ <path d="M348 560H450"/><path d="M348 680H450"/><path d="M348 800H450"/>
+ <path d="M650 254H780"/><path d="M650 465H780"/><path d="M650 654H780"/>
+ <path d="M650 725C700 725 700 585 780 585"/><path d="M650 725C715 725 715 820 780 820"/>
+ <path d="M1035 585H1120"/><path d="M1035 700H1120"/><path d="M1270 742V790"/>
+ <path d="M945 820C1050 820 1040 700 1120 700"/>
+</g>
+<g fill="none" stroke="#fb7185" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arrowRose)">
+ <path d="M185 940V820"/><path d="M355 940C410 940 410 680 450 680"/>
+</g>
+<!-- flow labels -->
+<g fill="#94a3b8" font-size="9">
+ <text x="365" y="156">HTML</text><text x="365" y="281">JSON</text><text x="365" y="396">HTML</text>
+ <text x="365" y="551">GraphQL JSON</text><text x="365" y="671">v1 JSON</text><text x="365" y="791">optional HTML</text>
+ <text x="674" y="244">atomic writes</text><text x="674" y="455">atomic writes</text><text x="674" y="644">merge by source key</text>
+ <text x="1042" y="576">records</text><text x="1044" y="691">optional group IDs</text><text x="1280" y="770">inline HTML/CSS/JS/data</text>
+</g>
+
+<!-- source boxes -->
+<g>
+ <rect x="45" y="105" width="303" height="120" rx="8" fill="#0f172a"/><rect x="45" y="105" width="303" height="120" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
+ <text x="62" y="130" fill="#fff" font-size="13" font-weight="700">Thunderstore listing pages</text>
+ <text x="62" y="149" fill="#fbbf24" font-size="9">4 pages × 2 sorts × 20 = 160 appearances</text>
+ <text x="62" y="170" fill="#94a3b8" font-size="9">last-updated + most-downloaded</text>
+ <text x="62" y="187" fill="#94a3b8" font-size="9">title · author · summary · category · image</text>
+ <text x="62" y="202" fill="#94a3b8" font-size="9">package URL · pinned · rank/page/position</text>
+
+ <rect x="45" y="245" width="303" height="92" rx="8" fill="#0f172a"/><rect x="45" y="245" width="303" height="92" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
+ <text x="62" y="270" fill="#fff" font-size="13" font-weight="700">Thunderstore metrics API</text>
+ <text x="62" y="290" fill="#94a3b8" font-size="9">/api/v1/package-metrics/{namespace}/{name}/</text>
+ <text x="62" y="308" fill="#94a3b8" font-size="9">exact downloads · rating score · latest version</text>
+ <text x="62" y="323" fill="#fbbf24" font-size="8">Canonical total replaces abbreviated listing count</text>
+
+ <rect x="45" y="357" width="303" height="96" rx="8" fill="#0f172a"/><rect x="45" y="357" width="303" height="96" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
+ <text x="62" y="382" fill="#fff" font-size="13" font-weight="700">Thunderstore package page</text>
+ <text x="62" y="402" fill="#94a3b8" font-size="9">public /c/valheim/p/{namespace}/{name}/</text>
+ <text x="62" y="420" fill="#94a3b8" font-size="9">package_created · version_created · README HTML</text>
+ <text x="62" y="438" fill="#fbbf24" font-size="8">Refetched only when latest version changes</text>
+
+ <rect x="45" y="500" width="303" height="116" rx="8" fill="#0f172a"/><rect x="45" y="500" width="303" height="116" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
+ <text x="62" y="525" fill="#fff" font-size="13" font-weight="700">Nexus GraphQL listing</text>
+ <text x="62" y="545" fill="#fbbf24" font-size="9">2 pages × 80 = 160 ranked listing rows</text>
+ <text x="62" y="564" fill="#94a3b8" font-size="9">updatedAt DESC · offsets 0 and 80</text>
+ <text x="62" y="582" fill="#94a3b8" font-size="9">ID · name · author · summary · category · image</text>
+ <text x="62" y="598" fill="#94a3b8" font-size="9">downloads · endorsements · timestamps · version</text>
+
+ <rect x="45" y="636" width="303" height="92" rx="8" fill="#0f172a"/><rect x="45" y="636" width="303" height="92" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
+ <text x="62" y="661" fill="#fff" font-size="13" font-weight="700">Nexus v1 mod detail API</text>
+ <text x="62" y="681" fill="#94a3b8" font-size="9">/v1/games/valheim/mods/{modId}.json</text>
+ <text x="62" y="699" fill="#94a3b8" font-size="9">description · unique downloads · views · fallbacks</text>
+ <text x="62" y="715" fill="#fbbf24" font-size="8">Cached once for newly observed IDs</text>
+
+ <rect x="45" y="748" width="303" height="104" rx="8" fill="#0f172a"/><rect x="45" y="748" width="303" height="104" rx="8" fill="#88133755" stroke="#fb7185" stroke-width="1.5"/>
+ <text x="62" y="773" fill="#fff" font-size="13" font-weight="700">Nexus mod page (optional evidence)</text>
+ <text x="62" y="793" fill="#94a3b8" font-size="9">authenticated browser-cookie request</text>
+ <text x="62" y="811" fill="#94a3b8" font-size="9">raw page HTML only; not required for core fields</text>
+ <text x="62" y="830" fill="#fb7185" font-size="8">Status: captured / failed / unavailable</text>
+</g>
+
+<!-- auth boxes -->
+<rect x="45" y="920" width="280" height="62" rx="8" fill="#0f172a"/><rect x="45" y="920" width="280" height="62" rx="8" fill="#88133755" stroke="#fb7185"/>
+<text x="62" y="945" fill="#fff" font-size="11" font-weight="700">Runtime-only authentication</text><text x="62" y="963" fill="#94a3b8" font-size="9">API key file + optional cookie export; never Git</text>
+
+<!-- processing boxes -->
+<g>
+ <rect x="450" y="113" width="200" height="282" rx="9" fill="#0f172a"/><rect x="450" y="113" width="200" height="282" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
+ <text x="470" y="141" fill="#fff" font-size="14" font-weight="700">tracker.py collect</text>
+ <text x="470" y="164" fill="#34d399" font-size="9">THUNDERSTORE PATH</text>
+ <text x="470" y="183" fill="#94a3b8" font-size="9">parse listing cards</text><text x="470" y="199" fill="#94a3b8" font-size="9">dedupe by namespace/name</text>
+ <text x="470" y="215" fill="#94a3b8" font-size="9">preserve both rank appearances</text><text x="470" y="231" fill="#94a3b8" font-size="9">fetch exact metrics + page detail</text>
+ <line x1="470" y1="251" x2="630" y2="251" stroke="#1e293b"/>
+ <text x="470" y="275" fill="#34d399" font-size="9">NEXUS PATH</text>
+ <text x="470" y="294" fill="#94a3b8" font-size="9">fetch 2 listing offsets</text><text x="470" y="310" fill="#94a3b8" font-size="9">reject/skip duplicate mod IDs</text>
+ <text x="470" y="326" fill="#94a3b8" font-size="9">cache v1 detail per new ID</text><text x="470" y="342" fill="#94a3b8" font-size="9">optionally capture authenticated page</text>
+ <text x="470" y="370" fill="#fbbf24" font-size="8">1-second request pacing · manual run</text>
+
+ <rect x="450" y="425" width="200" height="80" rx="9" fill="#0f172a"/><rect x="450" y="425" width="200" height="80" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
+ <text x="470" y="451" fill="#fff" font-size="13" font-weight="700">Raw evidence writer</text>
+ <text x="470" y="472" fill="#94a3b8" font-size="9">deterministic paths · atomic replace</text><text x="470" y="489" fill="#94a3b8" font-size="9">HTML/JSON retained for verification</text>
+
+ <rect x="450" y="540" width="200" height="228" rx="9" fill="#0f172a"/><rect x="450" y="540" width="200" height="228" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
+ <text x="470" y="568" fill="#fff" font-size="13" font-weight="700">Normalize + merge</text>
+ <text x="470" y="592" fill="#34d399" font-size="9">COMMON RECORD</text>
+ <text x="470" y="611" fill="#94a3b8" font-size="9">source key · title · author</text><text x="470" y="627" fill="#94a3b8" font-size="9">summary · description · categories</text>
+ <text x="470" y="643" fill="#94a3b8" font-size="9">thumbnail · canonical URL</text><text x="470" y="659" fill="#94a3b8" font-size="9">created/updated · downloads · version</text>
+ <text x="470" y="675" fill="#94a3b8" font-size="9">likes/endorsements · ranks · pinned</text><text x="470" y="691" fill="#94a3b8" font-size="9">adult flag · raw capture status</text>
+ <line x1="470" y1="709" x2="630" y2="709" stroke="#1e293b"/>
+ <text x="470" y="732" fill="#94a3b8" font-size="9">append {time, downloads, version}</text><text x="470" y="748" fill="#94a3b8" font-size="9">idempotently to observations[]</text>
+
+ <rect x="450" y="793" width="200" height="70" rx="9" fill="#0f172a"/><rect x="450" y="793" width="200" height="70" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
+ <text x="470" y="820" fill="#fff" font-size="13" font-weight="700">Verification gates</text><text x="470" y="841" fill="#94a3b8" font-size="9">page/card counts · unique IDs · schema</text><text x="470" y="856" fill="#94a3b8" font-size="9">report card/control/sort attributes</text>
+</g>
+
+<!-- storage boxes -->
+<g>
+ <rect x="780" y="115" width="255" height="278" rx="9" fill="#0f172a"/><rect x="780" y="115" width="255" height="278" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
+ <text x="800" y="142" fill="#fff" font-size="13" font-weight="700">raw/ source evidence</text>
+ <text x="800" y="169" fill="#a78bfa" font-size="9">Thunderstore</text><text x="800" y="188" fill="#94a3b8" font-size="9">listings/{sort}/page-{1..4}.html</text>
+ <text x="800" y="204" fill="#94a3b8" font-size="9">metrics/{namespace}/{name}.json</text><text x="800" y="220" fill="#94a3b8" font-size="9">packages/{namespace}/{name}.html</text>
+ <line x1="800" y1="241" x2="1015" y2="241" stroke="#312e81"/>
+ <text x="800" y="266" fill="#a78bfa" font-size="9">Nexus Mods</text><text x="800" y="285" fill="#94a3b8" font-size="9">listing-page-{1..2}.json</text>
+ <text x="800" y="301" fill="#94a3b8" font-size="9">mods/{modId}.json</text><text x="800" y="317" fill="#94a3b8" font-size="9">pages/{modId}.html (optional)</text>
+ <text x="800" y="349" fill="#fbbf24" font-size="8">Evidence is rebuildable and ignored by Git</text><text x="800" y="366" fill="#94a3b8" font-size="8">No database · same-directory atomic writes</text>
+
+ <rect x="780" y="425" width="255" height="320" rx="9" fill="#0f172a"/><rect x="780" y="425" width="255" height="320" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
+ <text x="800" y="453" fill="#fff" font-size="14" font-weight="700">data/mods.json</text>
+ <text x="800" y="477" fill="#a78bfa" font-size="9">CANONICAL NORMALIZED STORE</text>
+ <text x="800" y="500" fill="#94a3b8" font-size="9">one record per source-specific key</text><text x="800" y="516" fill="#94a3b8" font-size="9">thunderstore:{namespace}/{name}</text><text x="800" y="532" fill="#94a3b8" font-size="9">nexus:{modId}</text>
+ <line x1="800" y1="551" x2="1015" y2="551" stroke="#312e81"/>
+ <text x="800" y="574" fill="#fff" font-size="10" font-weight="700">Persisted observations</text><text x="800" y="592" fill="#94a3b8" font-size="9">observed_at · downloads · version</text>
+ <text x="800" y="619" fill="#fff" font-size="10" font-weight="700">Derived on report generation</text><text x="800" y="637" fill="#94a3b8" font-size="9">lifetime downloads/day</text><text x="800" y="653" fill="#94a3b8" font-size="9">current-version observed delta/day</text>
+ <text x="800" y="676" fill="#fbbf24" font-size="8">Version rate needs ≥2 same-version observations</text>
+ <line x1="800" y1="693" x2="1015" y2="693" stroke="#312e81"/>
+ <text x="800" y="716" fill="#94a3b8" font-size="9">canonical_group_id + manual match metadata</text><text x="800" y="732" fill="#fb7185" font-size="8">No automatic cross-site name matching</text>
+
+ <rect x="780" y="780" width="255" height="80" rx="9" fill="#0f172a"/><rect x="780" y="780" width="255" height="80" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
+ <text x="800" y="807" fill="#fff" font-size="12" font-weight="700">snapshots/latest.json</text><text x="800" y="828" fill="#94a3b8" font-size="9">time · sources · fresh/stored counts</text><text x="800" y="844" fill="#94a3b8" font-size="9">Thunderstore/Nexus page scope manifest</text>
+</g>
+
+<!-- report boxes -->
+<g>
+ <rect x="1120" y="410" width="280" height="350" rx="9" fill="#0f172a"/><rect x="1120" y="410" width="280" height="350" rx="9" fill="#08334466" stroke="#22d3ee" stroke-width="1.5"/>
+ <text x="1140" y="438" fill="#fff" font-size="14" font-weight="700">Report renderer</text>
+ <text x="1140" y="463" fill="#22d3ee" font-size="9">FIELDS ACTUALLY DISPLAYED</text>
+ <text x="1140" y="485" fill="#94a3b8" font-size="9">source badge · title · author · version</text><text x="1140" y="501" fill="#94a3b8" font-size="9">summary · category tags · thumbnail</text><text x="1140" y="517" fill="#94a3b8" font-size="9">created/updated dates · total downloads</text><text x="1140" y="533" fill="#94a3b8" font-size="9">endorsements or likes · pinned status</text><text x="1140" y="549" fill="#94a3b8" font-size="9">canonical source URL on clickable card</text>
+ <line x1="1140" y1="569" x2="1380" y2="569" stroke="#164e63"/>
+ <text x="1140" y="592" fill="#22d3ee" font-size="9">DERIVED / AGGREGATED</text>
+ <text x="1140" y="612" fill="#94a3b8" font-size="9">total downloads ÷ age → lifetime/day</text><text x="1140" y="628" fill="#94a3b8" font-size="9">same-version observation delta ÷ time</text><text x="1140" y="644" fill="#94a3b8" font-size="9">pinned Thunderstore cards fixed on top</text>
+ <line x1="1140" y1="664" x2="1380" y2="664" stroke="#164e63"/>
+ <text x="1140" y="687" fill="#22d3ee" font-size="9">CLIENT-SIDE CONTROLS</text>
+ <text x="1140" y="706" fill="#94a3b8" font-size="9">search · source filter · sort by updated,</text><text x="1140" y="722" fill="#94a3b8" font-size="9">downloads, lifetime/day, version delta/day</text>
+ <text x="1140" y="745" fill="#fbbf24" font-size="8">Images hotlink by default; optional base64 embed</text>
+
+ <rect x="1120" y="790" width="280" height="76" rx="9" fill="#0f172a" filter="url(#glow)"/><rect x="1120" y="790" width="280" height="76" rx="9" fill="#08334466" stroke="#22d3ee" stroke-width="2"/>
+ <text x="1260" y="820" fill="#fff" font-size="15" font-weight="700" text-anchor="middle">report.html</text><text x="1260" y="842" fill="#22d3ee" font-size="9" text-anchor="middle">single sortable dark-mode HTML artifact</text><text x="1260" y="857" fill="#94a3b8" font-size="8" text-anchor="middle">desktop grid · mobile stacked cards</text>
+</g>
+
+<!-- current limitation -->
+<rect x="407" y="920" width="1025" height="120" rx="12" fill="#0f172a"/><rect x="407" y="920" width="1025" height="120" rx="12" fill="#88133733" stroke="#fb7185" stroke-width="1.5"/>
+<text x="430" y="950" fill="#fb7185" font-size="13" font-weight="700">CURRENT CROSS-SITE BOUNDARY</text>
+<text x="430" y="975" fill="#cbd5e1" font-size="10">Explicit mapping metadata can state that a Nexus record and Thunderstore record represent the same mod.</text>
+<text x="430" y="995" fill="#cbd5e1" font-size="10">The report still renders source records separately and does not sum downloads/engagement across sites yet.</text>
+<text x="430" y="1016" fill="#94a3b8" font-size="9">Future combined statistics must define overlap semantics first; raw provider download counts are not assumed additive.</text>
+
+<!-- legend -->
+<g transform="translate(34 1067)"><text x="0" y="0" fill="#fff" font-size="10" font-weight="700">LEGEND</text>
+<rect x="70" y="-12" width="16" height="10" rx="2" fill="#78350f55" stroke="#fbbf24"/><text x="93" y="-3" fill="#94a3b8" font-size="8">external source</text>
+<rect x="200" y="-12" width="16" height="10" rx="2" fill="#064e3b66" stroke="#34d399"/><text x="223" y="-3" fill="#94a3b8" font-size="8">processing</text>
+<rect x="307" y="-12" width="16" height="10" rx="2" fill="#4c1d9555" stroke="#a78bfa"/><text x="330" y="-3" fill="#94a3b8" font-size="8">durable file</text>
+<rect x="420" y="-12" width="16" height="10" rx="2" fill="#08334466" stroke="#22d3ee"/><text x="443" y="-3" fill="#94a3b8" font-size="8">report/output</text>
+<line x1="560" y1="-7" x2="585" y2="-7" stroke="#fb7185" stroke-dasharray="5 4"/><text x="593" y="-3" fill="#94a3b8" font-size="8">auth/optional path</text>
+</g>
+</svg>
+</div>
+<section class="cards">
+ <article class="card"><h2><span class="dot" style="background:var(--amber)"></span>Source precedence</h2><ul><li>• Thunderstore listing supplies discovery, presentation metadata, pin state, and ranking appearances.</li><li>• Thunderstore metrics API supplies exact downloads, rating, and latest version.</li><li>• Nexus GraphQL supplies ranked discovery plus most display and metric fields; v1 detail enriches/fills gaps.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--violet)"></span>Persistence model</h2><ul><li>• Raw HTML/JSON is retained as source evidence.</li><li>• <code>data/mods.json</code> is the normalized canonical store with observation history.</li><li>• No database, service, scheduler, or LLM is required for routine collection/report generation.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--cyan)"></span>Report semantics</h2><ul><li>• The report compares each source record “apples to apples” using common normalized fields.</li><li>• Lifetime rate is computable immediately; current-version observed rate requires two tracker runs.</li><li>• Search, source filtering, and sorting happen locally in the generated HTML.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--rose)"></span>Deliberate safeguards</h2><ul><li>• Credentials and cookies remain runtime-only and outside Git.</li><li>• Cross-site matches are manual only—never inferred from names.</li><li>• <span class="warn">Mapped records are not statistically combined yet</span>; this avoids false totals from unknown audience overlap.</li></ul></article>
+</section>
+<p class="footer">Valheim Mod Tracker · DATA_FLOW.html · self-contained inline SVG/CSS · target scope: Thunderstore 4×20×2; Nexus 2×80</p>
+</div>
+</body>
+</html>

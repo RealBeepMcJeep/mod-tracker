@@ -2,10 +2,12 @@
 
 A deterministic, dependency-free Python CLI that collects and compares Valheim mods from Thunderstore and Nexus Mods, persists source evidence and normalized observations, and generates one sortable HTML report.
 
+[Data-flow and field-lineage diagram](DATA_FLOW.html)
+
 ## Required scope
 
-- Thunderstore: 10 pages sorted by `last-updated` and 10 pages sorted by `most-downloaded` (20 cards per page).
-- Nexus Mods: exactly one GraphQL page containing 80 mods sorted by `updatedAt` descending.
+- Thunderstore: 4 pages sorted by `last-updated` and 4 pages sorted by `most-downloaded` (20 cards per page; 160 ranked appearances total).
+- Nexus Mods: exactly two GraphQL pages of 80 mods each, sorted by `updatedAt` descending (160 listing results total).
 - Runtime: Python standard library only. No package installation, service, scheduler, or cron job is required.
 
 ## Run
@@ -64,7 +66,7 @@ Generated output is deliberately ignored by Git:
 - `raw/thunderstore/listings/` — source listing HTML by ranking and page
 - `raw/thunderstore/packages/` — public package detail HTML
 - `raw/thunderstore/metrics/` — exact package metric JSON
-- `raw/nexus/listing-page-1.json` — exact GraphQL response for the 80-item listing
+- `raw/nexus/listing-page-{1,2}.json` — exact GraphQL responses for the two 80-item listing pages
 - `raw/nexus/mods/` — cached v1 detail JSON for newly observed mods
 - `raw/nexus/pages/` — optional authenticated page HTML
 - `snapshots/latest.json` — latest run manifest
@@ -93,6 +95,6 @@ python3 -m py_compile tracker.py
 python3 tracker.py verify
 ```
 
-The verifier checks all 20 Thunderstore listing pages for 20 cards each, checks that the one Nexus listing contains 80 distinct mod IDs, checks normalized-record uniqueness and required fields, and validates report card count and sort metadata.
+The verifier checks all 8 Thunderstore listing pages for 20 cards each, reports the 160 ranked appearances, checks both Nexus pages for 80 nodes each and reports their distinct-ID count, checks normalized-record uniqueness and required fields, and validates report card count and sort metadata.
 
 Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

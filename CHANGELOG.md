@@ -2,7 +2,8 @@
 
 ## 2026-09-09
 
-- Corrected the deterministic collection scope to 10 Thunderstore pages per ranking and exactly one 80-item Nexus GraphQL page; added distinct-ID validation and stale Nexus listing cleanup.
+- Completed and verified the live approved-scope dataset: 160 Thunderstore ranking appearances (154 distinct packages), 160 distinct Nexus listing IDs, 314 normalized records, and 314 report cards.
+- Corrected the deterministic collection scope to 4 Thunderstore pages per ranking and exactly two 80-item Nexus GraphQL pages; added cross-page distinct-ID reporting and stale listing cleanup.
 - Added the manual `collect`, `report`, and `verify` CLI pipeline with atomic flat-file persistence and resumable detail caches.
 - Added Nexus GraphQL collection, v1 detail caching, runtime-only API-key authentication, and optional authenticated HTML capture from a caller-supplied cookie file.
 - Added Thunderstore collection for both required rankings, package metric/detail capture, ranking appearances, and canonical source deduplication.

@@ -1,0 +1,22 @@
+# Fail closed: only explicitly tracked project artifacts are allowed.
+*
+!.gitignore
+!AGENTS.md
+!README.md
+!todo.md
+!tracker.py
+!tests/
+!tests/**
+!data/
+!data/packages/
+!data/packages/*.json
+!raw/
+!raw/**/*.html
+!snapshots/
+!snapshots/*.json
+!INDEX.md
+
+# Never track transient writes or Python caches.
+**/*.tmp
+**/__pycache__/
+**/*.pyc

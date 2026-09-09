@@ -110,6 +110,7 @@ class ReportTests(unittest.TestCase):
 
         self.assertIn('.show-nsfw .mod-card[data-nsfw="true"]{display:grid}', page)
         self.assertIn("document.body.classList.toggle('show-nsfw',nsfw.checked)", page)
+        self.assertIn('<span class="results" id="results-count">0 results</span>', page)
 
     def test_report_cards_have_whole_card_source_tints(self):
         page = tracker.render_report([sample("thunderstore", "ts"), sample("nexus", "nx")], "2026-09-09T20:00:00Z")

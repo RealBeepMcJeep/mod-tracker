@@ -174,6 +174,14 @@ class ReportTests(unittest.TestCase):
         self.assertIn('.toggle-control{display:flex;align-items:center', page)
         self.assertIn('.toggle-control input{width:18px;height:18px;min-height:0', page)
         self.assertIn('.body h2 a,.body h2 a:visited{color:var(--text)', page)
+        self.assertIn('.body{padding:15px;min-width:0;overflow-wrap:anywhere}', page)
+        self.assertIn('.mod-card{display:grid;grid-template-columns:minmax(0,1fr)', page)
+        self.assertIn('.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))', page)
+        self.assertIn('.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr)', page)
+        self.assertIn('.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}', page)
+        self.assertIn('.badges{display:flex;gap:6px;flex-wrap:wrap', page)
+        self.assertIn('.tags{display:flex;flex-wrap:wrap;gap:4px}', page)
+        self.assertIn('.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%;overflow-wrap:anywhere}', page)
         self.assertNotIn('.control,input{width:100%}', page)
 
     def test_verifier_checks_card_count_groups_and_sort_attributes(self):

@@ -3,7 +3,11 @@
 
 from __future__ import annotations
 
+import json
+import os
+from datetime import datetime, timezone
 from html.parser import HTMLParser
+from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlparse
 
 
@@ -151,3 +155,116 @@ def parse_listing(html: str, base_url: str = "https://thunderstore.io") -> list[
     parser.feed(html)
     parser.close()
     return parser.cards
+
+
+def parse_datetime(value: str) -> datetime:
+    """Parse an API ISO-8601 timestamp as an aware UTC datetime."""
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def normalize_nexus(
+    node: dict, detail: dict | None, rank: int, collected_at: str
+) -> dict:
+    """Map Nexus GraphQL and v1 detail payloads to the common record."""
+    detail = detail or {}
+    source_id = str(node["modId"])
+    category = detail.get("category_name") or node.get("category")
+    return {
+        "key": f"nexus:{source_id}",
+        "source": "nexus",
+        "source_id": source_id,
+        "title": node.get("name") or detail.get("name") or "",
+        "author": node.get("author") or detail.get("author") or "",
+        "summary": node.get("summary") or detail.get("summary") or "",
+        "description": detail.get("description") or "",
+        "categories": [category] if category else [],
+        "thumbnail": node.get("pictureUrl") or node.get("thumbnailUrl") or detail.get("picture_url") or "",
+        "canonical_url": f"https://www.nexusmods.com/valheim/mods/{source_id}",
+        "created_at": node.get("createdAt") or detail.get("created_timestamp"),
+        "updated_at": node.get("updatedAt") or detail.get("updated_timestamp"),
+        "total_downloads": int(node.get("downloads") or detail.get("mod_downloads") or 0),
+        "unique_downloads": detail.get("unique_downloads"),
+        "endorsements": int(node.get("endorsements") or detail.get("endorsement_count") or 0),
+        "likes": None,
+        "views": detail.get("views"),
+        "version": node.get("version") or detail.get("version") or "",
+        "file_size_kb": node.get("fileSize"),
+        "adult_content": bool(node.get("adultContent", detail.get("contains_adult_content", False))),
+        "rank": rank,
+        "ranks": {"last-updated": rank},
+        "pinned": False,
+        "collected_at": collected_at,
+        "raw_page_capture": detail.get("_raw_page_capture", {
+            "status": "unavailable",
+            "reason": "no authenticated cookie source supplied",
+        }),
+    }
+
+
+def compute_rates(mod: dict, now: datetime) -> dict:
+    """Compute comparable rates, using observed deltas for current versions.
+
+    The current-version value is intentionally not an estimate of all downloads
+    since release. It is the download delta per day between the first and latest
+    persisted observations carrying the current version string.
+    """
+    created = parse_datetime(mod["created_at"])
+    age_days = max((now - created).total_seconds() / 86400, 1 / 86400)
+    observations = sorted(
+        (item for item in mod.get("observations", []) if item.get("version") == mod.get("version")),
+        key=lambda item: item["observed_at"],
+    )
+    observed_rate = None
+    observed_delta = None
+    baseline_at = observations[0]["observed_at"] if observations else None
+    if len(observations) >= 2:
+        elapsed = (
+            parse_datetime(observations[-1]["observed_at"])
+            - parse_datetime(observations[0]["observed_at"])
+        ).total_seconds() / 86400
+        if elapsed > 0:
+            observed_delta = max(0, observations[-1]["downloads"] - observations[0]["downloads"])
+            observed_rate = observed_delta / elapsed
+    return {
+        "lifetime_downloads_per_day": round(int(mod.get("total_downloads") or 0) / age_days, 6),
+        "current_version_observed_downloads_per_day": (
+            round(observed_rate, 6) if observed_rate is not None else None
+        ),
+        "current_version_observed_delta": observed_delta,
+        "current_version_baseline_at": baseline_at,
+        "rate_definition": "download delta/day between first and latest stored observations for the current version",
+    }
+
+
+def merge_mods(old: list[dict], fresh: list[dict], observed_at: str) -> list[dict]:
+    """Merge fresh records and append idempotent download observations."""
+    by_key = {item["key"]: dict(item) for item in old}
+    for incoming in fresh:
+        previous = by_key.get(incoming["key"], {})
+        observations = list(previous.get("observations", []))
+        observation = {
+            "observed_at": observed_at,
+            "downloads": int(incoming.get("total_downloads") or 0),
+            "version": incoming.get("version") or "",
+        }
+        if not any(item.get("observed_at") == observed_at for item in observations):
+            observations.append(observation)
+        merged = dict(previous)
+        merged.update(incoming)
+        merged["observations"] = sorted(observations, key=lambda item: item["observed_at"])
+        by_key[incoming["key"]] = merged
+    return [by_key[key] for key in sorted(by_key)]
+
+
+def atomic_write_json(path: Path, payload) -> None:
+    """Write deterministic UTF-8 JSON using an atomic same-directory rename."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temporary, path)

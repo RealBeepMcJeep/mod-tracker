@@ -30,5 +30,13 @@
   "nexus:79": {"canonical_group_id": "improved-dverger-circlet", "matched_to": ["thunderstore:RandyKnapp/ImprovedDvergerCirclet"], "method": "manual title-author-description"},
   "thunderstore:RandyKnapp/ImprovedDvergerCirclet": {"canonical_group_id": "improved-dverger-circlet", "matched_to": ["nexus:79"], "method": "manual title-author-description"},
   "nexus:92": {"canonical_group_id": "equipment-and-quick-slots", "matched_to": ["thunderstore:RandyKnapp/EquipmentAndQuickSlots"], "method": "manual title-author-description"},
-  "thunderstore:RandyKnapp/EquipmentAndQuickSlots": {"canonical_group_id": "equipment-and-quick-slots", "matched_to": ["nexus:92"], "method": "manual title-author-description"}
+  "thunderstore:RandyKnapp/EquipmentAndQuickSlots": {"canonical_group_id": "equipment-and-quick-slots", "matched_to": ["nexus:92"], "method": "manual title-author-description"},
+  "nexus:1781": {"canonical_group_id": "custom-chest-name", "matched_to": ["thunderstore:GemHunter1/CustomChestName"], "method": "manual exact author-version-description and explicit cross-link"},
+  "thunderstore:GemHunter1/CustomChestName": {"canonical_group_id": "custom-chest-name", "matched_to": ["nexus:1781"], "method": "manual exact author-version-description and explicit cross-link"},
+  "nexus:3022": {"canonical_group_id": "marsarah-tweaks", "matched_to": ["thunderstore:Marsarah/MarsarahTweaks"], "method": "manual exact author-version-description and explicit cross-link"},
+  "thunderstore:Marsarah/MarsarahTweaks": {"canonical_group_id": "marsarah-tweaks", "matched_to": ["nexus:3022"], "method": "manual exact author-version-description and explicit cross-link"},
+  "nexus:3499": {"canonical_group_id": "races-of-valheim", "matched_to": ["thunderstore:Nandor/RacesOfValheim"], "method": "manual exact title-distinctive-description; equivalent author handle"},
+  "thunderstore:Nandor/RacesOfValheim": {"canonical_group_id": "races-of-valheim", "matched_to": ["nexus:3499"], "method": "manual exact title-distinctive-description; equivalent author handle"},
+  "nexus:1138": {"canonical_group_id": "jotunn", "matched_to": ["thunderstore:ValheimModding/Jotunn"], "method": "manual exact author-description and explicit cross-link"},
+  "thunderstore:ValheimModding/Jotunn": {"canonical_group_id": "jotunn", "matched_to": ["nexus:1138"], "method": "manual exact author-description and explicit cross-link"}
 }

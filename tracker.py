@@ -575,19 +575,21 @@ def render_report(mods, generated_at, *, embed_thumbnails=False, thumbnail_fetch
         rates = [compute_rates(m, now) for m in members]
         updated = max((m.get('updated_at') or '' for m in members), default='')
         created = min((m.get('created_at') or '' for m in members if m.get('created_at')), default='')
-        lifetime = max(r['lifetime_downloads_per_day'] for r in rates)
+        lifetime = sum(r['lifetime_downloads_per_day'] for r in rates)
         vr = [r['current_version_observed_downloads_per_day'] for r in rates if r['current_version_observed_downloads_per_day'] is not None]
-        version_rate = max(vr) if vr else None
+        version_rate = sum(vr) if vr else None
+        total_downloads = sum(int(m.get('total_downloads') or 0) for m in members)
+        lifetime_label = 'Combined lifetime / day' if both else 'Lifetime / day'
         adult = any(m.get('adult_content') for m in members)
         pinned = any(m.get('pinned') for m in members)
         cats = sorted({x for m in members for x in m.get('categories',[])})
         search = ' '.join([x for m in members for x in [m.get('title',''),m.get('author','')]+m.get('categories',[])]).lower()
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
-        metrics = ''.join('<div><dt>%s downloads</dt><dd>%d</dd></div><div><dt>Endorsements / likes</dt><dd>%d / %d</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', int(m.get('total_downloads') or 0), int(m.get('endorsements') or 0), int(m.get('likes') or 0)) for m in members)
+        metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
         return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-v1="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
-<div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><p class="dates">Updated <time>%s</time> · Uploaded <time>%s</time></p></div><dl class="metrics">%s<div><dt>Max lifetime / day</dt><dd>%.1f</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(updated >= '2026-09-08T00:00:00Z').lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(max(int(m.get('total_downloads') or 0) for m in members)), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated[:10] or 'unknown'), escape(created[:10] or 'unknown'), metrics, lifetime)
+<div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><p class="dates">Updated <time>%s</time> · Uploaded <time>%s</time></p></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(updated >= '2026-09-08T00:00:00Z').lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated[:10] or 'unknown'), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)

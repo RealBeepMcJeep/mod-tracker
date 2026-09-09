@@ -118,6 +118,49 @@ class ReportTests(unittest.TestCase):
         self.assertIn('.mod-card.source-nexus{background:var(--nx-bg)', page)
         self.assertIn('.mod-card.source-both{background:linear-gradient', page)
 
+    def test_report_formats_display_numbers_but_keeps_raw_sort_values(self):
+        thunderstore = sample("thunderstore", "A/B", title="Shared")
+        nexus = sample("nexus", "79", title="Shared")
+        thunderstore.update(total_downloads=787350, endorsements=12345, likes=6789)
+        nexus.update(total_downloads=33203, endorsements=2345, likes=0)
+        for mod, match in ((thunderstore, "nexus:79"), (nexus, "thunderstore:A/B")):
+            mod["canonical_group_id"] = "shared"
+            mod["match"] = {"method": "manual", "matched_to": [match]}
+
+        page = tracker.render_report([thunderstore, nexus], "2026-09-09T20:00:00Z")
+
+        self.assertIn('<dt>Nexus Mods downloads</dt><dd>33,203</dd>', page)
+        self.assertIn('<dt>Thunderstore downloads</dt><dd>787,350</dd>', page)
+        self.assertIn('<dd>12,345 / 6,789</dd>', page)
+        self.assertRegex(page, r'<dt>Combined lifetime / day</dt><dd>[0-9,]+\.\d</dd>')
+        self.assertIn('data-sort-downloads="820553"', page)
+
+    def test_mapped_card_combines_cross_source_rate_sort_values(self):
+        thunderstore = sample("thunderstore", "A/B", title="Shared")
+        nexus = sample("nexus", "79", title="Shared")
+        thunderstore.update(total_downloads=2000, observations=[
+            {"observed_at": "2026-09-08T20:00:00Z", "downloads": 1000, "version": "1.2"},
+            {"observed_at": "2026-09-09T20:00:00Z", "downloads": 2000, "version": "1.2"},
+        ])
+        nexus.update(total_downloads=5000, observations=[
+            {"observed_at": "2026-09-08T20:00:00Z", "downloads": 3000, "version": "1.2"},
+            {"observed_at": "2026-09-09T20:00:00Z", "downloads": 5000, "version": "1.2"},
+        ])
+        for mod, match in ((thunderstore, "nexus:79"), (nexus, "thunderstore:A/B")):
+            mod["canonical_group_id"] = "shared"
+            mod["match"] = {"method": "manual", "matched_to": [match]}
+
+        expected_lifetime = sum(
+            tracker.compute_rates(mod, tracker.parse_datetime("2026-09-09T20:00:00Z"))["lifetime_downloads_per_day"]
+            for mod in (thunderstore, nexus)
+        )
+        page = tracker.render_report([thunderstore, nexus], "2026-09-09T20:00:00Z")
+
+        self.assertIn('data-sort-downloads="7000"', page)
+        self.assertIn(f'data-sort-lifetime-rate="{expected_lifetime}"', page)
+        self.assertIn('data-sort-version-rate="3000.0"', page)
+        self.assertIn('<dt>Combined lifetime / day</dt>', page)
+
     def test_mobile_toggles_stay_inline_and_title_links_inherit_card_color(self):
         page = tracker.render_report([sample("nexus", "79", title="White title")], "2026-09-09T20:00:00Z")
 

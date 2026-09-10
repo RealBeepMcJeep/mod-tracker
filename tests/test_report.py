@@ -72,6 +72,28 @@ class ReportTests(unittest.TestCase):
         self.assertIn("@media(max-width:520px)", page)
         self.assertIn("location.href", page)
 
+    def test_report_renders_uploaded_and_updated_as_aligned_rows(self):
+        page = tracker.render_report(
+            [sample("thunderstore", "A/B")],
+            "2026-09-09T20:00:00Z",
+        )
+
+        self.assertIn(
+            '<div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="2026-09-09T12:00:00Z">2026-09-09</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="2021-01-01T00:00:00Z">2021-01-01</time></div></div>',
+            page,
+        )
+        self.assertNotIn(" · Uploaded ", page)
+        self.assertIn(".dates{display:grid;gap:4px", page)
+        self.assertIn(
+            ".date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px",
+            page,
+        )
+        self.assertIn(".date-row time{white-space:nowrap}", page)
+        self.assertIn(
+            "@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}",
+            page,
+        )
+
     def test_report_escapes_fields_and_can_embed_thumbnails(self):
         mod = sample("nexus", "1", title='<script>alert("x")</script>')
 

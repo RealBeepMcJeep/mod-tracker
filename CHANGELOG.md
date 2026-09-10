@@ -25,6 +25,7 @@
 - Added mappings for 14 Jere Kuusela packages plus Heightmap Unlimited JvL, Drop That, Spawn That, Visbending, Recipe Pinner, VNEI, and Grantapher's Valheim Plus fork.
 - Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.
 - Kept mapping discovery outside routine manual scrape/report runs; perform another candidate review only when explicitly requested.
+- Split each card's Uploaded and Updated timestamps into a compact two-row grid with muted, fixed-width labels and non-wrapping date values, preventing the mobile orphan/wrap shown in the report screenshot.
 
 ## 2026-09-09
 

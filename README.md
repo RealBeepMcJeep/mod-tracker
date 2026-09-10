@@ -14,7 +14,7 @@ A deterministic, standard-library-only Python pipeline that collects mods from T
 | Retro Rewind - Video Store Simulator | `retrorewindvideostoresimulator` | unavailable; Nexus-only | `games/retro-rewind/` | `/reports/retro-rewind-mod-tracker/` |
 | TCG Card Shop Simulator | `tcgcardshopsimulator` | `tcg-card-shop-simulator` | `games/tcg-card-shop-simulator/` | `/reports/tcg-card-shop-simulator-mod-tracker/` |
 
-The exact registry is version-controlled in [`games.json`](games.json). It defines source support, source identifiers, pagination policy, output directory, display name, Valheim-only v1 cutoff, and publication destination. Registry validation rejects missing required games, unsupported sources, unsafe paths, invalid slugs, and duplicate output/publication destinations.
+The exact registry is version-controlled in [`games.json`](games.json). It defines source support, source identifiers, pagination policy, output directory, display name, an optional shared update-filter label/cutoff, and publication destination. Registry validation rejects missing required games, unsupported sources, unsafe paths, invalid slugs, malformed update filters, and duplicate output/publication destinations.
 
 Validated source references:
 
@@ -128,7 +128,7 @@ The current-version rate remains unknown until there are two observations for th
 
 Cross-site grouping is explicit and manual only. The routine manual pass does not discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
 
-Reports provide search, source filters, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. Valheim preserves its pinned mods and v1 date filter. Non-Valheim reports omit the Valheim-specific v1 control.
+Reports provide search, source filters, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. One shared registry-driven update-filter path serves Valheim (`v1 filter`, September 8, 2026), PEAK (`v2.0 filter`, August 10, 2026), and R.E.P.O. (`v0.4 filter`, May 7, 2026); each includes mods updated exactly at or after its UTC cutoff. Games with a null filter omit the control.
 
 ## Verification
 

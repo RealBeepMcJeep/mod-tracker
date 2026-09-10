@@ -36,7 +36,7 @@ class ReportTests(unittest.TestCase):
                 embed_thumbnails=True,
                 game_name="PEAK",
                 sources=("nexus",),
-                v1_cutoff=None,
+                update_filter=None,
                 thumbnail_fetch=lambda url: b"\x89PNG\r\n\x1a\nimage",
             )
 
@@ -113,18 +113,18 @@ class ReportTests(unittest.TestCase):
             "2026-09-09T20:00:00Z",
             game_name="Retro Rewind - Video Store Simulator",
             sources=("nexus",),
-            v1_cutoff=None,
+            update_filter=None,
         )
 
         self.assertIn("<title>Retro Rewind - Video Store Simulator Mod Tracker</title>", page)
         self.assertIn("<h1>Retro Rewind - Video Store Simulator Mod Tracker</h1>", page)
         self.assertIn("on Nexus Mods.", page)
-        self.assertNotIn('id="v1-toggle"', page)
+        self.assertNotIn('id="update-filter-toggle"', page)
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "report.html"
             path.write_text(page)
-            result = tracker.verify_report(path, expected_cards=1, expect_v1_filter=False)
+            result = tracker.verify_report(path, expected_cards=1, update_filter=None)
         self.assertTrue(result["ok"], result["errors"])
 
     def test_non_valheim_dual_source_report_names_both_sources(self):
@@ -133,7 +133,7 @@ class ReportTests(unittest.TestCase):
             "2026-09-09T20:00:00Z",
             game_name="PEAK",
             sources=("thunderstore", "nexus"),
-            v1_cutoff=None,
+            update_filter=None,
         )
         self.assertIn("PEAK mods across Thunderstore and Nexus Mods.", page)
 
@@ -143,7 +143,7 @@ class ReportTests(unittest.TestCase):
             "2026-09-09T20:00:00Z",
             game_name="Retro Rewind - Video Store Simulator",
             sources=("nexus",),
-            v1_cutoff=None,
+            update_filter=None,
         )
         subtitle = page.split('<p class="subtitle">', 1)[1].split("</p>", 1)[0]
         self.assertIn("on Nexus Mods.", subtitle)
@@ -173,6 +173,68 @@ class ReportTests(unittest.TestCase):
         self.assertIn('>Thunderstore</a>', page)
         self.assertIn('>Nexus Mods</a>', page)
 
+    def test_shared_update_filter_uses_configured_label_and_inclusive_boundary(self):
+        boundary = sample("nexus", "boundary", title="Boundary")
+        boundary["updated_at"] = "2026-08-10T00:00:00Z"
+        old = sample("thunderstore", "old", title="Old")
+        old["updated_at"] = "2026-08-09T23:59:59Z"
+
+        page = tracker.render_report(
+            [boundary, old],
+            "2026-09-09T20:00:00Z",
+            game_name="PEAK",
+            update_filter=tracker.GAME_CONFIGS["peak"]["update_filter"],
+        )
+
+        self.assertIn('id="update-filter-toggle"', page)
+        self.assertIn('data-update-filter="true"', page)
+        self.assertIn('data-update-filter="false"', page)
+        self.assertIn(
+            '<span title="Shows mods updated on or after Aug 10, 2026; not a semantic version filter.">v2.0 filter</span>',
+            page,
+        )
+        self.assertIn("c.dataset.updateFilter==='true'", page)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path,
+                expected_cards=2,
+                update_filter=tracker.GAME_CONFIGS["peak"]["update_filter"],
+            )
+        self.assertTrue(result["ok"], result["errors"])
+
+    def test_grouped_update_filter_uses_chronologically_latest_member(self):
+        at_cutoff = sample("nexus", "79", title="At cutoff")
+        at_cutoff["updated_at"] = "2026-08-09T20:00:00-04:00"
+        before_cutoff = sample("thunderstore", "A/B", title="Before cutoff")
+        before_cutoff["updated_at"] = "2026-08-09T23:59:59Z"
+        for mod in (at_cutoff, before_cutoff):
+            mod["canonical_group_id"] = "shared-offset-group"
+
+        page = tracker.render_report(
+            [at_cutoff, before_cutoff],
+            "2026-09-09T20:00:00Z",
+            update_filter=tracker.GAME_CONFIGS["peak"]["update_filter"],
+        )
+
+        self.assertEqual(page.count('class="mod-card'), 1)
+        self.assertIn('data-update-filter="true"', page)
+        self.assertIn('data-sort-updated="2026-08-09T20:00:00-04:00"', page)
+
+    def test_shared_update_filter_compares_equivalent_utc_offsets(self):
+        equivalent = sample("nexus", "equivalent", title="Equivalent")
+        equivalent["updated_at"] = "2026-08-09T20:00:00-04:00"
+
+        page = tracker.render_report(
+            [equivalent],
+            "2026-09-09T20:00:00Z",
+            game_name="PEAK",
+            update_filter=tracker.GAME_CONFIGS["peak"]["update_filter"],
+        )
+
+        self.assertIn('data-update-filter="true"', page)
+
     def test_report_has_static_nsfw_default_and_v1_boundary_metadata(self):
         adult = sample("nexus", "adult", title="Adult")
         adult["adult_content"] = True
@@ -183,9 +245,9 @@ class ReportTests(unittest.TestCase):
         page = tracker.render_report([adult, boundary, old], "2026-09-09T20:00:00Z")
         self.assertIn('.mod-card[data-nsfw="true"]{display:none}', page)
         self.assertIn('id="nsfw-toggle"', page)
-        self.assertIn('id="v1-toggle"', page)
-        self.assertIn('data-v1="true"', page)
-        self.assertIn('data-v1="false"', page)
+        self.assertIn('id="update-filter-toggle"', page)
+        self.assertIn('data-update-filter="true"', page)
+        self.assertIn('data-update-filter="false"', page)
         self.assertIn('<span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span>', page)
         self.assertIn('<p>Generated Sep 9, 2026 at 1:00 PM MST.</p>', page)
         self.assertNotIn('NSFW mods are hidden by default.', page)
@@ -255,7 +317,7 @@ class ReportTests(unittest.TestCase):
 
         self.assertIn('<div class="toggle-row">', page)
         self.assertIn('<label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>', page)
-        self.assertIn('<label class="toggle-control"><input id="v1-toggle" type="checkbox"><span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span></label>', page)
+        self.assertIn('<label class="toggle-control"><input id="update-filter-toggle" type="checkbox"><span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span></label>', page)
         self.assertIn('.toggle-row{display:flex', page)
         self.assertIn('.toggle-control{display:flex;align-items:center', page)
         self.assertIn('.toggle-control input{width:18px;height:18px;min-height:0', page)
@@ -269,6 +331,103 @@ class ReportTests(unittest.TestCase):
         self.assertIn('.tags{display:flex;flex-wrap:wrap;gap:4px}', page)
         self.assertIn('.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%;overflow-wrap:anywhere}', page)
         self.assertNotIn('.control,input{width:100%}', page)
+
+    def test_all_configured_games_share_update_filter_renderer(self):
+        cases = {
+            "peak": ("2026-08-10T00:00:00Z", "2026-08-09T23:59:59Z", "Aug 10, 2026", "v2.0 filter"),
+            "repo": ("2026-05-07T00:00:00Z", "2026-05-06T23:59:59Z", "May 7, 2026", "v0.4 filter"),
+            "valheim": ("2026-09-08T00:00:00Z", "2026-09-07T23:59:59Z", "Sep 8, 2026", "v1 filter"),
+        }
+        for game, (boundary_at, old_at, display_date, label) in cases.items():
+            with self.subTest(game=game):
+                boundary = sample("nexus", f"{game}-boundary")
+                boundary["updated_at"] = boundary_at
+                old = sample("nexus", f"{game}-old")
+                old["updated_at"] = old_at
+                update_filter = tracker.GAME_CONFIGS[game]["update_filter"]
+                page = tracker.render_report(
+                    [boundary, old],
+                    "2026-09-09T20:00:00Z",
+                    update_filter=update_filter,
+                )
+                self.assertEqual(page.count('id="update-filter-toggle"'), 1)
+                self.assertIn(f'>{label}</span>', page)
+                self.assertIn(f"updated on or after {display_date}", page)
+                self.assertEqual(page.count('data-update-filter="true"'), 1)
+                self.assertEqual(page.count('data-update-filter="false"'), 1)
+
+    def test_verifier_rejects_incorrect_update_filter_card_metadata(self):
+        update_filter = tracker.GAME_CONFIGS["peak"]["update_filter"]
+        page = tracker.render_report(
+            [sample("nexus", "79")],
+            "2026-09-09T20:00:00Z",
+            update_filter=update_filter,
+        ).replace('data-update-filter="true"', 'data-update-filter="false"', 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path, expected_cards=1, update_filter=update_filter
+            )
+        self.assertFalse(result["ok"])
+        self.assertIn("1 cards have incorrect update-filter metadata", result["errors"])
+
+    def test_verifier_rejects_update_filter_control_for_filterless_report(self):
+        page = tracker.render_report(
+            [sample("nexus", "79")],
+            "2026-09-09T20:00:00Z",
+            update_filter=None,
+        )
+        nsfw_control = '<label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>'
+        page = page.replace(
+            nsfw_control,
+            nsfw_control
+            + tracker.render_update_filter_control(
+                tracker.GAME_CONFIGS["peak"]["update_filter"]
+            ),
+            1,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path, expected_cards=1, update_filter=None
+            )
+        self.assertFalse(result["ok"])
+        self.assertIn("unexpected update-filter control", result["errors"])
+
+    def test_verifier_rejects_missing_shared_update_filter_javascript(self):
+        update_filter = tracker.GAME_CONFIGS["repo"]["update_filter"]
+        page = tracker.render_report(
+            [sample("nexus", "79")],
+            "2026-09-09T20:00:00Z",
+            update_filter=update_filter,
+        ).replace("c.dataset.updateFilter==='true'", "true")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path, expected_cards=1, update_filter=update_filter
+            )
+        self.assertFalse(result["ok"])
+        self.assertIn("missing shared update-filter JavaScript", result["errors"])
+
+    def test_verifier_rejects_mismatched_update_filter_metadata(self):
+        update_filter = tracker.GAME_CONFIGS["peak"]["update_filter"]
+        page = tracker.render_report(
+            [sample("nexus", "79")],
+            "2026-09-09T20:00:00Z",
+            update_filter=update_filter,
+        ).replace("v2.0 filter", "wrong filter")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path, expected_cards=1, update_filter=update_filter
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertIn("update-filter control does not match configuration", result["errors"])
 
     def test_verifier_checks_card_count_groups_and_sort_attributes(self):
         page = tracker.render_report([sample("nexus", "79")], "2026-09-09T20:00:00Z")

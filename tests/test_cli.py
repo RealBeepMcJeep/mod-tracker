@@ -179,6 +179,33 @@ class CliTests(unittest.TestCase):
         self.assertEqual(retro.game, "retro-rewind")
         self.assertEqual(all_games.game, "all")
 
+    def test_registry_configures_per_game_update_filters(self):
+        self.assertEqual(
+            tracker.GAME_CONFIGS["peak"]["update_filter"],
+            {"label": "v2.0 filter", "cutoff": "2026-08-10T00:00:00Z"},
+        )
+        self.assertEqual(
+            tracker.GAME_CONFIGS["repo"]["update_filter"],
+            {"label": "v0.4 filter", "cutoff": "2026-05-07T00:00:00Z"},
+        )
+        self.assertEqual(
+            tracker.GAME_CONFIGS["valheim"]["update_filter"],
+            {"label": "v1 filter", "cutoff": "2026-09-08T00:00:00Z"},
+        )
+        self.assertIsNone(tracker.GAME_CONFIGS["retro-rewind"]["update_filter"])
+        self.assertIsNone(
+            tracker.GAME_CONFIGS["tcg-card-shop-simulator"]["update_filter"]
+        )
+
+    def test_registry_rejects_update_filter_without_explicit_utc_cutoff(self):
+        registry = json.loads(json.dumps(tracker.GAME_CONFIGS))
+        registry["peak"]["update_filter"]["cutoff"] = "2026-08-10"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "games.json"
+            path.write_text(json.dumps(registry))
+            with self.assertRaisesRegex(ValueError, "invalid update_filter cutoff"):
+                tracker.load_game_registry(path)
+
     def test_registry_contains_required_five_games_and_publication_routes(self):
         self.assertEqual(
             set(tracker.GAME_CONFIGS),

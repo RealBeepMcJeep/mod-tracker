@@ -26,6 +26,7 @@
 - Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.
 - Kept mapping discovery outside routine manual scrape/report runs; perform another candidate review only when explicitly requested.
 - Split each card's Uploaded and Updated timestamps into a compact two-row grid with muted, fixed-width labels and non-wrapping date values, preventing the mobile orphan/wrap shown in the report screenshot.
+- Generalized Valheim's update-date checkbox into one shared registry-driven filter implementation and configured PEAK's `v2.0 filter` for August 10, 2026, R.E.P.O.'s `v0.4 filter` for May 7, 2026, and Valheim's existing `v1 filter` for September 8, 2026; every cutoff is inclusive at midnight UTC.
 
 ## 2026-09-09
 

@@ -43,7 +43,7 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
             raise ValueError(f"invalid game entry: {key!r}")
         required = {
             "display_name", "nexus_domain", "nexus_pages", "output_subdir",
-            "publication", "require_full_nexus_pages", "sources", "v1_cutoff",
+            "publication", "require_full_nexus_pages", "sources", "update_filter",
         }
         absent = required - set(config)
         if absent:
@@ -88,16 +88,32 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
         if destination in publication_paths:
             raise ValueError(f"duplicate publication destination: {'/'.join(destination)}")
         publication_paths.add(destination)
-        cutoff = config["v1_cutoff"]
-        if cutoff is not None:
+        update_filter = config["update_filter"]
+        if update_filter is not None:
+            if (
+                not isinstance(update_filter, dict)
+                or set(update_filter) != {"label", "cutoff"}
+                or not isinstance(update_filter["label"], str)
+                or not update_filter["label"].strip()
+            ):
+                raise ValueError(f"{key} has invalid update_filter")
+            cutoff = update_filter["cutoff"]
+            if not isinstance(cutoff, str) or not re.fullmatch(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", cutoff
+            ):
+                raise ValueError(f"{key} has invalid update_filter cutoff")
             try:
                 datetime.fromisoformat(cutoff.replace("Z", "+00:00"))
             except (AttributeError, ValueError) as exc:
-                raise ValueError(f"{key} has invalid v1_cutoff") from exc
+                raise ValueError(f"{key} has invalid update_filter cutoff") from exc
     return registry
 
 
 GAME_CONFIGS = load_game_registry()
+DEFAULT_UPDATE_FILTER = {
+    "label": "v1 filter",
+    "cutoff": "2026-09-08T00:00:00Z",
+}
 
 
 def game_output_root(root: Path, game_key: str) -> Path:
@@ -764,6 +780,34 @@ def _report_groups(mods):
     return singles + [groups[k] for k in sorted(groups)]
 
 
+def matches_update_filter(updated_at: str, update_filter: dict | None) -> bool:
+    """Classify one update timestamp against an optional inclusive UTC cutoff."""
+    return bool(
+        update_filter
+        and updated_at
+        and parse_datetime(updated_at) >= parse_datetime(update_filter["cutoff"])
+    )
+
+
+def timestamp_sort_key(value: str):
+    """Return a comparable UTC-aware key, sorting a missing timestamp first."""
+    return parse_datetime(value) if value else datetime.min.replace(tzinfo=timezone.utc)
+
+
+def render_update_filter_control(update_filter: dict | None) -> str:
+    """Render the one shared optional update-filter control."""
+    if update_filter is None:
+        return ""
+    cutoff = parse_datetime(update_filter["cutoff"])
+    cutoff_label = f"{cutoff.strftime('%b')} {cutoff.day}, {cutoff.year}"
+    return (
+        '<label class="toggle-control"><input id="update-filter-toggle" '
+        'type="checkbox"><span title="Shows mods updated on or after %s; '
+        'not a semantic version filter.">%s</span></label>'
+        % (escape(cutoff_label, quote=True), escape(update_filter["label"]))
+    )
+
+
 def render_report(
     mods,
     generated_at,
@@ -772,7 +816,7 @@ def render_report(
     thumbnail_fetch=http_fetch,
     game_name="Valheim",
     sources=("thunderstore", "nexus"),
-    v1_cutoff: str | None = "2026-09-08T00:00:00Z",
+    update_filter: dict | None = DEFAULT_UPDATE_FILTER,
 ):
     now = parse_datetime(generated_at)
     arizona_now = now.astimezone(ZoneInfo("America/Phoenix"))
@@ -782,11 +826,18 @@ def render_report(
     )
     def card(members):
         members = sorted(members, key=lambda m: m['source'])
-        primary = max(members, key=lambda m: (m.get('updated_at') or '', m.get('key','')))
+        primary = max(
+            members,
+            key=lambda m: (timestamp_sort_key(m.get('updated_at') or ''), m.get('key', '')),
+        )
         sources = {m['source'] for m in members}; both = len(sources) > 1
         source = 'both' if both else next(iter(sources)); label = 'Both' if both else ('Thunderstore' if source == 'thunderstore' else 'Nexus Mods')
         rates = [compute_rates(m, now) for m in members]
-        updated = max((m.get('updated_at') or '' for m in members), default='')
+        updated = max(
+            (m.get('updated_at') or '' for m in members),
+            key=timestamp_sort_key,
+            default='',
+        )
         created = min((m.get('created_at') or '' for m in members if m.get('created_at')), default='')
         lifetime = sum(r['lifetime_downloads_per_day'] for r in rates)
         vr = [r['current_version_observed_downloads_per_day'] for r in rates if r['current_version_observed_downloads_per_day'] is not None]
@@ -800,15 +851,15 @@ def render_report(
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
         metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
-        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-v1="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
+        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
 <div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="%s">%s</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="%s">%s</time></div></div></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(bool(v1_cutoff and updated >= v1_cutoff)).lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
 :root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%%;overflow-wrap:anywhere}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label><label class="toggle-control"><input id="v1-toggle" type="checkbox"><span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span></label></div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s.</p><section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),v1=document.querySelector('#v1-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!v1||!v1.checked||c.dataset.v1==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,...(v1?[v1]:[])].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, escape(generated_label), '' if pinned else ' hidden', pinned, regular)
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s.</p><section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, escape(generated_label), '' if pinned else ' hidden', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
         label for source, label in (("thunderstore", "Thunderstore"), ("nexus", "Nexus Mods"))
@@ -826,11 +877,9 @@ def render_report(
         "Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.",
         subtitle,
     )
-    if v1_cutoff is None:
-        page = page.replace(
-            '<label class="toggle-control"><input id="v1-toggle" type="checkbox"><span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span></label>',
-            "",
-        )
+    page = page.replace(
+        "{UPDATE_FILTER_CONTROL}", render_update_filter_control(update_filter)
+    )
     return page
 
 
@@ -840,36 +889,67 @@ class ReportVerifier(HTMLParser):
         self.cards = 0
         self.ids = set()
         self.missing_sort = 0
+        self.card_update_metadata = []
+        self.update_filter_controls = 0
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if attrs.get("id"):
             self.ids.add(attrs["id"])
+        if tag == "input" and attrs.get("id") == "update-filter-toggle":
+            self.update_filter_controls += 1
         if tag == "article" and "mod-card" in (attrs.get("class") or "").split():
             self.cards += 1
-            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-v1"}
+            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
+            self.card_update_metadata.append(
+                (attrs.get("data-sort-updated", ""), attrs.get("data-update-filter"))
+            )
 
 
 def verify_report(
     path: Path,
     expected_cards: int | None = None,
     *,
-    expect_v1_filter: bool = True,
+    update_filter: dict | None = DEFAULT_UPDATE_FILTER,
 ) -> dict:
+    text = path.read_text(encoding="utf-8")
     parser = ReportVerifier()
-    parser.feed(path.read_text(encoding="utf-8"))
+    parser.feed(text)
     errors = []
     if expected_cards is not None and parser.cards != expected_cards:
         errors.append(f"expected {expected_cards} cards, found {parser.cards}")
     required_ids = {"pinned-group", "regular-group", "search", "source-filter", "sort", "nsfw-toggle"}
-    if expect_v1_filter:
-        required_ids.add("v1-toggle")
+    expected_control = render_update_filter_control(update_filter)
+    if update_filter is not None:
+        required_ids.add("update-filter-toggle")
+        if parser.update_filter_controls != 1 or text.count(expected_control) != 1:
+            errors.append("update-filter control does not match configuration")
+    elif parser.update_filter_controls or "update-filter-toggle" in parser.ids:
+        errors.append("unexpected update-filter control")
     if not required_ids.issubset(parser.ids):
         errors.append("missing report controls or fixed groups")
     if parser.missing_sort:
         errors.append(f"{parser.missing_sort} cards lack sort/navigation attributes")
+    metadata_errors = 0
+    for updated_at, actual in parser.card_update_metadata:
+        try:
+            expected = str(matches_update_filter(updated_at, update_filter)).lower()
+        except ValueError:
+            metadata_errors += 1
+            continue
+        if actual != expected:
+            metadata_errors += 1
+    if metadata_errors:
+        errors.append(f"{metadata_errors} cards have incorrect update-filter metadata")
+    required_javascript = (
+        "updateFilter=document.querySelector('#update-filter-toggle')",
+        "(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')",
+        "[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])]",
+    )
+    if not all(fragment in text for fragment in required_javascript):
+        errors.append("missing shared update-filter JavaScript")
     return {"ok": not errors, "cards": parser.cards, "errors": errors}
 
 
@@ -897,7 +977,7 @@ def generate_report(
     embed_thumbnails: bool = False,
     game_name: str = "Valheim",
     sources=("thunderstore", "nexus"),
-    v1_cutoff: str | None = "2026-09-08T00:00:00Z",
+    update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     thumbnail_fetch=http_fetch,
 ) -> dict:
     mods_path = root / "data/mods.json"
@@ -914,7 +994,7 @@ def generate_report(
         thumbnail_fetch=thumbnail_fetch,
         game_name=game_name,
         sources=sources,
-        v1_cutoff=v1_cutoff,
+        update_filter=update_filter,
     )
     atomic_write_bytes(root / "report.html", page.encode("utf-8"))
     hotlinked_page = page if not embed_thumbnails else render_report(
@@ -923,13 +1003,13 @@ def generate_report(
         embed_thumbnails=False,
         game_name=game_name,
         sources=sources,
-        v1_cutoff=v1_cutoff,
+        update_filter=update_filter,
     )
     atomic_write_bytes(root / "report-hotlinked.html", hotlinked_page.encode("utf-8"))
     result = verify_report(
         root / "report.html",
         expected_cards=len(_report_groups(mods)),
-        expect_v1_filter=v1_cutoff is not None,
+        update_filter=update_filter,
     )
     if not result["ok"]:
         raise RuntimeError("generated report failed verification: " + "; ".join(result["errors"]))
@@ -942,7 +1022,7 @@ def verify_output(
     expected_thunderstore_pages: int = 4,
     expected_nexus_pages: int = 2,
     require_full_nexus_pages: bool = True,
-    expect_v1_filter: bool = True,
+    update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     require_reports: bool = False,
 ) -> dict:
     errors = []
@@ -1059,7 +1139,7 @@ def verify_output(
         report_result = verify_report(
             report_path,
             expected_cards=len(_report_groups(mods)),
-            expect_v1_filter=expect_v1_filter,
+            update_filter=update_filter,
         )
         errors.extend(report_result["errors"])
     elif require_reports:
@@ -1069,7 +1149,7 @@ def verify_output(
         hotlinked_result = verify_report(
             hotlinked_path,
             expected_cards=len(_report_groups(mods)),
-            expect_v1_filter=expect_v1_filter,
+            update_filter=update_filter,
         )
         errors.extend(hotlinked_result["errors"])
         local_text = report_path.read_text(encoding="utf-8") if report_path.exists() else ""
@@ -1246,7 +1326,7 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
         embed_thumbnails=args.embed_thumbnails,
         game_name=config["display_name"],
         sources=config["sources"],
-        v1_cutoff=config["v1_cutoff"],
+        update_filter=config["update_filter"],
     )
     return {**manifest, "report_cards": report["cards"]}
 
@@ -1280,7 +1360,7 @@ def _generate_selected_reports(args, generated_at: str) -> dict:
             embed_thumbnails=args.embed_thumbnails,
             game_name=config["display_name"],
             sources=config["sources"],
-            v1_cutoff=config["v1_cutoff"],
+            update_filter=config["update_filter"],
         )
     if args.game != "all":
         return results[args.game]
@@ -1298,7 +1378,7 @@ def _verify_selected_outputs(args) -> dict:
             expected_thunderstore_pages=thunderstore_pages if "thunderstore" in config["sources"] else 0,
             expected_nexus_pages=nexus_pages if "nexus" in config["sources"] else 0,
             require_full_nexus_pages=config["require_full_nexus_pages"],
-            expect_v1_filter=config["v1_cutoff"] is not None,
+            update_filter=config["update_filter"],
             require_reports=True,
         )
     if args.game != "all":

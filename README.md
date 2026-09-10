@@ -79,7 +79,7 @@ python3 tracker.py collect --game valheim --sources nexus --nexus-api-key-file /
 python3 tracker.py collect --game repo --thunderstore-pages 3 --nexus-pages 1
 ```
 
-`collect` is resumable: listing evidence is atomically replaced, per-mod details are cached, and Thunderstore detail pages are fetched again only when a latest version changes. JSON uses sorted keys and stable indentation. Collection timestamps are necessarily run-specific.
+`collect` is resumable: listing evidence is atomically replaced, per-mod details are cached, and Thunderstore detail pages are fetched again only when a latest version changes. Network reads retry transient timeouts, connection failures, HTTP 408/425/429, and HTTP 5xx responses at most twice with bounded backoff; permanent HTTP errors fail immediately. JSON uses sorted keys and stable indentation. Collection timestamps are necessarily run-specific.
 
 ## Per-game storage
 

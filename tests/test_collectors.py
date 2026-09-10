@@ -3,7 +3,10 @@ import os
 import sys
 import tempfile
 import unittest
+from email.message import Message
 from pathlib import Path
+from unittest import mock
+from urllib.error import HTTPError
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tracker
@@ -14,6 +17,28 @@ DETAIL_HTML = r'''<html><script>"package_created\",\"2021-02-14T18:07:34.498403Z
 
 
 class CollectorTests(unittest.TestCase):
+    def test_http_fetch_retries_transient_timeout(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"ok"
+        with mock.patch.object(
+            tracker, "urlopen", side_effect=[TimeoutError("slow"), response]
+        ) as opened, mock.patch.object(tracker.time, "sleep") as slept:
+            payload = tracker.http_fetch("https://example.test/data")
+
+        self.assertEqual(payload, b"ok")
+        self.assertEqual(opened.call_count, 2)
+        slept.assert_called_once_with(1)
+
+    def test_http_fetch_does_not_retry_permanent_http_error(self):
+        error = HTTPError("https://example.test/missing", 404, "missing", Message(), None)
+        with mock.patch.object(tracker, "urlopen", side_effect=error) as opened, \
+             mock.patch.object(tracker.time, "sleep") as slept:
+            with self.assertRaises(HTTPError):
+                tracker.http_fetch("https://example.test/missing")
+
+        self.assertEqual(opened.call_count, 1)
+        slept.assert_not_called()
+
     def test_parses_and_normalizes_thunderstore_exact_metrics(self):
         detail = tracker.parse_thunderstore_detail(DETAIL_HTML)
         card = tracker.parse_listing(CARD_PAGE)[0]

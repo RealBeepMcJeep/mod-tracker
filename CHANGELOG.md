@@ -9,6 +9,8 @@
 - Added strict dual-report verification and the stdlib-only `scripts/manual-pass.py` orchestration workflow, including all-game collection, isolation, staging, one atomic five-site preflight/publication, and verified public-repository push.
 - Added rollback-safe five-site replacement, requested-path-only Git commits, tracker/public branch guards, and exact local-versus-remote `main` hash verification.
 - Expanded the deterministic unit suites to 51 tracker tests and 26 central-publisher tests, including path-traversal, injected rollback-failure, unrelated-staging, and remote-hash regressions; added `games.json` plus the manual-pass source to the fail-closed Git allowlist.
+- Committed and pushed the shared five-game tracker and atomic central-publisher milestones to `main`, verifying exact local/remote commit equality and clean worktrees in both repositories.
+- Added bounded retries for transient timeouts, connection/URL failures, HTTP 408/425/429, and HTTP 5xx responses after the first live all-game dry run exposed intermittent Thunderstore detail-read timeouts; permanent HTTP errors still fail immediately.
 - Completed an explicit cross-source review of the latest 579-record dataset and added 21 manually verified Nexus Mods ↔ Thunderstore pairs, increasing canonical `Both` cards from 20 to 41.
 - Added mappings for 14 Jere Kuusela packages plus Heightmap Unlimited JvL, Drop That, Spawn That, Visbending, Recipe Pinner, VNEI, and Grantapher's Valheim Plus fork.
 - Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.

@@ -2,7 +2,6 @@
 
 ## Current milestone
 
-- [ ] Commit and push the shared-code milestone to tracker `main`.
 - [ ] Run and verify one live all-games collection.
 - [ ] Publish and read back all five game reports.
 - [ ] Push and verify the `public-artifacts` `main` branch.

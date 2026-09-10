@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import parse_qs, urljoin, urlparse
 from zoneinfo import ZoneInfo
@@ -380,8 +381,20 @@ def http_fetch(url: str, *, headers: dict | None = None, data: bytes | None = No
     request_headers = {"User-Agent": "ModTracker/1.0 (manual collector)"}
     request_headers.update(headers or {})
     request = Request(url, headers=request_headers, data=data)
-    with urlopen(request, timeout=60) as response:
-        return response.read()
+    delays = (1, 3)
+    for attempt in range(len(delays) + 1):
+        try:
+            with urlopen(request, timeout=60) as response:
+                return response.read()
+        except HTTPError as exc:
+            transient = exc.code in {408, 425, 429} or 500 <= exc.code < 600
+            if not transient or attempt == len(delays):
+                raise
+        except (TimeoutError, ConnectionError, URLError):
+            if attempt == len(delays):
+                raise
+        time.sleep(delays[attempt])
+    raise AssertionError("unreachable")
 
 
 class ReadmeParser(HTMLParser):

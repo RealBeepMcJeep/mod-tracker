@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-10
+
+- Completed an explicit cross-source review of the latest 579-record dataset and added 21 manually verified Nexus Mods ↔ Thunderstore pairs, increasing canonical `Both` cards from 20 to 41.
+- Added mappings for 14 Jere Kuusela packages plus Heightmap Unlimited JvL, Drop That, Spawn That, Visbending, Recipe Pinner, VNEI, and Grantapher's Valheim Plus fork.
+- Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.
+- Kept mapping discovery outside routine manual scrape/report runs; perform another candidate review only when explicitly requested.
+
 ## 2026-09-09
 
 - Completed a fresh dual-source scrape: 313 current records, 376 retained historical source records, and 356 canonical report cards.

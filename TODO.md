@@ -1,9 +1,5 @@
 # TODO
 
-## Current milestone
-
-- [ ] Complete and verify a live five-game dry pass using parallel Nexus/Thunderstore collection without publishing.
-
 ## Optional validation and operations
 
 - [ ] Repeat desktop and narrow-screen screenshot inspection when a working local browser runner is available.

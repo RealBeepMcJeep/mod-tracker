@@ -3,6 +3,7 @@
 ## 2026-09-09
 
 - Completed a fresh dual-source scrape: 313 current records, 376 retained historical source records, and 356 canonical report cards.
+- Rendered the report generation timestamp in human-readable Arizona MST instead of UTC ISO format.
 - Added four manually verified cross-source mappings for Custom Chest Name, Marsarah Tweaks, Races of Valheim, and Jotunn, bringing the report to 20 `Both` cards.
 - Added thousands separators to human-facing downloads, endorsements/likes, and rate metrics while preserving raw numeric HTML sort attributes.
 - Changed mapped-card total downloads, lifetime downloads/day, and observed current-version downloads/day to sum confirmed Nexus Mods and Thunderstore values instead of taking the larger source value.

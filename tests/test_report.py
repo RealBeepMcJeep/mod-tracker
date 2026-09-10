@@ -101,7 +101,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn('data-v1="true"', page)
         self.assertIn('data-v1="false"', page)
         self.assertIn('<span title="Shows mods updated on or after Sep 8, 2026; not a semantic version filter.">v1 filter</span>', page)
-        self.assertIn('<p>Generated 2026-09-09T20:00:00Z.</p>', page)
+        self.assertIn('<p>Generated Sep 9, 2026 at 1:00 PM MST.</p>', page)
         self.assertNotIn('NSFW mods are hidden by default.', page)
         self.assertNotIn('The v1 filter means', page)
 

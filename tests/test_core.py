@@ -38,6 +38,27 @@ class CoreModelTests(unittest.TestCase):
         self.assertFalse(mod["pinned"])
         self.assertEqual(mod["raw_page_capture"]["status"], "unavailable")
 
+    def test_normalizes_nexus_url_for_selected_game(self):
+        node = {
+            "modId": 12,
+            "name": "Retro Mod",
+            "createdAt": "2026-09-01T00:00:00Z",
+            "updatedAt": "2026-09-09T00:00:00Z",
+        }
+
+        mod = tracker.normalize_nexus(
+            node,
+            {},
+            rank=1,
+            collected_at="2026-09-09T20:00:00Z",
+            game_domain="retrorewindvideostoresimulator",
+        )
+
+        self.assertEqual(
+            mod["canonical_url"],
+            "https://www.nexusmods.com/retrorewindvideostoresimulator/mods/12",
+        )
+
     def test_rates_use_lifetime_and_observed_current_version_delta(self):
         mod = {
             "created_at": "2026-09-04T20:00:00Z", "updated_at": "2026-09-07T20:00:00Z",

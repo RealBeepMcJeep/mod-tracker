@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Valheim Mod Tracker — Data Flow</title>
+<title>Mod Tracker — Multi-Game Data Flow</title>
 <style>
 :root{--bg:#020617;--panel:#0f172a;--panel2:#111c31;--grid:#1e293b;--text:#f8fafc;--muted:#94a3b8;--cyan:#22d3ee;--emerald:#34d399;--violet:#a78bfa;--amber:#fbbf24;--rose:#fb7185;--orange:#fb923c;--slate:#64748b}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;padding:clamp(16px,3vw,34px)}
@@ -12,11 +12,11 @@
 </head>
 <body>
 <div class="container">
-<header class="header"><div class="title-row"><span class="pulse"></span><h1>Valheim Mod Tracker — Data Flow &amp; Field Lineage</h1></div><p class="subtitle">Manual, deterministic, Python-stdlib pipeline · external sources → raw evidence → normalized flat files → derived rates → single-file report</p></header>
+<header class="header"><div class="title-row"><span class="pulse"></span><h1>Mod Tracker — Multi-Game Data Flow &amp; Field Lineage</h1></div><p class="subtitle">One manual deterministic Python-stdlib pipeline · five isolated game roots · external sources → raw evidence → normalized flat files → verified and published reports</p></header>
 <div class="diagram">
 <svg viewBox="0 0 1450 1120" role="img" aria-labelledby="svg-title svg-desc">
-<title id="svg-title">Valheim mod tracker data-flow diagram</title>
-<desc id="svg-desc">Thunderstore and Nexus listing and detail sources flow through a Python collector into raw evidence, normalized JSON records, derived rate calculations, and a standalone HTML report.</desc>
+<title id="svg-title">Multi-game mod tracker data-flow diagram</title>
+<desc id="svg-desc">Per-game Thunderstore and Nexus sources flow through shared Python collectors into isolated raw evidence, normalized JSON records, derived rates, verified HTML, temporary publication staging, and separate static-site routes.</desc>
 <defs>
  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#1e293b" stroke-width=".55"/></pattern>
  <marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0 0L9 3.5 0 7Z" fill="#64748b"/></marker>
@@ -72,7 +72,7 @@
 
  <rect x="45" y="357" width="303" height="96" rx="8" fill="#0f172a"/><rect x="45" y="357" width="303" height="96" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
  <text x="62" y="382" fill="#fff" font-size="13" font-weight="700">Thunderstore package page</text>
- <text x="62" y="402" fill="#94a3b8" font-size="9">public /c/valheim/p/{namespace}/{name}/</text>
+ <text x="62" y="402" fill="#94a3b8" font-size="9">public /c/{configured-community}/p/{namespace}/{name}/</text>
  <text x="62" y="420" fill="#94a3b8" font-size="9">package_created · version_created · README HTML</text>
  <text x="62" y="438" fill="#fbbf24" font-size="8">Refetched only when latest version changes</text>
 
@@ -85,7 +85,7 @@
 
  <rect x="45" y="636" width="303" height="92" rx="8" fill="#0f172a"/><rect x="45" y="636" width="303" height="92" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
  <text x="62" y="661" fill="#fff" font-size="13" font-weight="700">Nexus v1 mod detail API</text>
- <text x="62" y="681" fill="#94a3b8" font-size="9">/v1/games/valheim/mods/{modId}.json</text>
+ <text x="62" y="681" fill="#94a3b8" font-size="9">/v1/games/{configured-domain}/mods/{modId}.json</text>
  <text x="62" y="699" fill="#94a3b8" font-size="9">description · unique downloads · views · fallbacks</text>
  <text x="62" y="715" fill="#fbbf24" font-size="8">Cached once for newly observed IDs</text>
 
@@ -111,7 +111,7 @@
  <text x="470" y="275" fill="#34d399" font-size="9">NEXUS PATH</text>
  <text x="470" y="294" fill="#94a3b8" font-size="9">fetch 2 listing offsets</text><text x="470" y="310" fill="#94a3b8" font-size="9">reject/skip duplicate mod IDs</text>
  <text x="470" y="326" fill="#94a3b8" font-size="9">cache v1 detail per new ID</text><text x="470" y="342" fill="#94a3b8" font-size="9">optionally capture authenticated page</text>
- <text x="470" y="370" fill="#fbbf24" font-size="8">1-second request pacing · manual run</text>
+ <text x="470" y="370" fill="#fbbf24" font-size="8">games.json routing · 1-second pacing · manual run</text>
 
  <rect x="450" y="425" width="200" height="80" rx="9" fill="#0f172a"/><rect x="450" y="425" width="200" height="80" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
  <text x="470" y="451" fill="#fff" font-size="13" font-weight="700">Raw evidence writer</text>
@@ -133,7 +133,7 @@
 <!-- storage boxes -->
 <g>
  <rect x="780" y="115" width="255" height="278" rx="9" fill="#0f172a"/><rect x="780" y="115" width="255" height="278" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
- <text x="800" y="142" fill="#fff" font-size="13" font-weight="700">raw/ source evidence</text>
+ <text x="800" y="142" fill="#fff" font-size="13" font-weight="700">per-game raw/ source evidence</text>
  <text x="800" y="169" fill="#a78bfa" font-size="9">Thunderstore</text><text x="800" y="188" fill="#94a3b8" font-size="9">listings/{sort}/page-{1..4}.html</text>
  <text x="800" y="204" fill="#94a3b8" font-size="9">metrics/{namespace}/{name}.json</text><text x="800" y="220" fill="#94a3b8" font-size="9">packages/{namespace}/{name}.html</text>
  <line x1="800" y1="241" x2="1015" y2="241" stroke="#312e81"/>
@@ -171,15 +171,15 @@
  <text x="1140" y="745" fill="#fbbf24" font-size="8">Images hotlink by default; optional base64 embed</text>
 
  <rect x="1120" y="790" width="280" height="76" rx="9" fill="#0f172a" filter="url(#glow)"/><rect x="1120" y="790" width="280" height="76" rx="9" fill="#08334466" stroke="#22d3ee" stroke-width="2"/>
- <text x="1260" y="820" fill="#fff" font-size="15" font-weight="700" text-anchor="middle">report.html</text><text x="1260" y="842" fill="#22d3ee" font-size="9" text-anchor="middle">single sortable dark-mode HTML artifact</text><text x="1260" y="857" fill="#94a3b8" font-size="8" text-anchor="middle">desktop grid · mobile stacked cards</text>
+ <text x="1260" y="820" fill="#fff" font-size="15" font-weight="700" text-anchor="middle">report-hotlinked.html</text><text x="1260" y="842" fill="#22d3ee" font-size="9" text-anchor="middle">verified per-game publication artifact</text><text x="1260" y="857" fill="#94a3b8" font-size="8" text-anchor="middle">temporary index.html staging · separate /reports/ route</text>
 </g>
 
 <!-- current limitation -->
 <rect x="407" y="920" width="1025" height="120" rx="12" fill="#0f172a"/><rect x="407" y="920" width="1025" height="120" rx="12" fill="#88133733" stroke="#fb7185" stroke-width="1.5"/>
 <text x="430" y="950" fill="#fb7185" font-size="13" font-weight="700">CURRENT CROSS-SITE BOUNDARY</text>
-<text x="430" y="975" fill="#cbd5e1" font-size="10">Explicit mapping metadata can state that a Nexus record and Thunderstore record represent the same mod.</text>
-<text x="430" y="995" fill="#cbd5e1" font-size="10">The report still renders source records separately and does not sum downloads/engagement across sites yet.</text>
-<text x="430" y="1016" fill="#94a3b8" font-size="9">Future combined statistics must define overlap semantics first; raw provider download counts are not assumed additive.</text>
+<text x="430" y="975" fill="#cbd5e1" font-size="10">Only explicit manual mapping metadata can state that Nexus and Thunderstore records represent the same mod.</text>
+<text x="430" y="995" fill="#cbd5e1" font-size="10">Mapped sources render as one Both card with separate links and summed confirmed source metrics.</text>
+<text x="430" y="1016" fill="#94a3b8" font-size="9">Routine manual passes never infer or add mappings; discovery happens only when explicitly requested.</text>
 
 <!-- legend -->
 <g transform="translate(34 1067)"><text x="0" y="0" fill="#fff" font-size="10" font-weight="700">LEGEND</text>
@@ -195,9 +195,9 @@
  <article class="card"><h2><span class="dot" style="background:var(--amber)"></span>Source precedence</h2><ul><li>• Thunderstore listing supplies discovery, presentation metadata, pin state, and ranking appearances.</li><li>• Thunderstore metrics API supplies exact downloads, rating, and latest version.</li><li>• Nexus GraphQL supplies ranked discovery plus most display and metric fields; v1 detail enriches/fills gaps.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--violet)"></span>Persistence model</h2><ul><li>• Raw HTML/JSON is retained as source evidence.</li><li>• <code>data/mods.json</code> is the normalized canonical store with observation history.</li><li>• No database, service, scheduler, or LLM is required for routine collection/report generation.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--cyan)"></span>Report semantics</h2><ul><li>• The report compares each source record “apples to apples” using common normalized fields.</li><li>• Lifetime rate is computable immediately; current-version observed rate requires two tracker runs.</li><li>• Search, source filtering, and sorting happen locally in the generated HTML.</li></ul></article>
- <article class="card"><h2><span class="dot" style="background:var(--rose)"></span>Deliberate safeguards</h2><ul><li>• Credentials and cookies remain runtime-only and outside Git.</li><li>• Cross-site matches are manual only—never inferred from names.</li><li>• <span class="warn">Mapped records are not statistically combined yet</span>; this avoids false totals from unknown audience overlap.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--rose)"></span>Deliberate safeguards</h2><ul><li>• Credentials and cookies remain runtime-only and outside Git.</li><li>• Cross-site matches are manual only—never inferred from names.</li><li>• All five game artifacts must verify and all publication targets must dry-run before the first live publish.</li></ul></article>
 </section>
-<p class="footer">Valheim Mod Tracker · DATA_FLOW.html · self-contained inline SVG/CSS · target scope: Thunderstore 4×20×2; Nexus 2×80</p>
+<p class="footer">Mod Tracker · DATA_FLOW.html · five isolated games · shared stdlib pipeline · independent static-site reports</p>
 </div>
 </body>
 </html>

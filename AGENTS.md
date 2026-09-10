@@ -1,23 +1,25 @@
-# AGENTS.md — Valheim Mod Tracker
+# AGENTS.md — Mod Tracker
 
-Deterministic stdlib-only collection and reporting for Valheim mods from Thunderstore and Nexus Mods.
+Deterministic stdlib-only collection and reporting for five games across Thunderstore and Nexus Mods.
 
 ## Scope
 
-- Thunderstore community: `https://thunderstore.io/c/valheim/`
-- Thunderstore rankings: `last-updated` and `most-downloaded`
-- Thunderstore depth: first 4 pages per ranking, 20 cards per page
-- Nexus listing: exactly two pages/80 items each sorted by `updatedAt` descending
+- Registry: `games.json` is the authoritative five-game source/page/output/publication configuration.
+- Games: Valheim, R.E.P.O., PEAK, Retro Rewind - Video Store Simulator, and TCG Card Shop Simulator.
+- Retro Rewind is Nexus-only; the other four use Nexus Mods and Thunderstore.
+- Thunderstore rankings: `last-updated` and `most-downloaded`, using each game's configured page count.
+- Nexus listings: `updatedAt` descending, using each game's configured page count and short-page policy.
 - Cross-source matching is explicit/manual only; never infer that similarly named mods are identical.
 
 ## Layout
 
-- `tracker.py` — collector, parser, merger, rate calculator, verifier, and HTML renderer
+- `tracker.py` — shared collector, parser, merger, rate calculator, verifier, and HTML renderer
+- `games.json` — version-controlled game/source/output/publication registry
+- `scripts/manual-pass.py` — all-game collect, verify, stage, atomic publish, push, and remote verification
 - `tests/` — stdlib `unittest` suite and sanitized inline fixtures
-- `data/mods.json` — generated normalized flat store with observations
-- `raw/` — generated source HTML and JSON evidence
-- `snapshots/latest.json` — generated run manifest
-- `report.html` — generated sortable combined report
+- Valheim generated state remains at the project root for compatibility.
+- Other games store generated state under `games/<game-key>/`.
+- Every game root has independent `data/`, `raw/`, `snapshots/`, reports, and verification artifacts.
 - `TODO.md` — outstanding work only
 - `CHANGELOG.md` — completed milestones grouped by date
 
@@ -26,17 +28,21 @@ Deterministic stdlib-only collection and reporting for Valheim mods from Thunder
 - Python standard library only.
 - Follow RED → GREEN → REFACTOR for behavior changes.
 - Save raw responses before parsing where practical and write canonical JSON atomically.
-- Read the Nexus API key only at runtime from the configured external file.
+- Read the Nexus API key only at runtime from an external file; default: `~/.config/nexus-mods/api-key`.
 - Never commit credentials, cookie headers/jars, generated datasets, raw captures, or temporary files.
 - Optional Nexus page capture must report `captured`, `failed`, or `unavailable` honestly.
 - Do not create cron or require an LLM at runtime.
-- Commit only verified milestones. Do not push unless explicitly requested by the active task.
+- Keep every game's generated state isolated; preserve Valheim's legacy root layout and publication route.
+- Routine manual passes do not discover or alter cross-site mappings.
+- Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
+- Commit only verified milestones. Push when explicitly requested by the active task.
 
 ## Verification
 
 ```bash
-python3 -m unittest discover -s tests -t . -v
-python3 -m py_compile tracker.py
-python3 tracker.py collect --output-root /tmp/valheim-mod-tracker
-python3 tracker.py verify --output-root /tmp/valheim-mod-tracker
+python3 -m unittest discover -s tests -v
+python3 -m py_compile tracker.py scripts/manual-pass.py
+python3 -m json.tool games.json >/dev/null
+git diff --check
+python3 tracker.py verify --game all --output-root .
 ```

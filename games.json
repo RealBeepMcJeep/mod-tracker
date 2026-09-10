@@ -1,0 +1,89 @@
+{
+  "peak": {
+    "display_name": "PEAK",
+    "nexus_domain": "peak",
+    "nexus_pages": 2,
+    "output_subdir": "games/peak",
+    "publication": {
+      "name": "peak-mod-tracker",
+      "section": "reports"
+    },
+    "require_full_nexus_pages": true,
+    "sources": [
+      "thunderstore",
+      "nexus"
+    ],
+    "thunderstore_community": "peak",
+    "thunderstore_pages": 4,
+    "v1_cutoff": null
+  },
+  "repo": {
+    "display_name": "R.E.P.O.",
+    "nexus_domain": "repo",
+    "nexus_pages": 2,
+    "output_subdir": "games/repo",
+    "publication": {
+      "name": "repo-mod-tracker",
+      "section": "reports"
+    },
+    "require_full_nexus_pages": true,
+    "sources": [
+      "thunderstore",
+      "nexus"
+    ],
+    "thunderstore_community": "repo",
+    "thunderstore_pages": 4,
+    "v1_cutoff": null
+  },
+  "retro-rewind": {
+    "display_name": "Retro Rewind - Video Store Simulator",
+    "nexus_domain": "retrorewindvideostoresimulator",
+    "nexus_pages": 2,
+    "output_subdir": "games/retro-rewind",
+    "publication": {
+      "name": "retro-rewind-mod-tracker",
+      "section": "reports"
+    },
+    "require_full_nexus_pages": false,
+    "sources": [
+      "nexus"
+    ],
+    "v1_cutoff": null
+  },
+  "tcg-card-shop-simulator": {
+    "display_name": "TCG Card Shop Simulator",
+    "nexus_domain": "tcgcardshopsimulator",
+    "nexus_pages": 2,
+    "output_subdir": "games/tcg-card-shop-simulator",
+    "publication": {
+      "name": "tcg-card-shop-simulator-mod-tracker",
+      "section": "reports"
+    },
+    "require_full_nexus_pages": true,
+    "sources": [
+      "thunderstore",
+      "nexus"
+    ],
+    "thunderstore_community": "tcg-card-shop-simulator",
+    "thunderstore_pages": 4,
+    "v1_cutoff": null
+  },
+  "valheim": {
+    "display_name": "Valheim",
+    "nexus_domain": "valheim",
+    "nexus_pages": 2,
+    "output_subdir": ".",
+    "publication": {
+      "name": "valheim-mod-tracker",
+      "section": "reports"
+    },
+    "require_full_nexus_pages": true,
+    "sources": [
+      "thunderstore",
+      "nexus"
+    ],
+    "thunderstore_community": "valheim",
+    "thunderstore_pages": 4,
+    "v1_cutoff": "2026-09-08T00:00:00Z"
+  }
+}

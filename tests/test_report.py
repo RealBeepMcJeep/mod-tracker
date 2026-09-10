@@ -23,6 +23,28 @@ def sample(source, source_id, pinned=False, title="Mod"):
 
 
 class ReportTests(unittest.TestCase):
+    def test_embedded_local_report_still_writes_hotlinked_publication_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mod = sample("nexus", "8", title="Embedded")
+            mod["thumbnail"] = "https://images.example/8.png"
+            tracker.atomic_write_json(root / "data/mods.json", [mod])
+
+            tracker.generate_report(
+                root,
+                "2026-09-10T12:00:00Z",
+                embed_thumbnails=True,
+                game_name="PEAK",
+                sources=("nexus",),
+                v1_cutoff=None,
+                thumbnail_fetch=lambda url: b"\x89PNG\r\n\x1a\nimage",
+            )
+
+            self.assertIn("data:image/", (root / "report.html").read_text())
+            self.assertNotIn(
+                "data:image/", (root / "report-hotlinked.html").read_text()
+            )
+
     def test_report_has_source_badges_clickable_cards_fixed_pins_and_sort_controls(self):
         mods = [sample("thunderstore", "A/Pinned", True, "Pinned"), sample("nexus", "79", False, "Nexus")]
 
@@ -62,6 +84,48 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn('<script>alert("x")</script>', page)
         self.assertIn("&lt;script&gt;", page)
         self.assertIn("data:image/png;base64,", page)
+
+    def test_report_uses_game_label_and_can_omit_valheim_v1_filter(self):
+        page = tracker.render_report(
+            [sample("nexus", "12", title="Retro Mod")],
+            "2026-09-09T20:00:00Z",
+            game_name="Retro Rewind - Video Store Simulator",
+            sources=("nexus",),
+            v1_cutoff=None,
+        )
+
+        self.assertIn("<title>Retro Rewind - Video Store Simulator Mod Tracker</title>", page)
+        self.assertIn("<h1>Retro Rewind - Video Store Simulator Mod Tracker</h1>", page)
+        self.assertIn("on Nexus Mods.", page)
+        self.assertNotIn('id="v1-toggle"', page)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(path, expected_cards=1, expect_v1_filter=False)
+        self.assertTrue(result["ok"], result["errors"])
+
+    def test_non_valheim_dual_source_report_names_both_sources(self):
+        page = tracker.render_report(
+            [sample("thunderstore", "A/B"), sample("nexus", "12")],
+            "2026-09-09T20:00:00Z",
+            game_name="PEAK",
+            sources=("thunderstore", "nexus"),
+            v1_cutoff=None,
+        )
+        self.assertIn("PEAK mods across Thunderstore and Nexus Mods.", page)
+
+    def test_nexus_only_report_does_not_claim_thunderstore(self):
+        page = tracker.render_report(
+            [sample("nexus", "12")],
+            "2026-09-09T20:00:00Z",
+            game_name="Retro Rewind - Video Store Simulator",
+            sources=("nexus",),
+            v1_cutoff=None,
+        )
+        subtitle = page.split('<p class="subtitle">', 1)[1].split("</p>", 1)[0]
+        self.assertIn("on Nexus Mods.", subtitle)
+        self.assertNotIn("Thunderstore", subtitle)
 
     def test_manual_mapping_only_applies_explicit_metadata(self):
         mods = [sample("nexus", "79")]

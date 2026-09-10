@@ -2,6 +2,13 @@
 
 ## 2026-09-10
 
+- Renamed the local project and private Gitea repository from `thunderstore-mod-tracker` to `mod-tracker`; preserved the dirty working tree and updated `origin` to `AI-Goes-Fast/mod-tracker` on `main`.
+- Added the version-controlled five-game registry for Valheim, R.E.P.O., PEAK, Retro Rewind - Video Store Simulator, and TCG Card Shop Simulator, with independently validated Nexus/Thunderstore identifiers, output roots, pagination policy, labels, and publication paths.
+- Kept Valheim's root storage, mappings, pinned mods, v1 filter, and `/reports/valheim-mod-tracker/` route unchanged; configured Retro Rewind as Nexus-only.
+- Removed the Valheim hard-code from Thunderstore collection, made report source wording configuration-driven, and made configured page counts the defaults with optional CLI overrides.
+- Added strict dual-report verification and the stdlib-only `scripts/manual-pass.py` orchestration workflow, including all-game collection, isolation, staging, one atomic five-site preflight/publication, and verified public-repository push.
+- Added rollback-safe five-site replacement, requested-path-only Git commits, tracker/public branch guards, and exact local-versus-remote `main` hash verification.
+- Expanded the deterministic unit suites to 51 tracker tests and 26 central-publisher tests, including path-traversal, injected rollback-failure, unrelated-staging, and remote-hash regressions; added `games.json` plus the manual-pass source to the fail-closed Git allowlist.
 - Completed an explicit cross-source review of the latest 579-record dataset and added 21 manually verified Nexus Mods ↔ Thunderstore pairs, increasing canonical `Both` cards from 20 to 41.
 - Added mappings for 14 Jere Kuusela packages plus Heightmap Unlimited JvL, Drop That, Spawn That, Visbending, Recipe Pinner, VNEI, and Grantapher's Valheim Plus fork.
 - Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.

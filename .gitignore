@@ -7,6 +7,9 @@
 !CHANGELOG.md
 !DATA_FLOW.html
 !tracker.py
+!games.json
+!scripts/
+!scripts/manual-pass.py
 !tests/
 !tests/**
 
@@ -15,6 +18,7 @@ data/
 raw/
 snapshots/
 report.html
+report-hotlinked.html
 *cookies*
 *cookie-jar*
 *.env

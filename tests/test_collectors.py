@@ -65,6 +65,32 @@ class CollectorTests(unittest.TestCase):
             detail_calls = [url for url in calls if "/p/ExampleAuthor/ExampleMod/" in url]
             self.assertEqual(len(detail_calls), 1)
 
+    def test_thunderstore_collection_uses_configured_community(self):
+        calls = []
+        metrics = {"downloads": 100, "rating_score": 2, "latest_version": "1.0"}
+
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if "package-metrics" in url:
+                return json.dumps(metrics).encode()
+            if "/p/ExampleAuthor/ExampleMod/" in url:
+                return DETAIL_HTML.encode()
+            return CARD_PAGE.replace("/c/valheim/", "/c/peak/").encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tracker.collect_thunderstore(
+                Path(tmp),
+                pages=1,
+                collected_at="2026-09-09T20:00:00Z",
+                community="peak",
+                fetch=fetch,
+                pause=lambda: None,
+            )
+
+        listing_calls = [url for url in calls if "ordering=" in url]
+        self.assertTrue(listing_calls)
+        self.assertTrue(all("/c/peak/" in url for url in listing_calls))
+
     def test_nexus_collection_uses_two_graphql_pages_and_caches_v1_details(self):
         calls = []
         listing = {"data": {"mods": {"nodes": [{
@@ -103,6 +129,92 @@ class CollectorTests(unittest.TestCase):
             self.assertIn(b"offset: 0", graphql_calls[0]["data"])
             self.assertIn(b"offset: 80", graphql_calls[1]["data"])
             self.assertEqual(graphql_calls[0]["headers"]["apikey"], "secret-runtime-key")
+
+    def test_nexus_collection_supports_a_small_nexus_only_game(self):
+        calls = []
+        listing = {"data": {"mods": {"nodes": [{
+            "modId": 12,
+            "name": "Retro Mod",
+            "createdAt": "2026-09-01T00:00:00Z",
+            "updatedAt": "2026-09-09T00:00:00Z",
+        }]}}}
+
+        def fetch(url, **kwargs):
+            calls.append((url, kwargs))
+            if url.endswith("/v2/graphql"):
+                return json.dumps(listing).encode()
+            return json.dumps({"description": "Full"}).encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mods = tracker.collect_nexus(
+                root,
+                "secret-runtime-key",
+                "2026-09-09T20:00:00Z",
+                game_domain="retrorewindvideostoresimulator",
+                pages=2,
+                require_full_pages=False,
+                fetch=fetch,
+                pause=lambda: None,
+            )
+
+            self.assertEqual(len(mods), 1)
+            self.assertEqual(sum(url.endswith("/v2/graphql") for url, _ in calls), 1)
+            graphql_data = calls[0][1]["data"]
+            self.assertIn(b'retrorewindvideostoresimulator', graphql_data)
+            self.assertTrue((root / "raw/nexus/listing-page-1.json").exists())
+            self.assertFalse((root / "raw/nexus/listing-page-2.json").exists())
+            self.assertTrue(any(
+                "/v1/games/retrorewindvideostoresimulator/mods/12.json" in url
+                for url, _ in calls
+            ))
+            self.assertEqual(
+                mods[0]["canonical_url"],
+                "https://www.nexusmods.com/retrorewindvideostoresimulator/mods/12",
+            )
+
+    def test_nexus_rejects_non_numeric_mod_id_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root.parent / "escape.json"
+            outside.unlink(missing_ok=True)
+
+            def fetch(url, *, headers=None, data=None):
+                if url.endswith("/v2/graphql"):
+                    return json.dumps({
+                        "data": {"mods": {"nodes": [{"modId": "../../escape"}]}}
+                    }).encode()
+                self.fail(f"unexpected detail request: {url}")
+
+            with self.assertRaisesRegex(ValueError, "Nexus mod ID"):
+                tracker.collect_nexus(
+                    root,
+                    "secret-runtime-key",
+                    "2026-09-10T00:00:00Z",
+                    pages=1,
+                    require_full_pages=False,
+                    fetch=fetch,
+                    pause=lambda: None,
+                )
+            self.assertFalse(outside.exists())
+
+    def test_thunderstore_rejects_unsafe_package_url_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            html = CARD_PAGE.replace(
+                "/c/valheim/p/ExampleAuthor/ExampleMod/",
+                "/c/peak/p/../../escape/",
+            ).encode()
+
+            with self.assertRaisesRegex(ValueError, "Thunderstore package URL"):
+                tracker.collect_thunderstore(
+                    root,
+                    1,
+                    "2026-09-10T00:00:00Z",
+                    community="peak",
+                    fetch=lambda url: html,
+                    pause=lambda: None,
+                )
 
     def test_cookie_header_detail_capture_records_success_without_persisting_cookie(self):
         seen = {}

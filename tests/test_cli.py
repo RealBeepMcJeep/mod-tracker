@@ -4,18 +4,78 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tracker
 from tests.test_report import sample
+from tests.test_tracker import CARD_PAGE
 
 
 class CliTests(unittest.TestCase):
     def test_collect_defaults_match_required_scope(self):
         args = tracker.build_parser().parse_args(["collect"])
-        self.assertEqual(args.thunderstore_pages, 4)
-        self.assertEqual(args.nexus_pages, 2)
+        self.assertIsNone(args.thunderstore_pages)
+        self.assertIsNone(args.nexus_pages)
         self.assertEqual(args.sources, "all")
+        self.assertEqual(args.game, "valheim")
+        self.assertEqual(tracker.game_page_counts(tracker.GAME_CONFIGS["valheim"], args), (4, 2))
+
+    def test_cli_page_flags_override_registry_defaults(self):
+        args = tracker.build_parser().parse_args(
+            ["collect", "--thunderstore-pages", "3", "--nexus-pages", "1"]
+        )
+        self.assertEqual(tracker.game_page_counts(tracker.GAME_CONFIGS["valheim"], args), (3, 1))
+
+    def test_cli_accepts_retro_rewind_and_all_game_selection(self):
+        retro = tracker.build_parser().parse_args(["collect", "--game", "retro-rewind"])
+        all_games = tracker.build_parser().parse_args(["collect", "--game", "all"])
+
+        self.assertEqual(retro.game, "retro-rewind")
+        self.assertEqual(all_games.game, "all")
+
+    def test_registry_contains_required_five_games_and_publication_routes(self):
+        self.assertEqual(
+            set(tracker.GAME_CONFIGS),
+            {"valheim", "repo", "peak", "retro-rewind", "tcg-card-shop-simulator"},
+        )
+        destinations = set()
+        for key, config in tracker.GAME_CONFIGS.items():
+            self.assertIn("display_name", config)
+            self.assertIn("sources", config)
+            self.assertIn("output_subdir", config)
+            self.assertIn("publication", config)
+            self.assertIn("nexus_pages", config)
+            if "thunderstore" in config["sources"]:
+                self.assertIn("thunderstore_community", config)
+                self.assertIn("thunderstore_pages", config)
+            destination = (config["publication"]["section"], config["publication"]["name"])
+            self.assertNotIn(destination, destinations)
+            destinations.add(destination)
+
+    def test_registry_rejects_escaping_output_path(self):
+        registry = json.loads(Path(tracker.GAME_CONFIG_PATH).read_text())
+        registry["repo"]["output_subdir"] = "../escape"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "games.json"
+            path.write_text(json.dumps(registry))
+            with self.assertRaisesRegex(ValueError, "output_subdir"):
+                tracker.load_game_registry(path)
+
+    def test_game_root_preserves_valheim_and_isolates_retro_rewind(self):
+        root = Path("/tmp/example")
+        self.assertEqual(tracker.game_output_root(root, "valheim"), root)
+        self.assertEqual(
+            tracker.game_output_root(root, "retro-rewind"),
+            root / "games/retro-rewind",
+        )
+
+    def test_all_non_valheim_games_have_isolated_roots(self):
+        root = Path("/tmp/example")
+        for key in set(tracker.GAME_CONFIGS) - {"valheim"}:
+            resolved = tracker.game_output_root(root, key)
+            self.assertNotEqual(resolved, root)
+            self.assertTrue(resolved.is_relative_to(root))
 
     def test_netscape_cookie_jar_becomes_runtime_header(self):
         jar = "# Netscape HTTP Cookie File\n.nexusmods.com\tTRUE\t/\tTRUE\t1999999999\tsession\tprivate\n"
@@ -72,6 +132,77 @@ class CliTests(unittest.TestCase):
             )
         self.assertFalse(result["ok"])
         self.assertTrue(any("distinct" in error for error in result["errors"]))
+
+    def test_verify_output_accepts_terminal_short_page_for_small_game(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mods = [sample("nexus", "12")]
+            mods[0]["observations"] = []
+            (root / "data").mkdir(parents=True)
+            (root / "data/mods.json").write_text(json.dumps(mods))
+            target = root / "raw/nexus/listing-page-1.json"
+            target.parent.mkdir(parents=True)
+            target.write_text(json.dumps({
+                "data": {"mods": {"nodes": [{"modId": 12}]}}
+            }))
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=2,
+                require_full_nexus_pages=False,
+            )
+
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertEqual(result["nexus_appearances"], 1)
+        self.assertEqual(result["nexus_distinct"], 1)
+
+    def test_verify_rejects_stale_pages_beyond_configured_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for ordering in ("last-updated", "most-downloaded"):
+                directory = root / "raw/thunderstore/listings" / ordering
+                directory.mkdir(parents=True)
+                (directory / "page-1.html").write_text(CARD_PAGE, encoding="utf-8")
+                (directory / "page-2.html").write_text(
+                    CARD_PAGE, encoding="utf-8"
+                )
+            tracker.atomic_write_json(root / "data/mods.json", [])
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=1,
+                expected_nexus_pages=0,
+            )
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(any(
+                "unexpected raw/thunderstore" in item for item in result["errors"]
+            ))
+
+    def test_all_source_compatibility_is_checked_before_collection(self):
+        args = tracker.build_parser().parse_args([
+            "collect", "--game", "all", "--sources", "thunderstore",
+        ])
+        with patch.object(tracker, "_run_game_collection") as run_game:
+            with self.assertRaisesRegex(ValueError, "retro-rewind"):
+                tracker.run_collection(args)
+        run_game.assert_not_called()
+
+    def test_strict_verify_requires_both_report_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "data").mkdir()
+            (root / "data/mods.json").write_text("[]")
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                require_reports=True,
+            )
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("report.html" in error for error in result["errors"]))
+        self.assertTrue(any("report-hotlinked.html" in error for error in result["errors"]))
 
 
 if __name__ == "__main__":

@@ -1,100 +1,142 @@
-# Valheim Mod Tracker
+# Mod Tracker
 
-A deterministic, dependency-free Python CLI that collects and compares Valheim mods from Thunderstore and Nexus Mods, persists source evidence and normalized observations, and generates one sortable HTML report.
+A deterministic, standard-library-only Python pipeline that collects mods from Thunderstore and Nexus Mods, keeps each game’s evidence and history isolated, verifies the artifacts, and publishes one sortable dark-mode HTML report per game.
 
 [Data-flow and field-lineage diagram](DATA_FLOW.html)
 
-## Required scope
+## Games and sources
 
-- Thunderstore: 4 pages sorted by `last-updated` and 4 pages sorted by `most-downloaded` (20 cards per page; 160 ranked appearances total).
-- Nexus Mods: exactly two GraphQL pages of 80 mods each, sorted by `updatedAt` descending (160 listing results total).
-- Runtime: Python standard library only. No package installation, service, scheduler, or cron job is required.
+| Game | Nexus domain | Thunderstore community | Local output | Published report |
+| --- | --- | --- | --- | --- |
+| Valheim | `valheim` | `valheim` | project root (preserved legacy layout) | `/reports/valheim-mod-tracker/` |
+| R.E.P.O. | `repo` | `repo` | `games/repo/` | `/reports/repo-mod-tracker/` |
+| PEAK | `peak` | `peak` | `games/peak/` | `/reports/peak-mod-tracker/` |
+| Retro Rewind - Video Store Simulator | `retrorewindvideostoresimulator` | unavailable; Nexus-only | `games/retro-rewind/` | `/reports/retro-rewind-mod-tracker/` |
+| TCG Card Shop Simulator | `tcgcardshopsimulator` | `tcg-card-shop-simulator` | `games/tcg-card-shop-simulator/` | `/reports/tcg-card-shop-simulator-mod-tracker/` |
 
-## Run
+The exact registry is version-controlled in [`games.json`](games.json). It defines source support, source identifiers, pagination policy, output directory, display name, Valheim-only v1 cutoff, and publication destination. Registry validation rejects missing required games, unsupported sources, unsafe paths, invalid slugs, and duplicate output/publication destinations.
 
-The Nexus API key is read at runtime and is never copied into project output:
+Validated source references:
 
-```bash
-python3 tracker.py collect
-python3 tracker.py verify
-```
+- R.E.P.O.: <https://www.nexusmods.com/games/repo> and <https://thunderstore.io/c/repo/>
+- PEAK: <https://www.nexusmods.com/games/peak/mods> and <https://thunderstore.io/c/peak/>
+- Retro Rewind: <https://www.nexusmods.com/games/retrorewindvideostoresimulator/mods>
+- TCG Card Shop Simulator: <https://www.nexusmods.com/games/tcgcardshopsimulator> and <https://thunderstore.io/c/tcg-card-shop-simulator/>
+- Thunderstore ecosystem metadata: <https://github.com/thunderstore-io/ecosystem-schema/tree/master> (the authoritative repository uses `master`; `main` does not exist)
+- PEAK’s ancillary community library: <https://github.com/PEAKModding/PEAKLib/tree/main> (`main`; not used as a listing source)
 
-Defaults:
+## Scope and runtime
 
-- output root: current directory
-- Nexus key: `~/.config/nexus-mods/api-key`
-- report: `report.html` (and `report-hotlinked.html` when thumbnails are not embedded)
-- normalized store: `data/mods.json`
+- Thunderstore games: four pages each for `last-updated` and `most-downloaded`, normally 20 cards per page.
+- Nexus games: two `updatedAt DESC` GraphQL pages of 80 mods each.
+- Retro Rewind permits a terminal short Nexus page because its catalog is smaller; the other games require complete configured pages.
+- Python standard library only: no runtime package installation, database, service, scheduler, cron job, or LLM call.
+- Network requests are paced and raw captures are retained for deterministic verification.
 
-Useful manual commands:
+## Manual all-games pass
 
-```bash
-# Collect just one source (the persisted store retains the other source).
-python3 tracker.py collect --sources thunderstore
-python3 tracker.py collect --sources nexus
-
-# Rebuild the report without network access.
-python3 tracker.py report
-
-# Inline fetched thumbnails as data URLs in the report.
-python3 tracker.py report --embed-thumbnails
-
-# Use a different isolated output directory.
-python3 tracker.py collect --output-root /tmp/valheim-mod-tracker
-python3 tracker.py verify --output-root /tmp/valheim-mod-tracker
-```
-
-`collect` is resumable: listing evidence is replaced atomically, per-mod detail payloads are cached, and a detail page is fetched again only when needed. JSON serialization uses sorted keys and stable indentation. Network collection timestamps are necessarily run-specific.
-
-## Nexus authentication and raw page capture
-
-The GraphQL listing and v1 detail requests use the API key from `~/.config/nexus-mods/api-key`. The key is sent only as an HTTP header and is not logged or persisted.
-
-Nexus detail-page HTML is Cloudflare-protected. For a one-time authenticated capture of each newly observed mod page, provide either a Netscape cookie jar or a file containing a browser-exported `Cookie:` header:
+The Nexus API key is read at runtime from `~/.config/nexus-mods/api-key` by default and is never copied into project output. The reusable manual workflow is:
 
 ```bash
-python3 tracker.py collect --sources nexus --nexus-cookie-file /path/outside/repo/nexus-cookies.txt
+cd /opt/data/projects/mod-tracker
+python3 scripts/manual-pass.py
 ```
 
-Cookie files and headers must remain outside Git. Without a cookie file, collection still caches the complete v1 API detail payload under `raw/nexus/mods/` and records `raw_page_capture.status` as `unavailable`. Failed HTML captures are recorded honestly as `failed`; they are never represented as successful.
+The wrapper:
 
-## Stored output
+1. collects every configured game independently;
+2. generates `report.html` and `report-hotlinked.html` for each game;
+3. strictly verifies every game before publication;
+4. stages each hotlinked report in a temporary directory as `index.html`;
+5. dry-runs the complete five-destination batch before the first external write;
+6. replaces all five destination trees with rollback protection, commits once, deploys once, and verifies every URL through `/opt/data/projects/public-artifacts/scripts/publish-site.py --batch-manifest`;
+7. pushes `public-artifacts/main` and verifies its remote hash equals local `HEAD`.
 
-Generated output is deliberately ignored by Git:
+Use `--dry-run` to perform collection, verification, staging, and all publisher preflights without publishing or pushing:
 
-- `data/mods.json` — flat normalized records with observation history and computed rates
-- `raw/thunderstore/listings/` — source listing HTML by ranking and page
-- `raw/thunderstore/packages/` — public package detail HTML
-- `raw/thunderstore/metrics/` — exact package metric JSON
-- `raw/nexus/listing-page-{1,2}.json` — exact GraphQL responses for the two 80-item listing pages
-- `raw/nexus/mods/` — cached v1 detail JSON for newly observed mods
+```bash
+python3 scripts/manual-pass.py --dry-run
+```
+
+The wrapper attempts collection for every game and reports per-game failures as JSON. It never performs a real publication if any collection, verification, staging, or publisher preflight fails.
+
+## Individual commands
+
+```bash
+# One game, all supported sources
+python3 tracker.py collect --game peak --nexus-api-key-file /path/to/key
+python3 tracker.py verify --game peak
+
+# All generated outputs
+python3 tracker.py verify --game all --output-root .
+python3 tracker.py report --game all --output-root .
+
+# One source only; persisted records from the other source remain untouched
+python3 tracker.py collect --game valheim --sources thunderstore
+python3 tracker.py collect --game valheim --sources nexus --nexus-api-key-file /path/to/key
+
+# Explicit page-count overrides; normally use games.json defaults
+python3 tracker.py collect --game repo --thunderstore-pages 3 --nexus-pages 1
+```
+
+`collect` is resumable: listing evidence is atomically replaced, per-mod details are cached, and Thunderstore detail pages are fetched again only when a latest version changes. JSON uses sorted keys and stable indentation. Collection timestamps are necessarily run-specific.
+
+## Per-game storage
+
+Each game root contains only that game’s generated state:
+
+- `data/mods.json` — normalized source records, observations, and computed rates
+- `raw/thunderstore/listings/` — listing HTML by ranking and page, where supported
+- `raw/thunderstore/packages/` — public package details, where supported
+- `raw/thunderstore/metrics/` — exact package metrics, where supported
+- `raw/nexus/listing-page-*.json` — exact GraphQL responses
+- `raw/nexus/mods/` — cached v1 details
 - `raw/nexus/pages/` — optional authenticated page HTML
-- `snapshots/latest.json` — latest run manifest
-- `report.html` and `report-hotlinked.html` — sortable, searchable combined report (the latter is the explicit externally hotlinked-image artifact)
+- `snapshots/latest.json` — latest collection manifest and counts
+- `report.html` — local sortable report
+- `report-hotlinked.html` — verified publication artifact
+
+Valheim deliberately retains these paths at the repository root. All other games live below their configured `games/<slug>/` directory. Generated data, raw captures, snapshots, reports, transient files, cookies, environment files, and credentials are ignored by Git.
 
 Writes use a same-directory temporary file followed by `os.replace`, so interrupted writes do not leave partially serialized canonical files.
 
-## Comparable rates
+## Authentication
 
-Each source is normalized to the same two rate fields:
+Nexus GraphQL and v1 detail requests use the API key file supplied at runtime. The key is sent only as an HTTP header and is not logged or persisted.
 
-- `lifetime_downloads_per_day`: current total downloads divided by age since creation, with a one-day minimum denominator.
-- `current_version_observed_downloads_per_day`: download delta divided by elapsed time between the first and latest stored observations of the current version.
+Optional Nexus detail-page HTML is Cloudflare-protected. To attempt a one-time authenticated capture for newly observed mods, provide a Netscape cookie jar or a file containing an exported `Cookie:` header:
 
-The current-version rate remains unknown until two observations for that version exist. Rates are based on observations made by this tracker; they do not claim provider-side historical precision.
+```bash
+python3 tracker.py collect --game valheim --sources nexus \
+  --nexus-api-key-file /path/to/key \
+  --nexus-cookie-file /path/outside/repo/nexus-cookies.txt
+```
 
-## Report behavior
+Without a cookie file, v1 API details are still cached and `raw_page_capture.status` is recorded as `unavailable`. Failed captures are recorded honestly as `failed`.
 
-`report.html` combines both sources into canonical cards: explicit mappings are rendered once with a prominent `Both` badge and separate Thunderstore/Nexus links; unmapped records remain source-specific cards. Source badges are in the card body, source metrics stay labeled, and the NSFW toggle defaults off (adult cards are also hidden by static CSS when JavaScript is disabled). Search, source filter (`Thunderstore`, `Nexus Mods`, or `Both`), NSFW visibility, updated-date filter, and sorting compose together. Thunderstore pinned entries remain in a separate fixed group. Optional thumbnail embedding removes report-time image dependencies.
+## Rates, mappings, and reports
+
+Every source record uses the same derived fields:
+
+- `lifetime_downloads_per_day`: downloads divided by age rounded up to a full day, with a one-day minimum.
+- `current_version_observed_downloads_per_day`: same-version download delta divided by elapsed time between first and latest tracker observations.
+
+The current-version rate remains unknown until there are two observations for that version.
+
+Cross-site grouping is explicit and manual only. The routine manual pass does not discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
+
+Reports provide search, source filters, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. Valheim preserves its pinned mods and v1 date filter. Non-Valheim reports omit the Valheim-specific v1 control.
 
 ## Verification
 
 ```bash
-python3 -m unittest discover -s tests -t . -v
-python3 -m py_compile tracker.py
-python3 tracker.py verify
+python3 -m unittest discover -s tests -v
+python3 -m py_compile tracker.py scripts/manual-pass.py
+python3 -m json.tool games.json >/dev/null
+python3 tracker.py verify --game all --output-root .
+git diff --check
 ```
 
-The verifier checks all 8 Thunderstore listing pages for 20 cards each, reports the 160 ranked appearances, checks both Nexus pages for 80 nodes each and reports their distinct-ID count, checks normalized-record uniqueness and required fields, and validates report card count and sort metadata.
+Strict CLI verification checks configured raw-page scope, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
 
 Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

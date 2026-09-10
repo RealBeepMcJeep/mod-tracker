@@ -8,7 +8,7 @@
       "name": "peak-mod-tracker",
       "section": "reports"
     },
-    "require_full_nexus_pages": true,
+    "require_full_nexus_pages": false,
     "sources": [
       "thunderstore",
       "nexus"
@@ -26,7 +26,7 @@
       "name": "repo-mod-tracker",
       "section": "reports"
     },
-    "require_full_nexus_pages": true,
+    "require_full_nexus_pages": false,
     "sources": [
       "thunderstore",
       "nexus"

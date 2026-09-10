@@ -11,6 +11,9 @@
 - Expanded the deterministic unit suites to 51 tracker tests and 26 central-publisher tests, including path-traversal, injected rollback-failure, unrelated-staging, and remote-hash regressions; added `games.json` plus the manual-pass source to the fail-closed Git allowlist.
 - Committed and pushed the shared five-game tracker and atomic central-publisher milestones to `main`, verifying exact local/remote commit equality and clean worktrees in both repositories.
 - Added bounded retries for transient timeouts, connection/URL failures, HTTP 408/425/429, and HTTP 5xx responses after the first live all-game dry run exposed intermittent Thunderstore detail-read timeouts; permanent HTTP errors still fail immediately.
+- Added shared Thunderstore terminal-page handling: after a nonempty page, a later listing HTTP 404 ends that ranking cleanly, removes stale pages, and records actual per-ranking counts and terminal status for strict manifest/snapshot verification; page-one 404s and unrelated permanent errors still fail.
+- Enabled verified terminal short Nexus pages for PEAK and R.E.P.O. in addition to Retro Rewind, retaining stale-page cleanup and full-page requirements for Valheim and TCG Card Shop Simulator.
+- Expanded the tracker suite to 60 passing tests, including terminal Thunderstore 404, short final page, stale cleanup, actual snapshot count, and PEAK/R.E.P.O. Nexus policy regressions.
 - Completed an explicit cross-source review of the latest 579-record dataset and added 21 manually verified Nexus Mods ↔ Thunderstore pairs, increasing canonical `Both` cards from 20 to 41.
 - Added mappings for 14 Jere Kuusela packages plus Heightmap Unlimited JvL, Drop That, Spawn That, Visbending, Recipe Pinner, VNEI, and Grantapher's Valheim Plus fork.
 - Regenerated the report as 538 canonical cards: 41 `Both`, 346 Thunderstore-only, and 151 Nexus-only; one NSFW card remains hidden by default.

@@ -59,7 +59,7 @@
 <g>
  <rect x="45" y="105" width="303" height="120" rx="8" fill="#0f172a"/><rect x="45" y="105" width="303" height="120" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
  <text x="62" y="130" fill="#fff" font-size="13" font-weight="700">Thunderstore listing pages</text>
- <text x="62" y="149" fill="#fbbf24" font-size="9">4 pages × 2 sorts × 20 = 160 appearances</text>
+ <text x="62" y="149" fill="#fbbf24" font-size="9">up to 4 pages × 2 sorts; terminal 404 records actual scope</text>
  <text x="62" y="170" fill="#94a3b8" font-size="9">last-updated + most-downloaded</text>
  <text x="62" y="187" fill="#94a3b8" font-size="9">title · author · summary · category · image</text>
  <text x="62" y="202" fill="#94a3b8" font-size="9">package URL · pinned · rank/page/position</text>
@@ -78,7 +78,7 @@
 
  <rect x="45" y="500" width="303" height="116" rx="8" fill="#0f172a"/><rect x="45" y="500" width="303" height="116" rx="8" fill="#78350f33" stroke="#fbbf24" stroke-width="1.5"/>
  <text x="62" y="525" fill="#fff" font-size="13" font-weight="700">Nexus GraphQL listing</text>
- <text x="62" y="545" fill="#fbbf24" font-size="9">2 pages × 80 = 160 ranked listing rows</text>
+ <text x="62" y="545" fill="#fbbf24" font-size="9">up to 2 pages × 80 ranked listing rows</text>
  <text x="62" y="564" fill="#94a3b8" font-size="9">updatedAt DESC · offsets 0 and 80</text>
  <text x="62" y="582" fill="#94a3b8" font-size="9">ID · name · author · summary · category · image</text>
  <text x="62" y="598" fill="#94a3b8" font-size="9">downloads · endorsements · timestamps · version</text>
@@ -109,7 +109,7 @@
  <text x="470" y="215" fill="#94a3b8" font-size="9">preserve both rank appearances</text><text x="470" y="231" fill="#94a3b8" font-size="9">fetch exact metrics + page detail</text>
  <line x1="470" y1="251" x2="630" y2="251" stroke="#1e293b"/>
  <text x="470" y="275" fill="#34d399" font-size="9">NEXUS PATH</text>
- <text x="470" y="294" fill="#94a3b8" font-size="9">fetch 2 listing offsets</text><text x="470" y="310" fill="#94a3b8" font-size="9">reject/skip duplicate mod IDs</text>
+ <text x="470" y="294" fill="#94a3b8" font-size="9">fetch up to 2 listing offsets</text><text x="470" y="310" fill="#94a3b8" font-size="9">terminal short page by game policy</text>
  <text x="470" y="326" fill="#94a3b8" font-size="9">cache v1 detail per new ID</text><text x="470" y="342" fill="#94a3b8" font-size="9">optionally capture authenticated page</text>
  <text x="470" y="370" fill="#fbbf24" font-size="8">games.json routing · 1-second pacing · manual run</text>
 
@@ -127,14 +127,14 @@
  <text x="470" y="732" fill="#94a3b8" font-size="9">append {time, downloads, version}</text><text x="470" y="748" fill="#94a3b8" font-size="9">idempotently to observations[]</text>
 
  <rect x="450" y="793" width="200" height="70" rx="9" fill="#0f172a"/><rect x="450" y="793" width="200" height="70" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
- <text x="470" y="820" fill="#fff" font-size="13" font-weight="700">Verification gates</text><text x="470" y="841" fill="#94a3b8" font-size="9">page/card counts · unique IDs · schema</text><text x="470" y="856" fill="#94a3b8" font-size="9">report card/control/sort attributes</text>
+ <text x="470" y="820" fill="#fff" font-size="13" font-weight="700">Verification gates</text><text x="470" y="841" fill="#94a3b8" font-size="9">actual page scope · unique IDs · schema</text><text x="470" y="856" fill="#94a3b8" font-size="9">manifest/snapshot · report attributes</text>
 </g>
 
 <!-- storage boxes -->
 <g>
  <rect x="780" y="115" width="255" height="278" rx="9" fill="#0f172a"/><rect x="780" y="115" width="255" height="278" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
  <text x="800" y="142" fill="#fff" font-size="13" font-weight="700">per-game raw/ source evidence</text>
- <text x="800" y="169" fill="#a78bfa" font-size="9">Thunderstore</text><text x="800" y="188" fill="#94a3b8" font-size="9">listings/{sort}/page-{1..4}.html</text>
+ <text x="800" y="169" fill="#a78bfa" font-size="9">Thunderstore</text><text x="800" y="188" fill="#94a3b8" font-size="9">listings/{sort}/page-{actual}.html + manifest</text>
  <text x="800" y="204" fill="#94a3b8" font-size="9">metrics/{namespace}/{name}.json</text><text x="800" y="220" fill="#94a3b8" font-size="9">packages/{namespace}/{name}.html</text>
  <line x1="800" y1="241" x2="1015" y2="241" stroke="#312e81"/>
  <text x="800" y="266" fill="#a78bfa" font-size="9">Nexus Mods</text><text x="800" y="285" fill="#94a3b8" font-size="9">listing-page-{1..2}.json</text>
@@ -153,7 +153,7 @@
  <text x="800" y="716" fill="#94a3b8" font-size="9">canonical_group_id + manual match metadata</text><text x="800" y="732" fill="#fb7185" font-size="8">No automatic cross-site name matching</text>
 
  <rect x="780" y="780" width="255" height="80" rx="9" fill="#0f172a"/><rect x="780" y="780" width="255" height="80" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
- <text x="800" y="807" fill="#fff" font-size="12" font-weight="700">snapshots/latest.json</text><text x="800" y="828" fill="#94a3b8" font-size="9">time · sources · fresh/stored counts</text><text x="800" y="844" fill="#94a3b8" font-size="9">Thunderstore/Nexus page scope manifest</text>
+ <text x="800" y="807" fill="#fff" font-size="12" font-weight="700">snapshots/latest.json</text><text x="800" y="828" fill="#94a3b8" font-size="9">time · sources · fresh/stored counts</text><text x="800" y="844" fill="#94a3b8" font-size="9">actual Thunderstore counts · Nexus scope</text>
 </g>
 
 <!-- report boxes -->

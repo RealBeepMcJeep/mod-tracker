@@ -7,8 +7,8 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Registry: `games.json` is the authoritative five-game source/page/output/publication configuration.
 - Games: Valheim, R.E.P.O., PEAK, Retro Rewind - Video Store Simulator, and TCG Card Shop Simulator.
 - Retro Rewind is Nexus-only; the other four use Nexus Mods and Thunderstore.
-- Thunderstore rankings: `last-updated` and `most-downloaded`, using each game's configured page count.
-- Nexus listings: `updatedAt` descending, using each game's configured page count and short-page policy.
+- Thunderstore rankings: `last-updated` and `most-downloaded`, requesting up to each game's configured page count; a later HTTP 404 after a nonempty page terminates that ranking and the actual count is persisted and verified.
+- Nexus listings: `updatedAt` descending, using each game's configured maximum and short-page policy; PEAK, R.E.P.O., and Retro Rewind permit terminal short pages.
 - Cross-source matching is explicit/manual only; never infer that similarly named mods are identical.
 
 ## Layout
@@ -28,6 +28,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Python standard library only.
 - Follow RED → GREEN → REFACTOR for behavior changes.
 - Save raw responses before parsing where practical and write canonical JSON atomically.
+- Remove stale listing pages beyond the actual fetched scope and keep Thunderstore listing-manifest counts synchronized with `snapshots/latest.json`.
 - Read the Nexus API key only at runtime from an external file; default: `~/.config/nexus-mods/api-key`.
 - Never commit credentials, cookie headers/jars, generated datasets, raw captures, or temporary files.
 - Optional Nexus page capture must report `captured`, `failed`, or `unavailable` honestly.

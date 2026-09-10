@@ -528,14 +528,29 @@ def collect_thunderstore(
     if not SLUG_RE.fullmatch(community):
         raise ValueError(f"invalid Thunderstore community: {community!r}")
     found: dict[str, dict] = {}
+    listing_scope = {
+        "requested_pages_per_sort": pages,
+        "rankings": {},
+    }
     for ordering in ("last-updated", "most-downloaded"):
         rank = 0
+        fetched_pages = set()
+        terminal_http_status = None
+        nonempty_page_seen = False
         for page in range(1, pages + 1):
             url = f"https://thunderstore.io/c/{community}/?ordering={ordering}&page={page}"
-            body = fetch(url)
+            try:
+                body = fetch(url)
+            except HTTPError as exc:
+                if exc.code == 404 and nonempty_page_seen:
+                    terminal_http_status = 404
+                    break
+                raise
             atomic_write_bytes(root / f"raw/thunderstore/listings/{ordering}/page-{page}.html", body)
+            fetched_pages.add(page)
             pause()
             cards = parse_listing(body.decode("utf-8"))
+            nonempty_page_seen = nonempty_page_seen or bool(cards)
             for position, card in enumerate(cards, 1):
                 rank += 1
                 source_id = _thunderstore_source_id(card["package_url"], community)
@@ -548,9 +563,14 @@ def collect_thunderstore(
         listing_dir = root / f"raw/thunderstore/listings/{ordering}"
         for stale in listing_dir.glob("page-*.html"):
             match = re.fullmatch(r"page-(\d+)\.html", stale.name)
-            if match and int(match.group(1)) > pages:
+            if match and int(match.group(1)) not in fetched_pages:
                 stale.unlink()
+        listing_scope["rankings"][ordering] = {
+            "fetched_pages": len(fetched_pages),
+            "terminal_http_status": terminal_http_status,
+        }
 
+    atomic_write_json(root / "raw/thunderstore/listings/manifest.json", listing_scope)
     normalized = []
     for source_id in sorted(found):
         namespace, name = source_id.split("/", 1)
@@ -926,21 +946,65 @@ def verify_output(
 ) -> dict:
     errors = []
     ts_appearances = 0
-    for ordering in ("last-updated", "most-downloaded"):
-        listing_dir = root / f"raw/thunderstore/listings/{ordering}"
-        for stale in listing_dir.glob("page-*.html"):
-            match = re.fullmatch(r"page-(\d+)\.html", stale.name)
-            if match and int(match.group(1)) > expected_thunderstore_pages:
-                errors.append(f"unexpected {stale.relative_to(root)} beyond configured scope")
-        for page in range(1, expected_thunderstore_pages + 1):
-            path = root / f"raw/thunderstore/listings/{ordering}/page-{page}.html"
-            if not path.exists():
-                errors.append(f"missing {path.relative_to(root)}")
-                continue
-            count = len(parse_listing(path.read_text(encoding="utf-8")))
-            ts_appearances += count
-            if count != 20:
-                errors.append(f"{path.relative_to(root)} has {count} cards, expected 20")
+    thunderstore_page_counts = {}
+    if expected_thunderstore_pages:
+        listing_root = root / "raw/thunderstore/listings"
+        listing_scope = _load_json(listing_root / "manifest.json", None)
+        snapshot = _load_json(root / "snapshots/latest.json", None)
+        if not isinstance(listing_scope, dict):
+            errors.append("missing or invalid raw/thunderstore/listings/manifest.json")
+            listing_scope = {}
+        if listing_scope.get("requested_pages_per_sort") != expected_thunderstore_pages:
+            errors.append(
+                "Thunderstore listing manifest requested page count does not match configured scope"
+            )
+        rankings = listing_scope.get("rankings", {})
+        snapshot_counts = (
+            snapshot.get("thunderstore_pages_per_sort")
+            if isinstance(snapshot, dict)
+            else None
+        )
+        if not isinstance(snapshot_counts, dict):
+            errors.append("snapshot lacks Thunderstore pages-per-sort counts")
+            snapshot_counts = {}
+
+        for ordering in ("last-updated", "most-downloaded"):
+            ranking = rankings.get(ordering, {}) if isinstance(rankings, dict) else {}
+            fetched_pages = ranking.get("fetched_pages")
+            terminal_status = ranking.get("terminal_http_status")
+            if (
+                not isinstance(fetched_pages, int)
+                or isinstance(fetched_pages, bool)
+                or not 1 <= fetched_pages <= expected_thunderstore_pages
+            ):
+                errors.append(f"invalid fetched page count for Thunderstore {ordering}")
+                fetched_pages = expected_thunderstore_pages
+            thunderstore_page_counts[ordering] = fetched_pages
+            if fetched_pages < expected_thunderstore_pages and terminal_status != 404:
+                errors.append(f"Thunderstore {ordering} ended early without terminal HTTP 404")
+            if fetched_pages == expected_thunderstore_pages and terminal_status is not None:
+                errors.append(f"unexpected terminal HTTP status for Thunderstore {ordering}")
+            if snapshot_counts.get(ordering) != fetched_pages:
+                errors.append(f"snapshot page count does not match Thunderstore {ordering} evidence")
+
+            listing_dir = listing_root / ordering
+            for stale in listing_dir.glob("page-*.html"):
+                match = re.fullmatch(r"page-(\d+)\.html", stale.name)
+                if match and int(match.group(1)) not in range(1, fetched_pages + 1):
+                    errors.append(f"unexpected {stale.relative_to(root)} beyond fetched scope")
+            for page in range(1, fetched_pages + 1):
+                path = listing_dir / f"page-{page}.html"
+                if not path.exists():
+                    errors.append(f"missing {path.relative_to(root)}")
+                    continue
+                count = len(parse_listing(path.read_text(encoding="utf-8")))
+                ts_appearances += count
+                terminal_page = page == fetched_pages and terminal_status == 404
+                if count < 1 or count > 20 or (not terminal_page and count != 20):
+                    expectation = "1 to 20" if terminal_page else "20"
+                    errors.append(
+                        f"{path.relative_to(root)} has {count} cards, expected {expectation}"
+                    )
     nexus_appearances = 0
     nexus_ids = []
     short_page_seen = False
@@ -1023,6 +1087,7 @@ def verify_output(
         "errors": errors,
         "mods": len(mods),
         "thunderstore_appearances": ts_appearances,
+        "thunderstore_pages_per_sort": thunderstore_page_counts,
         "nexus_appearances": nexus_appearances,
         "nexus_distinct": nexus_distinct,
         "report": report_result,
@@ -1090,6 +1155,7 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
         raise ValueError(f"{game_key} does not support source {args.sources!r}")
     thunderstore_pages, nexus_pages = game_page_counts(config, args)
     fresh = []
+    thunderstore_page_counts = {}
     if "thunderstore" in selected_sources:
         fresh.extend(collect_thunderstore(
             root,
@@ -1097,6 +1163,20 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
             collected_at,
             community=config["thunderstore_community"],
         ))
+        listing_scope = _load_json(
+            root / "raw/thunderstore/listings/manifest.json", None
+        )
+        rankings = listing_scope.get("rankings") if isinstance(listing_scope, dict) else None
+        if not isinstance(rankings, dict):
+            raise RuntimeError("Thunderstore collector did not write valid listing scope")
+        for ordering in ("last-updated", "most-downloaded"):
+            ranking = rankings.get(ordering)
+            fetched_pages = ranking.get("fetched_pages") if isinstance(ranking, dict) else None
+            if not isinstance(fetched_pages, int) or isinstance(fetched_pages, bool):
+                raise RuntimeError(
+                    f"Thunderstore collector wrote invalid page count for {ordering}"
+                )
+            thunderstore_page_counts[ordering] = fetched_pages
     if "nexus" in selected_sources:
         api_key = args.nexus_api_key_file.read_text(encoding="utf-8").strip()
         cookie_header = load_cookie_header(args.nexus_cookie_file) if args.nexus_cookie_file else None
@@ -1124,7 +1204,7 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
         "sources": sorted(selected_sources),
         "fresh_records": len(fresh),
         "stored_records": len(mods),
-        "thunderstore_pages_per_sort": thunderstore_pages if "thunderstore" in selected_sources else 0,
+        "thunderstore_pages_per_sort": thunderstore_page_counts,
         "nexus_pages": nexus_pages if "nexus" in selected_sources else 0,
     }
     atomic_write_json(root / "snapshots/latest.json", manifest)

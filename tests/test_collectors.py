@@ -90,6 +90,85 @@ class CollectorTests(unittest.TestCase):
             detail_calls = [url for url in calls if "/p/ExampleAuthor/ExampleMod/" in url]
             self.assertEqual(len(detail_calls), 1)
 
+    def test_thunderstore_collection_records_terminal_404_and_removes_stale_pages(self):
+        metrics = {"downloads": 100, "rating_score": 2, "latest_version": "1.0"}
+
+        def fetch(url, **kwargs):
+            if "ordering=" in url:
+                page = int(url.rsplit("page=", 1)[1])
+                if page == 3:
+                    raise HTTPError(url, 404, "missing", Message(), None)
+                return CARD_PAGE.encode()
+            if "package-metrics" in url:
+                return json.dumps(metrics).encode()
+            if "/p/ExampleAuthor/ExampleMod/" in url:
+                return DETAIL_HTML.encode()
+            self.fail(f"unexpected request: {url}")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for ordering in ("last-updated", "most-downloaded"):
+                stale = root / f"raw/thunderstore/listings/{ordering}/page-4.html"
+                stale.parent.mkdir(parents=True, exist_ok=True)
+                stale.write_text("stale")
+
+            tracker.collect_thunderstore(
+                root,
+                pages=4,
+                collected_at="2026-09-10T00:00:00Z",
+                fetch=fetch,
+                pause=lambda: None,
+            )
+
+            scope = json.loads(
+                (root / "raw/thunderstore/listings/manifest.json").read_text()
+            )
+            self.assertEqual(scope["requested_pages_per_sort"], 4)
+            self.assertEqual(
+                scope["rankings"],
+                {
+                    "last-updated": {"fetched_pages": 2, "terminal_http_status": 404},
+                    "most-downloaded": {"fetched_pages": 2, "terminal_http_status": 404},
+                },
+            )
+            for ordering in ("last-updated", "most-downloaded"):
+                self.assertTrue(
+                    (root / f"raw/thunderstore/listings/{ordering}/page-2.html").exists()
+                )
+                self.assertFalse(
+                    (root / f"raw/thunderstore/listings/{ordering}/page-4.html").exists()
+                )
+
+    def test_thunderstore_collection_rejects_page_one_404(self):
+        def fetch(url, **kwargs):
+            raise HTTPError(url, 404, "missing", Message(), None)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(HTTPError):
+                tracker.collect_thunderstore(
+                    Path(tmp),
+                    pages=4,
+                    collected_at="2026-09-10T00:00:00Z",
+                    fetch=fetch,
+                    pause=lambda: None,
+                )
+
+    def test_thunderstore_collection_rejects_unrelated_permanent_http_error(self):
+        def fetch(url, **kwargs):
+            if "page=1" in url:
+                return CARD_PAGE.encode()
+            raise HTTPError(url, 403, "forbidden", Message(), None)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(HTTPError):
+                tracker.collect_thunderstore(
+                    Path(tmp),
+                    pages=4,
+                    collected_at="2026-09-10T00:00:00Z",
+                    fetch=fetch,
+                    pause=lambda: None,
+                )
+
     def test_thunderstore_collection_uses_configured_community(self):
         calls = []
         metrics = {"downloads": 100, "rating_score": 2, "latest_version": "1.0"}
@@ -172,6 +251,9 @@ class CollectorTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            stale = root / "raw/nexus/listing-page-2.json"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("{}")
             mods = tracker.collect_nexus(
                 root,
                 "secret-runtime-key",

@@ -27,9 +27,9 @@ Validated source references:
 
 ## Scope and runtime
 
-- Thunderstore games: four pages each for `last-updated` and `most-downloaded`, normally 20 cards per page.
-- Nexus games: two `updatedAt DESC` GraphQL pages of 80 mods each.
-- Retro Rewind permits a terminal short Nexus page because its catalog is smaller; the other games require complete configured pages.
+- Thunderstore games: request up to four pages each for `last-updated` and `most-downloaded`, normally 20 cards per page. After at least one nonempty page, HTTP 404 on a later listing page is a clean terminal condition; actual per-ranking page counts and the terminal status are persisted and verified.
+- Nexus games: request up to two `updatedAt DESC` GraphQL pages of 80 mods each.
+- PEAK, R.E.P.O., and Retro Rewind permit a terminal short Nexus page; Valheim and TCG Card Shop Simulator require complete configured Nexus pages.
 - Python standard library only: no runtime package installation, database, service, scheduler, cron job, or LLM call.
 - Network requests are paced and raw captures are retained for deterministic verification.
 
@@ -79,14 +79,14 @@ python3 tracker.py collect --game valheim --sources nexus --nexus-api-key-file /
 python3 tracker.py collect --game repo --thunderstore-pages 3 --nexus-pages 1
 ```
 
-`collect` is resumable: listing evidence is atomically replaced, per-mod details are cached, and Thunderstore detail pages are fetched again only when a latest version changes. Network reads retry transient timeouts, connection failures, HTTP 408/425/429, and HTTP 5xx responses at most twice with bounded backoff; permanent HTTP errors fail immediately. JSON uses sorted keys and stable indentation. Collection timestamps are necessarily run-specific.
+`collect` is resumable: listing evidence is atomically replaced, stale pages after a terminal Thunderstore 404 or short Nexus page are removed, per-mod details are cached, and Thunderstore detail pages are fetched again only when a latest version changes. Network reads retry transient timeouts, connection failures, HTTP 408/425/429, and HTTP 5xx responses at most twice with bounded backoff. A later Thunderstore listing 404 is terminal only after a nonempty page; page-one 404s and other permanent HTTP errors fail immediately. JSON uses sorted keys and stable indentation. Collection timestamps are necessarily run-specific.
 
 ## Per-game storage
 
 Each game root contains only that game’s generated state:
 
 - `data/mods.json` — normalized source records, observations, and computed rates
-- `raw/thunderstore/listings/` — listing HTML by ranking and page, where supported
+- `raw/thunderstore/listings/` — listing HTML by ranking/page plus `manifest.json` with requested pages, actual fetched counts, and terminal status, where supported
 - `raw/thunderstore/packages/` — public package details, where supported
 - `raw/thunderstore/metrics/` — exact package metrics, where supported
 - `raw/nexus/listing-page-*.json` — exact GraphQL responses
@@ -137,6 +137,6 @@ python3 tracker.py verify --game all --output-root .
 git diff --check
 ```
 
-Strict CLI verification checks configured raw-page scope, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
+Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
 
 Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

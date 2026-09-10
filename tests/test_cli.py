@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -13,6 +14,150 @@ from tests.test_tracker import CARD_PAGE
 
 
 class CliTests(unittest.TestCase):
+    def test_dual_source_collection_overlaps_provider_work(self):
+        thunderstore_started = threading.Event()
+        nexus_started = threading.Event()
+
+        def collect_thunderstore(root, *args, **kwargs):
+            thunderstore_started.set()
+            self.assertTrue(
+                nexus_started.wait(1),
+                "Nexus collection did not overlap Thunderstore collection",
+            )
+            tracker.atomic_write_json(
+                root / "raw/thunderstore/listings/manifest.json",
+                {
+                    "requested_pages_per_sort": 4,
+                    "rankings": {
+                        ordering: {
+                            "fetched_pages": 4,
+                            "terminal_http_status": None,
+                        }
+                        for ordering in ("last-updated", "most-downloaded")
+                    },
+                },
+            )
+            return []
+
+        def collect_nexus(*args, **kwargs):
+            nexus_started.set()
+            self.assertTrue(
+                thunderstore_started.wait(1),
+                "Thunderstore collection did not overlap Nexus collection",
+            )
+            return []
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            key_file = root / "nexus-key"
+            key_file.write_text("runtime-only")
+            args = tracker.build_parser().parse_args([
+                "collect",
+                "--game",
+                "peak",
+                "--output-root",
+                str(root),
+                "--nexus-api-key-file",
+                str(key_file),
+            ])
+            with patch.object(
+                tracker, "collect_thunderstore", side_effect=collect_thunderstore
+            ), patch.object(
+                tracker, "collect_nexus", side_effect=collect_nexus
+            ), patch.object(
+                tracker, "generate_report", return_value={"cards": 0}
+            ):
+                result = tracker._run_game_collection(
+                    args, "peak", "2026-09-10T19:00:00Z"
+                )
+
+        self.assertEqual(result["fresh_records"], 0)
+
+    def test_dual_source_collection_aggregates_both_provider_failures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            key_file = root / "nexus-key"
+            key_file.write_text("runtime-only")
+            args = tracker.build_parser().parse_args([
+                "collect",
+                "--game",
+                "peak",
+                "--output-root",
+                str(root),
+                "--nexus-api-key-file",
+                str(key_file),
+            ])
+            with patch.object(
+                tracker,
+                "collect_thunderstore",
+                side_effect=RuntimeError("Thunderstore unavailable"),
+            ), patch.object(
+                tracker,
+                "collect_nexus",
+                side_effect=RuntimeError("Nexus unavailable"),
+            ):
+                with self.assertRaises(RuntimeError) as raised:
+                    tracker._run_game_collection(
+                        args, "peak", "2026-09-10T19:00:00Z"
+                    )
+
+        message = str(raised.exception)
+        self.assertIn("thunderstore: Thunderstore unavailable", message)
+        self.assertIn("nexus: Nexus unavailable", message)
+
+    def test_provider_failure_does_not_partially_merge_or_render(self):
+        def collect_thunderstore(root, *args, **kwargs):
+            tracker.atomic_write_json(
+                root / "raw/thunderstore/listings/manifest.json",
+                {
+                    "requested_pages_per_sort": 4,
+                    "rankings": {
+                        ordering: {
+                            "fetched_pages": 4,
+                            "terminal_http_status": None,
+                        }
+                        for ordering in ("last-updated", "most-downloaded")
+                    },
+                },
+            )
+            return [sample("thunderstore", "Example/SuccessfulRawResult")]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game_root = root / "games/peak"
+            key_file = root / "nexus-key"
+            key_file.write_text("runtime-only")
+            protected = {
+                game_root / "data/mods.json": b'[{"unchanged": true}]\n',
+                game_root / "snapshots/latest.json": b'{"unchanged": true}\n',
+                game_root / "report.html": b"old local report\n",
+                game_root / "report-hotlinked.html": b"old public report\n",
+            }
+            for path, payload in protected.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(payload)
+            args = tracker.build_parser().parse_args([
+                "collect",
+                "--game",
+                "peak",
+                "--output-root",
+                str(root),
+                "--nexus-api-key-file",
+                str(key_file),
+            ])
+            with patch.object(
+                tracker, "collect_thunderstore", side_effect=collect_thunderstore
+            ), patch.object(
+                tracker, "collect_nexus", side_effect=RuntimeError("Nexus unavailable")
+            ), patch.object(tracker, "generate_report") as generate_report:
+                with self.assertRaises(RuntimeError):
+                    tracker._run_game_collection(
+                        args, "peak", "2026-09-10T19:00:00Z"
+                    )
+                generate_report.assert_not_called()
+            for path, payload in protected.items():
+                self.assertEqual(path.read_bytes(), payload)
+
     def test_collect_defaults_match_required_scope(self):
         args = tracker.build_parser().parse_args(["collect"])
         self.assertIsNone(args.thunderstore_pages)

@@ -15,7 +15,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 
 - `tracker.py` — shared collector, parser, merger, rate calculator, verifier, and HTML renderer
 - `games.json` — version-controlled game/source/output/publication registry
-- `scripts/manual-pass.py` — all-game collect, verify, stage, atomic publish, push, and remote verification
+- `scripts/manual-pass.py` — sequential all-game orchestration with per-game provider concurrency, verification, staging, atomic publish, push, and remote verification
 - `tests/` — stdlib `unittest` suite and sanitized inline fixtures
 - Valheim generated state remains at the project root for compatibility.
 - Other games store generated state under `games/<game-key>/`.
@@ -28,6 +28,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Python standard library only.
 - Follow RED → GREEN → REFACTOR for behavior changes.
 - Save raw responses before parsing where practical and write canonical JSON atomically.
+- Run Nexus and Thunderstore concurrently only within the same dual-source game, preserve each provider's own pacing, aggregate both failures deterministically, and do not merge or render unless both succeed.
 - Remove stale listing pages beyond the actual fetched scope and keep Thunderstore listing-manifest counts synchronized with `snapshots/latest.json`.
 - Read the Nexus API key only at runtime from an external file; default: `~/.config/nexus-mods/api-key`.
 - Never commit credentials, cookie headers/jars, generated datasets, raw captures, or temporary files.

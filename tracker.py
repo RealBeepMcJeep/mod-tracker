@@ -10,6 +10,7 @@ import re
 import time
 import base64
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html import escape
 from html.parser import HTMLParser
@@ -1154,15 +1155,60 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
     else:
         raise ValueError(f"{game_key} does not support source {args.sources!r}")
     thunderstore_pages, nexus_pages = game_page_counts(config, args)
+    provider_jobs = {}
+    if "thunderstore" in selected_sources:
+        provider_jobs["thunderstore"] = (
+            collect_thunderstore,
+            (root, thunderstore_pages, collected_at),
+            {"community": config["thunderstore_community"]},
+        )
+    if "nexus" in selected_sources:
+        api_key = args.nexus_api_key_file.read_text(encoding="utf-8").strip()
+        cookie_header = load_cookie_header(args.nexus_cookie_file) if args.nexus_cookie_file else None
+        provider_jobs["nexus"] = (
+            collect_nexus,
+            (root, api_key, collected_at),
+            {
+                "cookie_header": cookie_header,
+                "game_domain": config["nexus_domain"],
+                "pages": nexus_pages,
+                "require_full_pages": config["require_full_nexus_pages"],
+            },
+        )
+
+    if len(provider_jobs) == 1:
+        provider_results = {
+            source: function(*positional, **keywords)
+            for source, (function, positional, keywords) in provider_jobs.items()
+        }
+    else:
+        with ThreadPoolExecutor(max_workers=len(provider_jobs)) as executor:
+            futures = {
+                source: executor.submit(function, *positional, **keywords)
+                for source, (function, positional, keywords) in provider_jobs.items()
+            }
+            provider_results = {}
+            provider_failures = []
+            for source in ("thunderstore", "nexus"):
+                if source not in futures:
+                    continue
+                try:
+                    provider_results[source] = futures[source].result()
+                except Exception as exc:
+                    detail = str(exc) or type(exc).__name__
+                    provider_failures.append(f"{source}: {detail}")
+            if provider_failures:
+                raise RuntimeError(
+                    f"provider collection failed for {game_key}: "
+                    + "; ".join(provider_failures)
+                )
+
     fresh = []
+    for source in ("thunderstore", "nexus"):
+        fresh.extend(provider_results.get(source, []))
+
     thunderstore_page_counts = {}
     if "thunderstore" in selected_sources:
-        fresh.extend(collect_thunderstore(
-            root,
-            thunderstore_pages,
-            collected_at,
-            community=config["thunderstore_community"],
-        ))
         listing_scope = _load_json(
             root / "raw/thunderstore/listings/manifest.json", None
         )
@@ -1177,20 +1223,6 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
                     f"Thunderstore collector wrote invalid page count for {ordering}"
                 )
             thunderstore_page_counts[ordering] = fetched_pages
-    if "nexus" in selected_sources:
-        api_key = args.nexus_api_key_file.read_text(encoding="utf-8").strip()
-        cookie_header = load_cookie_header(args.nexus_cookie_file) if args.nexus_cookie_file else None
-        fresh.extend(
-            collect_nexus(
-                root,
-                api_key,
-                collected_at,
-                cookie_header=cookie_header,
-                game_domain=config["nexus_domain"],
-                pages=nexus_pages,
-                require_full_pages=config["require_full_nexus_pages"],
-            )
-        )
     mods_path = root / "data/mods.json"
     mods = merge_mods(_load_json(mods_path, []), fresh, collected_at)
     if args.mappings and game_key == "valheim":

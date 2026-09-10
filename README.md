@@ -32,6 +32,7 @@ Validated source references:
 - PEAK, R.E.P.O., and Retro Rewind permit a terminal short Nexus page; Valheim and TCG Card Shop Simulator require complete configured Nexus pages.
 - Python standard library only: no runtime package installation, database, service, scheduler, cron job, or LLM call.
 - Network requests are paced and raw captures are retained for deterministic verification.
+- For a dual-source game, the Nexus and Thunderstore collectors run concurrently in two standard-library worker threads. Each provider retains its own pacing; games remain sequential, and normalized state/report writes begin only after both provider jobs succeed.
 
 ## Manual all-games pass
 
@@ -44,7 +45,7 @@ python3 scripts/manual-pass.py
 
 The wrapper:
 
-1. collects every configured game independently;
+1. collects every configured game independently, overlapping its Nexus and Thunderstore provider jobs when both are configured;
 2. generates `report.html` and `report-hotlinked.html` for each game;
 3. strictly verifies every game before publication;
 4. stages each hotlinked report in a temporary directory as `index.html`;
@@ -58,7 +59,7 @@ Use `--dry-run` to perform collection, verification, staging, and all publisher 
 python3 scripts/manual-pass.py --dry-run
 ```
 
-The wrapper attempts collection for every game and reports per-game failures as JSON. It never performs a real publication if any collection, verification, staging, or publisher preflight fails.
+The wrapper attempts collection for every game and reports per-game failures as JSON. Within a dual-source game, both provider results or errors are joined in deterministic source order; one provider failure cannot partially merge normalized data, rewrite snapshots/reports, or allow publication. It never performs a real publication if any collection, verification, staging, or publisher preflight fails.
 
 ## Individual commands
 

@@ -111,7 +111,7 @@
  <text x="470" y="275" fill="#34d399" font-size="9">NEXUS PATH</text>
  <text x="470" y="294" fill="#94a3b8" font-size="9">fetch up to 2 listing offsets</text><text x="470" y="310" fill="#94a3b8" font-size="9">terminal short page by game policy</text>
  <text x="470" y="326" fill="#94a3b8" font-size="9">cache v1 detail per new ID</text><text x="470" y="342" fill="#94a3b8" font-size="9">optionally capture authenticated page</text>
- <text x="470" y="370" fill="#fbbf24" font-size="8">games.json routing · 1-second pacing · manual run</text>
+ <text x="470" y="370" fill="#fbbf24" font-size="8">dual-source: 2 threads · independent pacing · fixed join</text>
 
  <rect x="450" y="425" width="200" height="80" rx="9" fill="#0f172a"/><rect x="450" y="425" width="200" height="80" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
  <text x="470" y="451" fill="#fff" font-size="13" font-weight="700">Raw evidence writer</text>
@@ -193,7 +193,7 @@
 </div>
 <section class="cards">
  <article class="card"><h2><span class="dot" style="background:var(--amber)"></span>Source precedence</h2><ul><li>• Thunderstore listing supplies discovery, presentation metadata, pin state, and ranking appearances.</li><li>• Thunderstore metrics API supplies exact downloads, rating, and latest version.</li><li>• Nexus GraphQL supplies ranked discovery plus most display and metric fields; v1 detail enriches/fills gaps.</li></ul></article>
- <article class="card"><h2><span class="dot" style="background:var(--violet)"></span>Persistence model</h2><ul><li>• Raw HTML/JSON is retained as source evidence.</li><li>• <code>data/mods.json</code> is the normalized canonical store with observation history.</li><li>• No database, service, scheduler, or LLM is required for routine collection/report generation.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--violet)"></span>Persistence model</h2><ul><li>• Nexus and Thunderstore overlap within a dual-source game while keeping independent pacing.</li><li>• Both providers join before normalized data, snapshots, or reports change; failures are aggregated.</li><li>• No database, service, scheduler, or LLM is required for routine collection/report generation.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--cyan)"></span>Report semantics</h2><ul><li>• The report compares each source record “apples to apples” using common normalized fields.</li><li>• Lifetime rate is computable immediately; current-version observed rate requires two tracker runs.</li><li>• Search, source filtering, and sorting happen locally in the generated HTML.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--rose)"></span>Deliberate safeguards</h2><ul><li>• Credentials and cookies remain runtime-only and outside Git.</li><li>• Cross-site matches are manual only—never inferred from names.</li><li>• All five game artifacts must verify and all publication targets must dry-run before the first live publish.</li></ul></article>
 </section>

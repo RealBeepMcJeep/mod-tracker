@@ -104,6 +104,8 @@ Writes use a same-directory temporary file followed by `os.replace`, so interrup
 
 Nexus GraphQL and v1 detail requests use the API key file supplied at runtime. The key is sent only as an HTTP header and is not logged or persisted.
 
+A live comparison on September 10, 2026 verified that the separate public website endpoint `https://api-router.nexusmods.com/graphql` returns the same ordered PEAK listing payload as authenticated v2 GraphQL: 72 records with every field selected by this tracker and no API-key header. This proves a deterministic anonymous listing source exists, but the current manual pipeline intentionally continues using the authenticated API because v1 detail enrichment still requires the key; no automatic fallback is claimed or wired.
+
 Optional Nexus detail-page HTML is Cloudflare-protected. To attempt a one-time authenticated capture for newly observed mods, provide a Netscape cookie jar or a file containing an exported `Cookie:` header:
 
 ```bash

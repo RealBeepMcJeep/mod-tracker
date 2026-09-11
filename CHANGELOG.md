@@ -2,6 +2,7 @@
 
 ## 2026-09-11
 
+- Added accessible client-side pagination to every single-file report: the complete filtered result set uses fixed 100-card pages, pinned cards count toward the limit, filter/sort changes reset to page 1, and strict verification rejects altered controls or pagination logic.
 - Completed a supervised full pass in canonical order: refreshed all five datasets, reviewed a bounded 14-pair mapping shortlist, accepted 7 mod pairs and one new author alias, regenerated 222/299/160/178/746 canonical cards, and passed strict all-game verification.
 - Moved future publication to one atomic `/mod-tracking/` tree with a landing page and per-game paths at `/mod-tracking/<game-key>/`; the root manifest requires post-deployment verification of all six URLs while leaving legacy public assets untouched.
 - Added a stdlib-only bounded mapping-candidate CLI using normalized names, token overlap, Levenshtein title/author similarity, and description similarity; it skips mapped records, reports single-source games explicitly, and never auto-applies fuzzy matches.

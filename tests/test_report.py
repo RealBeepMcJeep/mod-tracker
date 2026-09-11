@@ -614,6 +614,70 @@ class ReportTests(unittest.TestCase):
         self.assertIn("@media(max-width:520px)", page)
         self.assertIn("location.href", page)
 
+    def test_report_paginates_the_filtered_single_file_card_set_by_100(self):
+        mods = [sample("thunderstore", "Team/Pinned", True, "Pinned")]
+        mods.extend(sample("nexus", str(index), False, f"Mod {index}") for index in range(100))
+
+        page = tracker.render_report(mods, "2026-09-09T20:00:00Z")
+
+        self.assertEqual(page.count('class="mod-card'), 101)
+        self.assertIn('id="pagination"', page)
+        self.assertIn('id="previous-page"', page)
+        self.assertIn('id="next-page"', page)
+        self.assertIn('id="page-indicator"', page)
+        self.assertIn('aria-live="polite"', page)
+        self.assertIn("const pageSize=100", page)
+        self.assertIn("const totalPages=Math.ceil(matching.length/pageSize)", page)
+        self.assertIn("const pageCards=matching.slice(start,start+pageSize)", page)
+        self.assertIn("pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup)", page)
+        self.assertIn("regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup)", page)
+        self.assertIn("currentPage=1;update()", page)
+        self.assertIn("Page '+(totalPages?currentPage:0)+' of '+totalPages", page)
+
+    def test_verifier_rejects_missing_or_tampered_pagination_contract(self):
+        page = tracker.render_report(
+            [sample("nexus", str(index), False, f"Mod {index}") for index in range(101)],
+            "2026-09-09T20:00:00Z",
+        )
+        mutations = {
+            "controls": ('id="next-page"', 'id="next-page-broken"'),
+            "navigation landmark": (
+                '<nav class="pagination" id="pagination" aria-label="Report pages">',
+                '<div class="pagination" id="pagination" aria-label="Report pages">',
+            ),
+            "previous button type": (
+                '<button type="button" id="previous-page">Previous</button>',
+                '<button id="previous-page">Previous</button>',
+            ),
+            "next button element": (
+                '<button type="button" id="next-page">Next</button>',
+                '<div id="next-page">Next</div>',
+            ),
+            "page indicator live region": (
+                '<span class="page-indicator" id="page-indicator" aria-live="polite">',
+                '<span class="page-indicator" id="page-indicator" aria-live="off">',
+            ),
+            "page size": ("const pageSize=100", "const pageSize=101"),
+            "filtered slice": (
+                "matching.slice(start,start+pageSize)",
+                "matching.slice(start+1,start+pageSize)",
+            ),
+            "filter reset": ("currentPage=1;update()", "update()"),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            for field, (old, new) in mutations.items():
+                with self.subTest(field=field):
+                    self.assertIn(old, page)
+                    path.write_text(page.replace(old, new, 1))
+                    result = tracker.verify_report(path, expected_cards=101)
+                    self.assertFalse(result["ok"], field)
+                    self.assertTrue(
+                        any("pagination" in error for error in result["errors"]),
+                        result["errors"],
+                    )
+
     def test_report_category_filter_lists_unique_escaped_categories(self):
         first = sample("nexus", "1")
         first["categories"] = ["Utility", 'A&B <Tools>']
@@ -665,7 +729,7 @@ class ReportTests(unittest.TestCase):
         )
         self.assertIn("const tags=[...document.querySelectorAll('.tag[data-category]')]", page)
         self.assertIn(
-            "e.stopPropagation();category.value=tag.dataset.category;update();category.focus()",
+            "e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()",
             page,
         )
         self.assertIn("if(!e.target.closest('a,button,input,select'))", page)
@@ -710,7 +774,7 @@ class ReportTests(unittest.TestCase):
                 "true/*(!category.value||JSON.parse(c.dataset.categories).includes(category.value))*/",
             ),
             "tag handler": (
-                "e.stopPropagation();category.value=tag.dataset.category;update();category.focus()",
+                "e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()",
                 "e.stopPropagation()",
             ),
             "mobile toolbar made sticky": (

@@ -130,6 +130,15 @@ The current-version rate remains unknown until there are two observations for th
 
 Cross-site grouping is explicit and manual only. The routine manual pass does not discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
 
+For an explicit mapping review, generate a bounded advisory shortlist from saved data:
+
+```bash
+python3 scripts/mapping_candidates.py --game all --limit 20 --min-score 0.45 \
+  --output /tmp/mod-tracker-mapping-candidates.json
+```
+
+The stdlib-only tool compares Nexus records only with Thunderstore records, skips already mapped records, and ranks pairs deterministically using normalized-title Levenshtein similarity, title-token overlap, description-token overlap, and normalized-author Levenshtein similarity. Output includes component scores, reasons, URLs, and summaries capped at 500 characters so manual or LLM review consumes only the shortlist rather than complete catalogs. It never edits `mappings.json` or `author-mappings.json`; authoritative reciprocal mappings remain a manual, separately verified decision. Nexus-only games are recorded explicitly as `single-source`.
+
 Author rarity is explicit and deterministic. Each game independently sums raw lifetime downloads across every stored mod for each source-scoped identity, merges identities only through that game’s reciprocal `author-mappings.json`, and computes nearest-rank cutoffs from that game’s canonical-author pool. The configured bands are Common below the 60th percentile, Uncommon at or above the 60th, Rare at or above the 70th, Epic at or above the 80th, and Legendary at or above the 90th. Ties at a cutoff are promoted together. Author names render white, green, blue, purple, or orange with matching tier, lifetime-download total, known-mod count, and first-known-mod publication tooltip/ARIA metadata plus a concise on-page legend. Explicitly mapped source records for one canonical mod count once toward the known-mod total.
 
 Reports retain their generation timestamp and separately show `Data last updated at` using the latest parsed `updated_at` value among that game’s stored mods. They provide search, source and category dropdowns, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. Clicking a category chip selects that category in the dropdown and reapplies every filter together. The complete filter toolbar remains at the top while scrolling on desktop-width viewports; at 520px and below it returns to normal document flow so it does not consume the mobile viewport. One shared registry-driven update-filter path serves Valheim (`v1 filter`, September 8, 2026), PEAK (`v2.0 filter`, August 10, 2026), and R.E.P.O. (`v0.4 filter`, May 7, 2026); each includes mods updated exactly at or after its UTC cutoff. Games with a null filter omit the control.
@@ -146,4 +155,4 @@ git diff --check
 
 Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, source-derived category options/card metadata/buttons, category JavaScript, sticky responsive toolbar behavior, independently recomputed author reputation, exact rendered author identity/canonical/total/tier/mod-count/first-publication/accessibility metadata, parsed latest-data timestamp metadata and visible text, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
 
-Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).
+Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md); the latest bounded cross-provider decisions are recorded in [`MAPPING_REVIEW.md`](MAPPING_REVIEW.md).

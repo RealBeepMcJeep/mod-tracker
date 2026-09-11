@@ -40,6 +40,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Implement author rarity only through shared `author_tiers` registry data: sum raw lifetime downloads per source-scoped/canonical author, merge only reciprocal cross-provider aliases, calculate nearest-rank 60/70/80/90 cutoffs per game, render white/green/blue/purple/orange author metadata with known-mod count and first-publication provenance, and independently recompute it during verification.
 - Keep category filtering shared and source-derived: normalized card metadata and dropdown options must match grouped report categories, category chips must be native buttons, all filters must compose in one predicate, and the verifier must reject altered metadata or interaction code. Keep the toolbar outside the title header so desktop viewport-sticky positioning is not parent-bounded; disable sticky positioning at 520px and below so mobile uses normal document flow.
 - Routine manual passes do not discover or alter cross-site mappings.
+- Use `scripts/mapping_candidates.py` only for explicit mapping passes. Keep output bounded and deterministic, compare only Nexus↔Thunderstore pairs, expose component scores and reasons, and never let similarity output write authoritative mod or author mappings automatically.
 - Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
 - Commit only verified milestones. Push when explicitly requested by the active task.
 

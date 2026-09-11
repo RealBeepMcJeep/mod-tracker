@@ -1,1 +1,16 @@
-{}
+{
+  "nexus:ghostnarwhal": {
+    "canonical_author_id": "ghostnarwhal",
+    "matched_to": [
+      "thunderstore:ghostnarwhal"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:ghostnarwhal": {
+    "canonical_author_id": "ghostnarwhal",
+    "matched_to": [
+      "nexus:ghostnarwhal"
+    ],
+    "method": "manual same-mod shortlist review"
+  }
+}

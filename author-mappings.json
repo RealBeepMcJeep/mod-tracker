@@ -1,1 +1,212 @@
-{}
+{
+  "nexus:advize": {
+    "canonical_author_id": "advize",
+    "matched_to": [
+      "thunderstore:advize"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:asharppen": {
+    "canonical_author_id": "asharppen",
+    "matched_to": [
+      "thunderstore:asharppen"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:digitalroot": {
+    "canonical_author_id": "digitalroot",
+    "matched_to": [
+      "thunderstore:digitalroot"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:frenvius": {
+    "canonical_author_id": "frenvius",
+    "matched_to": [
+      "thunderstore:frenvius"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:ishid4": {
+    "canonical_author_id": "ishid4",
+    "matched_to": [
+      "thunderstore:ishid4"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:jere kuusela": {
+    "canonical_author_id": "jere-kuusela",
+    "matched_to": [
+      "thunderstore:jerekuusela"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:main street gaming": {
+    "canonical_author_id": "main-street-gaming",
+    "matched_to": [
+      "thunderstore:mainstreetgaming"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:malafein": {
+    "canonical_author_id": "malafein",
+    "matched_to": [
+      "thunderstore:malafein"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:mschmoecker": {
+    "canonical_author_id": "mschmoecker",
+    "matched_to": [
+      "thunderstore:mschmoecker"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:neobotics": {
+    "canonical_author_id": "neobotics",
+    "matched_to": [
+      "thunderstore:neobotics"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:shudnal": {
+    "canonical_author_id": "shudnal",
+    "matched_to": [
+      "thunderstore:shudnal"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:soloredis": {
+    "canonical_author_id": "soloredis",
+    "matched_to": [
+      "thunderstore:soloredis"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:tastychickenlegs": {
+    "canonical_author_id": "tastychickenlegs",
+    "matched_to": [
+      "thunderstore:tastychickenlegs"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:valesthor": {
+    "canonical_author_id": "valesthor",
+    "matched_to": [
+      "thunderstore:valesthor"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:yololo": {
+    "canonical_author_id": "yololo",
+    "matched_to": [
+      "thunderstore:yololo"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:advize": {
+    "canonical_author_id": "advize",
+    "matched_to": [
+      "nexus:advize"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:asharppen": {
+    "canonical_author_id": "asharppen",
+    "matched_to": [
+      "nexus:asharppen"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:digitalroot": {
+    "canonical_author_id": "digitalroot",
+    "matched_to": [
+      "nexus:digitalroot"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:frenvius": {
+    "canonical_author_id": "frenvius",
+    "matched_to": [
+      "nexus:frenvius"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:ishid4": {
+    "canonical_author_id": "ishid4",
+    "matched_to": [
+      "nexus:ishid4"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:jerekuusela": {
+    "canonical_author_id": "jere-kuusela",
+    "matched_to": [
+      "nexus:jere kuusela"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:mainstreetgaming": {
+    "canonical_author_id": "main-street-gaming",
+    "matched_to": [
+      "nexus:main street gaming"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:malafein": {
+    "canonical_author_id": "malafein",
+    "matched_to": [
+      "nexus:malafein"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:mschmoecker": {
+    "canonical_author_id": "mschmoecker",
+    "matched_to": [
+      "nexus:mschmoecker"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:neobotics": {
+    "canonical_author_id": "neobotics",
+    "matched_to": [
+      "nexus:neobotics"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:shudnal": {
+    "canonical_author_id": "shudnal",
+    "matched_to": [
+      "nexus:shudnal"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:soloredis": {
+    "canonical_author_id": "soloredis",
+    "matched_to": [
+      "nexus:soloredis"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:tastychickenlegs": {
+    "canonical_author_id": "tastychickenlegs",
+    "matched_to": [
+      "nexus:tastychickenlegs"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:valesthor": {
+    "canonical_author_id": "valesthor",
+    "matched_to": [
+      "nexus:valesthor"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:yololo": {
+    "canonical_author_id": "yololo",
+    "matched_to": [
+      "nexus:yololo"
+    ],
+    "method": "manual same-mod shortlist review"
+  }
+}

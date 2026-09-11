@@ -1,1 +1,44 @@
-{}
+{
+  "nexus:omniscye": {
+    "canonical_author_id": "omniscye",
+    "matched_to": [
+      "thunderstore:omniscye"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:xiaohaimod": {
+    "canonical_author_id": "xiaohaimod",
+    "matched_to": [
+      "thunderstore:xiaohaimod"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:ymc_mhz": {
+    "canonical_author_id": "ymc-mhz",
+    "matched_to": [
+      "thunderstore:ymc_mhz"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:omniscye": {
+    "canonical_author_id": "omniscye",
+    "matched_to": [
+      "nexus:omniscye"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:xiaohaimod": {
+    "canonical_author_id": "xiaohaimod",
+    "matched_to": [
+      "nexus:xiaohaimod"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:ymc_mhz": {
+    "canonical_author_id": "ymc-mhz",
+    "matched_to": [
+      "nexus:ymc_mhz"
+    ],
+    "method": "manual same-mod shortlist review"
+  }
+}

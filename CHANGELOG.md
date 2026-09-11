@@ -2,6 +2,8 @@
 
 ## 2026-09-11
 
+- Added a stdlib-only bounded mapping-candidate CLI using normalized names, token overlap, Levenshtein title/author similarity, and description similarity; it skips mapped records, reports single-source games explicitly, and never auto-applies fuzzy matches.
+- Reviewed 99 bounded candidates across all games, manually accepted 91 reciprocal mod pairs and 26 reciprocal author-alias pairs, rejected 8 ambiguous pairs, and recorded the complete pass in `MAPPING_REVIEW.md`; post-mapping strict report counts are PEAK 220, R.E.P.O. 299, Retro Rewind 160, TCG Card Shop Simulator 178, and Valheim 715.
 - Kept the complete filter toolbar sticky on desktop while disabling sticky positioning, height capping, and internal toolbar scrolling at 520px and below so mobile report cards regain the full viewport while scrolling.
 - Expanded author rarity to Common/Uncommon/Rare/Epic/Legendary using per-game nearest-rank 60th/70th/80th/90th-percentile cutoffs and white/green/blue/purple/orange styling.
 - Added distinct known-mod counts and first-known-mod publication timestamps to author reputation artifacts, tooltips, ARIA labels, and strict report verification; explicitly mapped cross-provider records for one canonical mod count once.

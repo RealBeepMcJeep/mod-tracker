@@ -1,0 +1,114 @@
+{
+  "nexus:111": {
+    "canonical_group_id": "badgemanager",
+    "matched_to": [
+      "thunderstore:Isotope/BadgeRemover"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:189": {
+    "canonical_group_id": "peak-quick-resume",
+    "matched_to": [
+      "thunderstore:OnlyCook/PEAK_Quick_Resume"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:210": {
+    "canonical_group_id": "peak-ranked",
+    "matched_to": [
+      "thunderstore:PeakCode/PEAK_RANKED"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:228": {
+    "canonical_group_id": "hiking-gps",
+    "matched_to": [
+      "thunderstore:abra9987/Hiking_GPS"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:37": {
+    "canonical_group_id": "peak-unlimited",
+    "matched_to": [
+      "thunderstore:glarmer/PEAK_Unlimited"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:38": {
+    "canonical_group_id": "peak-voice-volume-saver",
+    "matched_to": [
+      "thunderstore:glarmer/PEAK_Voice_Volume_Saver"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:91": {
+    "canonical_group_id": "smoreskincolors",
+    "matched_to": [
+      "thunderstore:figgies/SmoreSkinColors"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:93": {
+    "canonical_group_id": "campfirerespawn",
+    "matched_to": [
+      "thunderstore:XiaohaiMod/CampfireRespawn"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:Isotope/BadgeRemover": {
+    "canonical_group_id": "badgemanager",
+    "matched_to": [
+      "nexus:111"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:OnlyCook/PEAK_Quick_Resume": {
+    "canonical_group_id": "peak-quick-resume",
+    "matched_to": [
+      "nexus:189"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:PeakCode/PEAK_RANKED": {
+    "canonical_group_id": "peak-ranked",
+    "matched_to": [
+      "nexus:210"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:XiaohaiMod/CampfireRespawn": {
+    "canonical_group_id": "campfirerespawn",
+    "matched_to": [
+      "nexus:93"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:abra9987/Hiking_GPS": {
+    "canonical_group_id": "hiking-gps",
+    "matched_to": [
+      "nexus:228"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:figgies/SmoreSkinColors": {
+    "canonical_group_id": "smoreskincolors",
+    "matched_to": [
+      "nexus:91"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:glarmer/PEAK_Unlimited": {
+    "canonical_group_id": "peak-unlimited",
+    "matched_to": [
+      "nexus:37"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:glarmer/PEAK_Voice_Volume_Saver": {
+    "canonical_group_id": "peak-voice-volume-saver",
+    "matched_to": [
+      "nexus:38"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  }
+}

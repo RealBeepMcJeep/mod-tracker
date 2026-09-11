@@ -1,0 +1,44 @@
+{
+  "nexus:185": {
+    "canonical_group_id": "xh-damageshow-enemyhealthbar",
+    "matched_to": [
+      "thunderstore:XiaohaiMod/XH_DamageShow_EnemyHealthBar"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:245": {
+    "canonical_group_id": "empress-spawn-browser",
+    "matched_to": [
+      "thunderstore:Omniscye/Empress_Spawn_Browser"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:45": {
+    "canonical_group_id": "morehead",
+    "matched_to": [
+      "thunderstore:YMC_MHZ/MoreHead"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:Omniscye/Empress_Spawn_Browser": {
+    "canonical_group_id": "empress-spawn-browser",
+    "matched_to": [
+      "nexus:245"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:XiaohaiMod/XH_DamageShow_EnemyHealthBar": {
+    "canonical_group_id": "xh-damageshow-enemyhealthbar",
+    "matched_to": [
+      "nexus:185"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:YMC_MHZ/MoreHead": {
+    "canonical_group_id": "morehead",
+    "matched_to": [
+      "nexus:45"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  }
+}

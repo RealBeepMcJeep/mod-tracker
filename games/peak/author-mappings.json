@@ -1,1 +1,100 @@
-{}
+{
+  "nexus:abra9987": {
+    "canonical_author_id": "abra9987",
+    "matched_to": [
+      "thunderstore:abra9987"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:figgies": {
+    "canonical_author_id": "figgies",
+    "matched_to": [
+      "thunderstore:figgies"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:glarmer": {
+    "canonical_author_id": "glarmer",
+    "matched_to": [
+      "thunderstore:glarmer"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:isotope": {
+    "canonical_author_id": "isotope",
+    "matched_to": [
+      "thunderstore:isotope"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:onlycook": {
+    "canonical_author_id": "onlycook",
+    "matched_to": [
+      "thunderstore:onlycook"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:peakcode": {
+    "canonical_author_id": "peakcode",
+    "matched_to": [
+      "thunderstore:peakcode"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "nexus:xiaohai": {
+    "canonical_author_id": "xiaohai",
+    "matched_to": [
+      "thunderstore:xiaohaimod"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:abra9987": {
+    "canonical_author_id": "abra9987",
+    "matched_to": [
+      "nexus:abra9987"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:figgies": {
+    "canonical_author_id": "figgies",
+    "matched_to": [
+      "nexus:figgies"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:glarmer": {
+    "canonical_author_id": "glarmer",
+    "matched_to": [
+      "nexus:glarmer"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:isotope": {
+    "canonical_author_id": "isotope",
+    "matched_to": [
+      "nexus:isotope"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:onlycook": {
+    "canonical_author_id": "onlycook",
+    "matched_to": [
+      "nexus:onlycook"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:peakcode": {
+    "canonical_author_id": "peakcode",
+    "matched_to": [
+      "nexus:peakcode"
+    ],
+    "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:xiaohaimod": {
+    "canonical_author_id": "xiaohai",
+    "matched_to": [
+      "nexus:xiaohai"
+    ],
+    "method": "manual same-mod shortlist review"
+  }
+}

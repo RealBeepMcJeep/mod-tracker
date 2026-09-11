@@ -7,16 +7,20 @@
 !CHANGELOG.md
 !GOAL.md
 !DATA_FLOW.html
+!MAPPING_REVIEW.md
 !tracker.py
 !games.json
+!mappings.json
 !author-mappings.json
 !games/
 games/*
 !games/*/
 games/*/*
 !games/*/author-mappings.json
+!games/*/mappings.json
 !scripts/
 !scripts/manual-pass.py
+!scripts/mapping_candidates.py
 !tests/
 !tests/**
 

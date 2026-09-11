@@ -1,0 +1,58 @@
+{
+  "nexus:448": {
+    "canonical_group_id": "enhanced-workbench",
+    "matched_to": [
+      "thunderstore:GhostNarwhal/Enhanced_Workbench"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:449": {
+    "canonical_group_id": "put-it-back",
+    "matched_to": [
+      "thunderstore:GhostNarwhal/Put_It_Back"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:463": {
+    "canonical_group_id": "enhanced-play-tables",
+    "matched_to": [
+      "thunderstore:GhostNarwhal/Enhanced_Playtables"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "nexus:496": {
+    "canonical_group_id": "enhanced-prefab-loader",
+    "matched_to": [
+      "thunderstore:GhostNarwhal/Enhanced_Prefab_Loader"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:GhostNarwhal/Enhanced_Playtables": {
+    "canonical_group_id": "enhanced-play-tables",
+    "matched_to": [
+      "nexus:463"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:GhostNarwhal/Enhanced_Prefab_Loader": {
+    "canonical_group_id": "enhanced-prefab-loader",
+    "matched_to": [
+      "nexus:496"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:GhostNarwhal/Enhanced_Workbench": {
+    "canonical_group_id": "enhanced-workbench",
+    "matched_to": [
+      "nexus:448"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  },
+  "thunderstore:GhostNarwhal/Put_It_Back": {
+    "canonical_group_id": "put-it-back",
+    "matched_to": [
+      "nexus:449"
+    ],
+    "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
+  }
+}

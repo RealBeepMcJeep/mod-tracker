@@ -117,10 +117,10 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Render `Data last updated at <datetime>` from the maximum parsed mod `updated_at` instant while retaining `Generated <datetime>.`; reject tampered or lexicographically miscomputed values.
 - [x] Update the five-tier legend, colors, documentation, data-flow documentation, generated-artifact verifier, and desktop-only sticky/mobile-normal-flow toolbar contract without adding disclaimer text.
 - [x] Run all static, unit, regeneration, and strict all-game verification gates; pass an independent fail-closed pre-commit review; commit and push the reputation/provenance milestone.
-- [ ] Add a stdlib-only, RED→GREEN mapping-candidate script that scores only Nexus↔Thunderstore pairs using normalized names, token similarity, Levenshtein distance, descriptions, and author similarity.
-- [ ] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
-- [ ] Run the candidate tool for every configured game, explicitly record Nexus-only/no-candidate games, and manually inspect the bounded shortlists.
-- [ ] Add only high-confidence reciprocal cross-provider mod and author mappings; reject ambiguous candidates and validate that no same-provider or fuzzy-only identity is made authoritative.
+- [x] Add a stdlib-only, RED→GREEN mapping-candidate script that scores only Nexus↔Thunderstore pairs using normalized names, token similarity, Levenshtein distance, descriptions, and author similarity.
+- [x] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
+- [x] Run the candidate tool for every configured game, explicitly record Nexus-only/no-candidate games, and manually inspect the bounded shortlists.
+- [x] Add only high-confidence reciprocal cross-provider mod and author mappings; reject ambiguous candidates and validate that no same-provider or fuzzy-only identity is made authoritative.
 - [ ] Run all mapping and report verification gates, pass an independent fail-closed review, commit the mapping/tooling milestone, and push `mod-tracker/main`.
 - [ ] Regenerate every report, dry-run and publish all five in one batch, push `public-artifacts/main`, and verify all exact live routes plus the HTTP 404 guard.
 - [ ] Confirm every remaining checklist item is complete, then delete `GOAL.md`, commit that deletion as the final milestone, push, and verify both repositories are clean and synchronized.

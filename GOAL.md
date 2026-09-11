@@ -97,8 +97,8 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Make the search, dropdowns, and checkboxes remain visible at the top while scrolling, with responsive styling that does not obscure report content.
 - [x] Extend strict report verification to require the shared category control, card category metadata, category predicate, tag-to-filter behavior, and sticky toolbar contract.
 - [x] Update project documentation, run all static and generated-report gates, and pass an independent fail-closed pre-commit review.
-- [ ] Commit and push the verified tracker milestone; confirm local `HEAD` equals `origin/main` and the worktree is clean.
-- [ ] Regenerate and strictly verify all five reports from saved data, publish them in one preflighted batch, push `public-artifacts/main`, and verify all five live routes are HTTP 200 and byte-identical.
+- [x] Commit and push the verified tracker milestone; confirm local `HEAD` equals `origin/main` and the worktree is clean.
+- [x] Regenerate and strictly verify all five reports from saved data, publish them in one preflighted batch, push `public-artifacts/main`, and verify all five live routes are HTTP 200 and byte-identical.
 - [x] Use the existing `AI-Goes-Fast/mod-tracker` Gitea repository and verify its `main` branch is reachable before pushing this milestone.
 
 ## Definition of Done / Verification

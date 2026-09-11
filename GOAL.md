@@ -121,7 +121,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
 - [x] Run the candidate tool for every configured game, explicitly record Nexus-only/no-candidate games, and manually inspect the bounded shortlists.
 - [x] Add only high-confidence reciprocal cross-provider mod and author mappings; reject ambiguous candidates and validate that no same-provider or fuzzy-only identity is made authoritative.
-- [ ] Run all mapping and report verification gates, pass an independent fail-closed review, commit the mapping/tooling milestone, and push `mod-tracker/main`.
+- [x] Run all mapping and report verification gates, pass an independent fail-closed review, commit the mapping/tooling milestone, and push `mod-tracker/main`.
 - [ ] Regenerate every report, dry-run and publish all five in one batch, push `public-artifacts/main`, and verify all exact live routes plus the HTTP 404 guard.
 - [ ] Confirm every remaining checklist item is complete, then delete `GOAL.md`, commit that deletion as the final milestone, push, and verify both repositories are clean and synchronized.
 

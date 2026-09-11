@@ -65,28 +65,28 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Confirm `ReportVerifier` and `verify_report()` reject missing, incorrect, or tampered tier classes, source identity keys, canonical identities, raw-download totals, thresholds, and generation metadata.
 - [x] Confirm grouped cross-provider mods use the correct source-scoped primary author identity and merge author downloads only through explicit reciprocal mappings.
 - [x] Confirm HTML escaping protects author names, source identity attributes, canonical IDs, tooltip text, ARIA labels, and all mapping-derived values.
-- [ ] Finish and verify Valheim’s dynamic thresholds, exact tier assignments, persisted reputation metadata, rendered colors, legend, accessibility metadata, and report verification.
+- [x] Finish and verify Valheim’s dynamic thresholds, exact tier assignments, persisted reputation metadata, rendered colors, legend, accessibility metadata, and report verification.
 - [x] Confirm the completed implementation is shared and registry-driven without game-key branches or duplicated per-game logic.
 - [x] Add registry and integration tests proving each game computes thresholds only from its own author pool and cannot inherit another game’s thresholds, mappings, reputation artifact, or author totals.
 - [x] Add tests covering single-provider games, dual-provider games, empty author pools, one-author pools, equal download totals at percentile boundaries, missing authors, zero downloads, negative downloads, invalid or Boolean download values, and authors with multiple mods.
 - [x] Ensure each game stores its own reproducibility artifact without overwriting another game’s `data/author-reputation.json`.
 - [x] Verify Normal, Magic, Epic, and Legendary rendering independently for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
 - [x] Update `README.md`, `CHANGELOG.md`, `TODO.md`, `DATA_FLOW.html`, and relevant project documentation with the algorithm, exact percentile semantics, mapping format, per-game isolation, all-game rollout, legend, and accessibility behavior.
-- [ ] Run the complete unit suite, Python compilation, JSON validation, repository consistency checks, standard-library import audit, and generated-report verification; fix every failure using RED→GREEN TDD.
+- [x] Run the complete unit suite, Python compilation, JSON validation, repository consistency checks, standard-library import audit, and generated-report verification; fix every failure using RED→GREEN TDD.
 - [x] Dispatch the mandatory independent pre-commit review over the complete all-game diff and fail closed on any security concern, logic error, or requirement mismatch.
 - [x] Fix any review findings and rerun all gates.
 - [x] After review passes, commit with a `[verified]` message and push `mod-tracker/main`.
-- [ ] Verify local tracker HEAD equals `origin/main` and the worktree is clean.
-- [ ] Regenerate all five reports from saved collected data using `python3 tracker.py report --game all`; do not perform a fresh scrape unless separately requested.
-- [ ] Run aggregate and per-game verification and record each game’s dynamically calculated raw-download cutoffs plus exact Normal, Magic, Epic, and Legendary author counts.
-- [ ] Stage all five freshly generated `report-hotlinked.html` artifacts in `/opt/data/projects/public-artifacts` as their respective `index.html` files.
-- [ ] Build a five-entry publication batch manifest for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
-- [ ] Run the complete five-report publication batch with `--dry-run` and confirm exactly the five intended report files would change.
-- [ ] Run the live five-report publication batch only after the dry run passes.
-- [ ] Verify the public-artifacts change set contains exactly the five intended `public/reports/*/index.html` files.
-- [ ] Commit and push `public-artifacts/main`, then verify local HEAD equals `origin/main` and the worktree is clean.
-- [ ] Fetch all five public report URLs and verify each returns HTTP 200 and is byte-identical to both its freshly generated local report and committed static artifact.
-- [ ] Fetch a nonexistent report route and confirm it still returns HTTP 404.
+- [x] Verify local tracker HEAD equals `origin/main` and the worktree is clean.
+- [x] Regenerate all five reports from saved collected data using `python3 tracker.py report --game all`; do not perform a fresh scrape unless separately requested.
+- [x] Run aggregate and per-game verification and record each game’s dynamically calculated raw-download cutoffs plus exact Normal, Magic, Epic, and Legendary author counts.
+- [x] Stage all five freshly generated `report-hotlinked.html` artifacts in `/opt/data/projects/public-artifacts` as their respective `index.html` files.
+- [x] Build a five-entry publication batch manifest for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
+- [x] Run the complete five-report publication batch with `--dry-run` and confirm exactly the five intended report files would change.
+- [x] Run the live five-report publication batch only after the dry run passes.
+- [x] Verify the public-artifacts change set contains exactly the five intended `public/reports/*/index.html` files.
+- [x] Commit and push `public-artifacts/main`, then verify local HEAD equals `origin/main` and the worktree is clean.
+- [x] Fetch all five public report URLs and verify each returns HTTP 200 and is byte-identical to both its freshly generated local report and committed static artifact.
+- [x] Fetch a nonexistent report route and confirm it still returns HTTP 404.
 - [x] Update the `multi-game-mod-tracker` skill with any reusable dynamic author-tier, mapping, verification, or all-game publication lessons not already documented.
 
 ## Definition of Done / Verification

@@ -8,6 +8,7 @@
 - Rendered Normal, Magic, Epic, and Legendary author names in white, blue, purple, and orange with concise legend, tooltip, ARIA, source identity, canonical identity, and raw-total metadata.
 - Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, tiers, classes, tooltips, and ARIA labels.
 - Added fail-closed mapping validation and regression coverage for malformed, missing, duplicate, conflicting, same-provider, nonreciprocal, and unsupported mappings plus pool boundaries, ties, invalid totals, escaping, grouped cards, and all-game isolation.
+- Regenerated and strictly verified all five reports from saved data, published them in one preflighted batch, and confirmed every live route is byte-identical to its generated and committed artifact.
 
 ## 2026-09-10
 

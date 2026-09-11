@@ -2,6 +2,7 @@
 
 ## 2026-09-11
 
+- Reduced the six-hour automation scope to deterministic collection, generation, strict verification, publication, push, and live verification using existing mappings as read-only inputs; deferred future mod/author reconciliation and any persistent review queue to `TODO.md`, removed the abandoned uncommitted queue implementation, and revalidated the clean 139-test baseline plus all five saved datasets and reports.
 - Added accessible client-side pagination to every single-file report: the complete filtered result set uses fixed 100-card pages, pinned cards count toward the limit, filter/sort changes reset to page 1, and strict verification rejects altered controls or pagination logic.
 - Completed a supervised full pass in canonical order: refreshed all five datasets, reviewed a bounded 14-pair mapping shortlist, accepted 7 mod pairs and one new author alias, regenerated 222/299/160/178/746 canonical cards, and passed strict all-game verification.
 - Moved future publication to one atomic `/mod-tracking/` tree with a landing page and per-game paths at `/mod-tracking/<game-key>/`; the root manifest requires post-deployment verification of all six URLs while leaving legacy public assets untouched.

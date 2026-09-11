@@ -128,9 +128,9 @@ Every source record uses the same derived fields:
 
 The current-version rate remains unknown until there are two observations for that version.
 
-Cross-site grouping is explicit and manual only. The routine manual pass does not discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
+Cross-site grouping is explicit and manual only. Automated and scheduled passes use the current reciprocal mapping files as read-only configuration and never discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
 
-For an explicit mapping review, generate a bounded advisory shortlist from saved data:
+Future mapping reconciliation is deferred in `TODO.md`. If it is explicitly resumed as manual work, generate a bounded advisory shortlist from saved data:
 
 ```bash
 python3 scripts/mapping_candidates.py --game all --limit 20 --min-score 0.45 \

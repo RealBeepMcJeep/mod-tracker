@@ -106,7 +106,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Regenerate Valheim from saved data, strictly verify it, publish it alone, and verify its live route before starting any other game.
 - [x] Regenerate and strictly verify the other four games, publish them as one batch, and verify their four live routes before starting the manual pass.
 - [x] Run this morning's full manual collection pass for all five games and strictly verify every refreshed game without publishing partial results.
-- [ ] Regenerate all five reports from the refreshed saved data, publish them as one batch, push both repositories, and verify all five live routes are HTTP 200 and byte-identical.
+- [x] Regenerate all five reports from the refreshed saved data, publish them as one batch, push both repositories, and verify all five live routes are HTTP 200 and byte-identical.
 
 ## Definition of Done / Verification
 

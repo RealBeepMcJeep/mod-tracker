@@ -116,7 +116,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Extend author tooltip and accessible text with rarity, lifetime downloads, known mod count, and earliest known publication date, including singular/plural and unknown-date behavior.
 - [x] Render `Data last updated at <datetime>` from the maximum parsed mod `updated_at` instant while retaining `Generated <datetime>.`; reject tampered or lexicographically miscomputed values.
 - [x] Update the five-tier legend, colors, documentation, data-flow documentation, generated-artifact verifier, and desktop-only sticky/mobile-normal-flow toolbar contract without adding disclaimer text.
-- [ ] Run all static, unit, regeneration, and strict all-game verification gates; pass an independent fail-closed pre-commit review; commit and push the reputation/provenance milestone.
+- [x] Run all static, unit, regeneration, and strict all-game verification gates; pass an independent fail-closed pre-commit review; commit and push the reputation/provenance milestone.
 - [ ] Add a stdlib-only, RED→GREEN mapping-candidate script that scores only Nexus↔Thunderstore pairs using normalized names, token similarity, Levenshtein distance, descriptions, and author similarity.
 - [ ] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
 - [ ] Run the candidate tool for every configured game, explicitly record Nexus-only/no-candidate games, and manually inspect the bounded shortlists.

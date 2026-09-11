@@ -15,7 +15,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 
 - `tracker.py` — shared collector, parser, merger, rate calculator, verifier, and HTML renderer
 - `games.json` — version-controlled game/source/output/publication registry
-- `scripts/manual-pass.py` — sequential all-game orchestration with per-game provider concurrency, verification, staging, atomic publish, push, and remote verification
+- `scripts/manual-pass.py` — legacy sequential all-game data-plus-generation orchestration with per-game provider concurrency, verification, staging, atomic publish, push, and remote verification; it does not perform the manual mapping stage required by a full pass
 - `tests/` — stdlib `unittest` suite and sanitized inline fixtures
 - Valheim generated state remains at the project root for compatibility.
 - Other games store generated state under `games/<game-key>/`.
@@ -23,6 +23,15 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Every game root has an independent version-controlled `author-mappings.json` and generated `data/author-reputation.json`.
 - `TODO.md` — outstanding work only
 - `CHANGELOG.md` — completed milestones grouped by date
+
+## Run vocabulary
+
+- **Data pass** — scrape the latest configured mod listings, fetch details for new or changed mods not already covered by valid saved evidence, and persist raw captures, normalized records, observations, snapshots, and data-verification results. It does not discover mappings, generate a publication release, or publish reports.
+- **Mapping pass** — run the bounded deterministic Nexus↔Thunderstore candidate generator against saved data, manually review mod identity and author identity as separate decisions, apply only evidenced reciprocal mappings, rerun candidates until only documented rejects remain, validate, and commit accepted mapping changes. It never auto-applies fuzzy matches and is not performed by `scripts/manual-pass.py`.
+- **Generation pass** — generate every requested report from the current saved data and mappings, strictly verify the local artifacts, stage and dry-run the complete static-site publication cohort, publish it, push `public-artifacts`, and verify the deployment at its intended routes. It does not scrape provider data or discover mappings.
+- **Verification pass** — perform a read-only audit of saved data, mappings, generated reports, repository synchronization, and requested live routes. It may regenerate nothing, scrape nothing, alter no mapping, publish nothing, and commit nothing.
+- **Full pass** — run a data pass, mapping pass, generation pass, and verification pass, in that order. Stop on any failed stage and never publish partial or unverified results. Because mapping decisions require bounded manual review, a full pass is supervised and is not equivalent to invoking `scripts/manual-pass.py` alone.
+- **Dry run** — a modifier, not a run type. It must not publish, deploy, or push changes to `public-artifacts`, but it is not a no-write simulation: a data or full pass still persists newly collected evidence and normalized state, and a generation or full pass still generates and verifies local reports. Mapping changes remain manual and require explicit acceptance; dry-run mode never auto-applies them.
 
 ## Rules
 
@@ -39,7 +48,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Implement optional update-date controls only through the shared `update_filter` registry object, renderer, card metadata, JavaScript predicate, and verifier; labels and inclusive UTC cutoffs are configuration, never game-specific branches.
 - Implement author rarity only through shared `author_tiers` registry data: sum raw lifetime downloads per source-scoped/canonical author, merge only reciprocal cross-provider aliases, calculate nearest-rank 60/70/80/90 cutoffs per game, render white/green/blue/purple/orange author metadata with known-mod count and first-publication provenance, and independently recompute it during verification.
 - Keep category filtering shared and source-derived: normalized card metadata and dropdown options must match grouped report categories, category chips must be native buttons, all filters must compose in one predicate, and the verifier must reject altered metadata or interaction code. Keep the toolbar outside the title header so desktop viewport-sticky positioning is not parent-bounded; disable sticky positioning at 520px and below so mobile uses normal document flow.
-- Routine manual passes do not discover or alter cross-site mappings.
+- Data, generation, and verification passes do not discover or alter cross-site mappings; only the explicit mapping stage of a mapping or full pass may do so.
 - Use `scripts/mapping_candidates.py` only for explicit mapping passes. Keep output bounded and deterministic, compare only Nexus↔Thunderstore pairs, expose component scores and reasons, and never let similarity output write authoritative mod or author mappings automatically.
 - Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
 - Commit only verified milestones. Push when explicitly requested by the active task.

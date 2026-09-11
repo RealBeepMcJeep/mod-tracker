@@ -23,6 +23,7 @@
 - Made the complete filter toolbar sticky while scrolling on desktop, with an accessible region label; at 520px and below it returns to unrestricted normal page flow without a height cap or internal scrolling.
 - Extended strict verification to reject altered category options, per-card category metadata, tag bindings, category JavaScript, or sticky-toolbar semantics and styling.
 - Verified and pushed the completed tracker to the existing `AI-Goes-Fast/mod-tracker` repository, synchronized both project repositories, completed all 55 substantive goal checklist items, and deleted the finished `GOAL.md` in final tracker commit `db04bf223e194e5e8170694f05310679be59d5d0`.
+- Defined canonical data, mapping, generation, verification, and full passes in `AGENTS.md`; a full pass runs all four stages in order, while dry run remains a publication-suppression modifier rather than a no-write simulation.
 
 ## 2026-09-10
 

@@ -1,6 +1,6 @@
 # Dynamic Author Rarity Across All Mod Reports
 
-Complete dynamic author-rarity support for Valheim first and then all other configured games using raw lifetime downloads and per-game 60/85/97 percentile thresholds, followed by regeneration, verification, and republication of every report.
+Complete dynamic author-rarity support for Valheim first and then all other configured games using raw lifetime downloads and per-game 60/70/80/90 percentile thresholds, followed by regeneration, verification, and republication of every report.
 
 ## Current State
 
@@ -28,12 +28,12 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - Implemented source-scoped author identities.
 - Implemented raw lifetime-download aggregation.
 - Implemented explicit canonical cross-provider mappings without fuzzy matching.
-- Implemented dynamic per-game Normal, Magic, Epic, and Legendary tiers at the 60th, 85th, and 97th percentiles.
+- Implemented dynamic per-game Common, Uncommon, Rare, Epic, and Legendary tiers at the 60th, 70th, 80th, and 90th percentiles.
 - Enabled the shared author-tier policy for all five games in `games.json`.
 - Added independent empty author-mapping files for all five game roots.
 - Added percentile ordering and safe mapping-path validation.
 - Added reciprocal mapping loading and rejection of nonreciprocal or unsupported-source mappings.
-- Added accessible author-name rendering with white, blue, purple, and orange rarity classes, tooltips, ARIA labels, and subtle higher-tier glow.
+- Added accessible author-name rendering with white, green, blue, purple, and orange rarity classes, provenance-rich tooltips, ARIA labels, and subtle higher-tier glow.
 - Added a concise visible Author rarity legend.
 - Added generation and persistence of per-game `data/author-reputation.json` artifacts.
 - Wired author tiers through collection, standalone report generation, and verification paths.
@@ -70,7 +70,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Add registry and integration tests proving each game computes thresholds only from its own author pool and cannot inherit another game’s thresholds, mappings, reputation artifact, or author totals.
 - [x] Add tests covering single-provider games, dual-provider games, empty author pools, one-author pools, equal download totals at percentile boundaries, missing authors, zero downloads, negative downloads, invalid or Boolean download values, and authors with multiple mods.
 - [x] Ensure each game stores its own reproducibility artifact without overwriting another game’s `data/author-reputation.json`.
-- [x] Verify Normal, Magic, Epic, and Legendary rendering independently for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
+- [x] Verify Common, Uncommon, Rare, Epic, and Legendary rendering independently for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
 - [x] Update `README.md`, `CHANGELOG.md`, `TODO.md`, `DATA_FLOW.html`, and relevant project documentation with the algorithm, exact percentile semantics, mapping format, per-game isolation, all-game rollout, legend, and accessibility behavior.
 - [x] Run the complete unit suite, Python compilation, JSON validation, repository consistency checks, standard-library import audit, and generated-report verification; fix every failure using RED→GREEN TDD.
 - [x] Dispatch the mandatory independent pre-commit review over the complete all-game diff and fail closed on any security concern, logic error, or requirement mismatch.
@@ -78,7 +78,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] After review passes, commit with a `[verified]` message and push `mod-tracker/main`.
 - [x] Verify local tracker HEAD equals `origin/main` and the worktree is clean.
 - [x] Regenerate all five reports from saved collected data using `python3 tracker.py report --game all`; do not perform a fresh scrape unless separately requested.
-- [x] Run aggregate and per-game verification and record each game’s dynamically calculated raw-download cutoffs plus exact Normal, Magic, Epic, and Legendary author counts.
+- [x] Run aggregate and per-game verification and record each game’s dynamically calculated raw-download cutoffs plus exact Common, Uncommon, Rare, Epic, and Legendary author counts.
 - [x] Stage all five freshly generated `report-hotlinked.html` artifacts in `/opt/data/projects/public-artifacts` as their respective `index.html` files.
 - [x] Build a five-entry publication batch manifest for Valheim, PEAK, R.E.P.O., Retro Rewind, and TCG Card Shop Simulator.
 - [x] Run the complete five-report publication batch with `--dry-run` and confirm exactly the five intended report files would change.
@@ -94,7 +94,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Add RED→GREEN renderer tests for a category dropdown populated from the current report’s categories, including an all-categories option and HTML escaping.
 - [x] Add RED→GREEN interaction-contract tests proving category filtering composes with search, source, NSFW, and update-date filters.
 - [x] Make every category tag a keyboard-accessible button that selects its category in the dropdown and reapplies filtering without navigating the card.
-- [x] Make the search, dropdowns, and checkboxes remain visible at the top while scrolling, with responsive styling that does not obscure report content.
+- [x] Make the search, dropdowns, and checkboxes remain visible at the top while scrolling on desktop, while using normal page flow on mobile so the toolbar does not obscure report content.
 - [x] Extend strict report verification to require the shared category control, card category metadata, category predicate, tag-to-filter behavior, and sticky toolbar contract.
 - [x] Update project documentation, run all static and generated-report gates, and pass an independent fail-closed pre-commit review.
 - [x] Commit and push the verified tracker milestone; confirm local `HEAD` equals `origin/main` and the worktree is clean.
@@ -111,11 +111,11 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 ## Additional Criteria: Five-Tier Reputation, Provenance, and Mapping Pass
 
 - [x] Approve five author tiers with percentile cutoffs at 60/70/80/90: Common (white), Uncommon (green), Rare (blue), Epic (purple), and Legendary (orange).
-- [ ] Add RED→GREEN registry and reputation tests for the exact five-tier schema, ordered cutoffs, boundary classification, empty pools, and all five games.
-- [ ] Persist each canonical author's raw lifetime downloads, distinct known canonical-mod count, and earliest known mod publication timestamp; verify all three independently.
-- [ ] Extend author tooltip and accessible text with rarity, lifetime downloads, known mod count, and earliest known publication date, including singular/plural and unknown-date behavior.
-- [ ] Render `Data last updated at <datetime>` from the maximum parsed mod `updated_at` instant while retaining `Generated <datetime>.`; reject tampered or lexicographically miscomputed values.
-- [ ] Update the five-tier legend, colors, documentation, data-flow documentation, and generated-artifact verifier without adding disclaimer text.
+- [x] Add RED→GREEN registry and reputation tests for the exact five-tier schema, ordered cutoffs, boundary classification, empty pools, and all five games.
+- [x] Persist each canonical author's raw lifetime downloads, distinct known canonical-mod count, and earliest known mod publication timestamp; verify all three independently.
+- [x] Extend author tooltip and accessible text with rarity, lifetime downloads, known mod count, and earliest known publication date, including singular/plural and unknown-date behavior.
+- [x] Render `Data last updated at <datetime>` from the maximum parsed mod `updated_at` instant while retaining `Generated <datetime>.`; reject tampered or lexicographically miscomputed values.
+- [x] Update the five-tier legend, colors, documentation, data-flow documentation, generated-artifact verifier, and desktop-only sticky/mobile-normal-flow toolbar contract without adding disclaimer text.
 - [ ] Run all static, unit, regeneration, and strict all-game verification gates; pass an independent fail-closed pre-commit review; commit and push the reputation/provenance milestone.
 - [ ] Add a stdlib-only, RED→GREEN mapping-candidate script that scores only Nexus↔Thunderstore pairs using normalized names, token similarity, Levenshtein distance, descriptions, and author similarity.
 - [ ] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
@@ -160,9 +160,10 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 
   ```json
   {
-    "magic": 60,
-    "epic": 85,
-    "legendary": 97
+    "uncommon": 60,
+    "rare": 70,
+    "epic": 80,
+    "legendary": 90
   }
   ```
 
@@ -206,7 +207,7 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
   - Final tier assignments
 
 - Confirm each game’s thresholds are calculated only from that game’s author pool and differ naturally when download distributions differ; no absolute raw-download threshold may be hardcoded.
-- Confirm all reports contain applicable `author-tier-normal`, `author-tier-magic`, `author-tier-epic`, and `author-tier-legendary` classes using white, blue, purple, and orange styling, plus accessible tooltip and ARIA metadata and the concise rarity legend.
+- Confirm all reports contain applicable `author-tier-common`, `author-tier-uncommon`, `author-tier-rare`, `author-tier-epic`, and `author-tier-legendary` classes using white, green, blue, purple, and orange styling, plus accessible provenance-rich tooltip and ARIA metadata and the concise rarity legend.
 - Confirm explicit cross-provider mappings combine totals only within the configured game, while unmapped same-looking Nexus and Thunderstore names remain separate.
 - Run `git diff --check` and the repository’s standard-library import audit; confirm both pass.
 - Confirm the independent pre-commit review returns `passed: true` with no security concerns, logic errors, or requirement mismatches.

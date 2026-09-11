@@ -2,11 +2,15 @@
 
 ## 2026-09-11
 
-- Added shared, registry-driven author rarity for all five games using each game’s own canonical-author pool and dynamic nearest-rank 60th/85th/97th-percentile cutoffs.
+- Kept the complete filter toolbar sticky on desktop while disabling sticky positioning, height capping, and internal toolbar scrolling at 520px and below so mobile report cards regain the full viewport while scrolling.
+- Expanded author rarity to Common/Uncommon/Rare/Epic/Legendary using per-game nearest-rank 60th/70th/80th/90th-percentile cutoffs and white/green/blue/purple/orange styling.
+- Added distinct known-mod counts and first-known-mod publication timestamps to author reputation artifacts, tooltips, ARIA labels, and strict report verification; explicitly mapped cross-provider records for one canonical mod count once.
+- Added a separate `Data last updated at` report timestamp derived from the maximum parsed mod `updated_at`, with canonical metadata and fail-closed verification independent of the generation time.
+- Added shared, registry-driven author rarity for all five games using each game’s own canonical-author pool and dynamic nearest-rank percentile cutoffs.
 - Summed only raw lifetime downloads across an author’s stored mods; source identities remain separate unless joined by an explicit reciprocal Nexus/Thunderstore mapping.
-- Added independent version-controlled `author-mappings.json` files and isolated `data/author-reputation.json` artifacts containing generation time, percentiles, raw cutoffs, canonical totals, and tiers.
-- Rendered Normal, Magic, Epic, and Legendary author names in white, blue, purple, and orange with concise legend, tooltip, ARIA, source identity, canonical identity, and raw-total metadata.
-- Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, tiers, classes, tooltips, and ARIA labels.
+- Added independent version-controlled `author-mappings.json` files and isolated `data/author-reputation.json` artifacts containing generation time, percentiles, raw cutoffs, canonical totals, known-mod counts, first-publication timestamps, and tiers.
+- Rendered author names using the configured five-tier colors with concise legend, tooltip, ARIA, source identity, canonical identity, raw-total, known-mod-count, and first-publication metadata.
+- Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, provenance, tiers, classes, tooltips, ARIA labels, and report freshness metadata.
 - Added fail-closed mapping validation and regression coverage for malformed, missing, duplicate, conflicting, same-provider, nonreciprocal, and unsupported mappings plus pool boundaries, ties, invalid totals, escaping, grouped cards, and all-game isolation.
 - Regenerated and strictly verified all five reports from saved data, published them in one preflighted batch, and confirmed every live route is byte-identical to its generated and committed artifact.
 - Added a report-wide category dropdown derived from current card categories; category chips are native buttons that select the dropdown and compose with search, source, NSFW, and update-date filters.

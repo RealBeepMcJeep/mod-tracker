@@ -95,14 +95,19 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
                 not isinstance(author_tiers, dict)
                 or set(author_tiers) != {"percentiles", "mappings_file"}
                 or not isinstance(author_tiers["percentiles"], dict)
-                or set(author_tiers["percentiles"]) != {"magic", "epic", "legendary"}
+                or set(author_tiers["percentiles"]) != {
+                    "uncommon", "rare", "epic", "legendary"
+                }
             ):
                 raise ValueError(f"{key} has invalid author_tiers")
             percentiles = author_tiers["percentiles"]
-            values = [percentiles[tier] for tier in ("magic", "epic", "legendary")]
+            values = [
+                percentiles[tier]
+                for tier in ("uncommon", "rare", "epic", "legendary")
+            ]
             if (
                 any(not isinstance(value, int) or isinstance(value, bool) for value in values)
-                or not 0 < values[0] < values[1] < values[2] < 100
+                or not 0 < values[0] < values[1] < values[2] < values[3] < 100
             ):
                 raise ValueError(f"{key} has invalid author_tiers percentiles")
             mappings_file = author_tiers["mappings_file"]
@@ -853,6 +858,8 @@ def build_author_reputation(
         return None
     canonical_by_identity = {}
     totals = {}
+    mod_keys = {}
+    first_published = {}
     for mod in mods:
         identity = author_identity_key(mod)
         if not identity:
@@ -874,6 +881,17 @@ def build_author_reputation(
         else:
             downloads = max(0, raw_downloads)
         totals[canonical] = totals.get(canonical, 0) + downloads
+        mod_key = (
+            f"group:{mod['canonical_group_id']}"
+            if mod.get("canonical_group_id")
+            else f"record:{mod.get('key', '')}"
+        )
+        mod_keys.setdefault(canonical, set()).add(mod_key)
+        created_at = mod.get("created_at")
+        if created_at:
+            created = parse_datetime(str(created_at))
+            if canonical not in first_published or created < first_published[canonical]:
+                first_published[canonical] = created
     values = sorted(totals.values())
     percentiles = config["percentiles"]
     cutoffs = {
@@ -886,9 +904,11 @@ def build_author_reputation(
             return "legendary"
         if downloads >= cutoffs["epic"]:
             return "epic"
-        if downloads >= cutoffs["magic"]:
-            return "magic"
-        return "normal"
+        if downloads >= cutoffs["rare"]:
+            return "rare"
+        if downloads >= cutoffs["uncommon"]:
+            return "uncommon"
+        return "common"
 
     return {
         "percentiles": dict(percentiles),
@@ -897,6 +917,12 @@ def build_author_reputation(
             identity: {
                 "canonical_author_id": canonical,
                 "downloads": totals[canonical],
+                "mod_count": len(mod_keys[canonical]),
+                "first_mod_published_at": (
+                    first_published[canonical].isoformat().replace("+00:00", "Z")
+                    if canonical in first_published
+                    else None
+                ),
                 "tier": tier_for(totals[canonical]),
             }
             for identity, canonical in canonical_by_identity.items()
@@ -1006,18 +1032,36 @@ def render_author_name(mod: dict, author_reputation: dict | None) -> str:
         return escape(author)
     tier = profile["tier"]
     downloads = int(profile["downloads"])
+    mod_count = int(profile["mod_count"])
+    first_published = profile.get("first_mod_published_at")
+    if first_published:
+        first_date = parse_datetime(str(first_published))
+        first_label = f"{first_date.strftime('%b')} {first_date.day}, {first_date.year}"
+        first_evidence = f"first known mod published {first_label}"
+    else:
+        first_evidence = "first known mod publication unknown"
+    mod_label = f"{mod_count} known mod{'s' if mod_count != 1 else ''}"
     canonical = str(profile["canonical_author_id"])
-    evidence = f"{tier.title()} author · {downloads:,} lifetime downloads"
-    aria = f"{author}, {tier.title()} author, {downloads:,} lifetime downloads"
+    evidence = (
+        f"{tier.title()} author · {downloads:,} lifetime downloads · "
+        f"{mod_label} · {first_evidence}"
+    )
+    aria = (
+        f"{author}, {tier.title()} author, {downloads:,} lifetime downloads, "
+        f"{mod_label}, {first_evidence}"
+    )
     return (
         '<span class="author author-tier-%s" data-author-tier="%s" '
-        'data-author-downloads="%d" data-author-key="%s" '
+        'data-author-downloads="%d" data-author-mod-count="%d" '
+        'data-author-first-published="%s" data-author-key="%s" '
         'data-author-canonical="%s" title="%s" '
         'aria-label="%s">%s</span>'
         % (
             tier,
             tier,
             downloads,
+            mod_count,
+            escape(str(first_published or ""), quote=True),
             escape(identity, quote=True),
             escape(canonical, quote=True),
             escape(evidence, quote=True),
@@ -1033,7 +1077,7 @@ def render_author_legend(author_reputation: dict | None) -> str:
         return ""
     items = "".join(
         f'<span class="author-tier-{tier}">{tier.title()}</span>'
-        for tier in ("normal", "magic", "epic", "legendary")
+        for tier in ("common", "uncommon", "rare", "epic", "legendary")
     )
     return (
         '<div class="author-legend" aria-label="Author rarity legend">'
@@ -1042,7 +1086,7 @@ def render_author_legend(author_reputation: dict | None) -> str:
 
 
 REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();"
-REPORT_STYLESHEET_SHA256 = "b75b3a9ad44f9af5181015887705666b72c57595b4ea5844176cfa92bb574a76"
+REPORT_STYLESHEET_SHA256 = "8c7f3614acdf25115d2e6775ba6c169091b84ca505feb4e7b7769d1804736089"
 
 
 def render_report(
@@ -1062,6 +1106,22 @@ def render_report(
         f"{arizona_now.strftime('%b')} {arizona_now.day}, {arizona_now.year} at "
         f"{arizona_now.strftime('%I:%M %p').lstrip('0')} {arizona_now.tzname()}"
     )
+    latest_update = max(
+        (parse_datetime(str(mod["updated_at"])) for mod in mods if mod.get("updated_at")),
+        default=None,
+    )
+    if latest_update is not None:
+        latest_arizona = latest_update.astimezone(ZoneInfo("America/Phoenix"))
+        latest_label = (
+            f"{latest_arizona.strftime('%b')} {latest_arizona.day}, "
+            f"{latest_arizona.year} at "
+            f"{latest_arizona.strftime('%I:%M %p').lstrip('0')} "
+            f"{latest_arizona.tzname()}"
+        )
+        latest_iso = latest_update.isoformat().replace("+00:00", "Z")
+    else:
+        latest_label = "unknown"
+        latest_iso = ""
     categories = {}
     for mod in mods:
         for category in mod.get("categories", []):
@@ -1118,7 +1178,7 @@ def render_report(
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
-:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-normal:#f2f4f7;--author-magic:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-normal{color:var(--author-normal)}.author-tier-magic{color:var(--author-magic);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{padding:10px 14px;max-height:50vh;overflow-y:auto;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
+:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-common:#f2f4f7;--author-uncommon:#4ade80;--author-rare:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-common{color:var(--author-common)}.author-tier-uncommon{color:var(--author-uncommon);text-shadow:0 0 7px rgba(74,222,128,.28)}.author-tier-rare{color:var(--author-rare);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{position:static;padding:10px 14px;max-height:none;overflow:visible;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
 </style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
@@ -1143,9 +1203,16 @@ def render_report(
     page = page.replace("{CATEGORY_OPTIONS}", category_options)
     page = page.replace("{AUTHOR_LEGEND}", render_author_legend(author_reputation))
     page = page.replace(
+        f"<p>Generated {generated_label}.</p>",
+        f"<p>Generated {generated_label}.</p>"
+        f"<p>Data last updated at {latest_label}.</p>",
+        1,
+    )
+    page = page.replace(
         "<head>",
         '<head><meta name="report-generated-at" content="%s">'
-        % escape(generated_at, quote=True),
+        '<meta name="report-data-last-updated-at" content="%s">'
+        % (escape(generated_at, quote=True), escape(latest_iso, quote=True)),
         1,
     )
     return page
@@ -1163,6 +1230,8 @@ class ReportVerifier(HTMLParser):
         self.card_author_metadata = []
         self._current_card_authors = None
         self.report_generated_at = None
+        self.report_data_last_updated_at = None
+        self.report_data_last_updated_count = 0
         self.category_controls = 0
         self.category_options = []
         self.card_category_metadata = []
@@ -1234,6 +1303,9 @@ class ReportVerifier(HTMLParser):
                 self._current_card_category_buttons.append(attrs.get("data-category"))
         if tag == "meta" and attrs.get("name") == "report-generated-at":
             self.report_generated_at = attrs.get("content")
+        if tag == "meta" and attrs.get("name") == "report-data-last-updated-at":
+            self.report_data_last_updated_at = attrs.get("content")
+            self.report_data_last_updated_count += 1
 
     def handle_endtag(self, tag):
         if tag == "article":
@@ -1283,6 +1355,36 @@ def verify_report(
         errors.append("missing report controls or fixed groups")
     if parser.missing_sort:
         errors.append(f"{parser.missing_sort} cards lack sort/navigation attributes")
+    try:
+        latest_update = max(
+            (
+                parse_datetime(updated_at)
+                for updated_at, _ in parser.card_update_metadata
+                if updated_at
+            ),
+            default=None,
+        )
+    except ValueError:
+        latest_update = None
+        errors.append("data last updated timestamp is missing or invalid")
+    if latest_update is not None:
+        expected_latest_iso = latest_update.isoformat().replace("+00:00", "Z")
+        latest_arizona = latest_update.astimezone(ZoneInfo("America/Phoenix"))
+        expected_latest_label = (
+            f"{latest_arizona.strftime('%b')} {latest_arizona.day}, "
+            f"{latest_arizona.year} at "
+            f"{latest_arizona.strftime('%I:%M %p').lstrip('0')} "
+            f"{latest_arizona.tzname()}"
+        )
+    else:
+        expected_latest_iso = ""
+        expected_latest_label = "unknown"
+    if (
+        parser.report_data_last_updated_count != 1
+        or parser.report_data_last_updated_at != expected_latest_iso
+        or text.count(f"Data last updated at {expected_latest_label}.") != 1
+    ):
+        errors.append("data last updated timestamp is missing or invalid")
     if parser.category_controls != 1:
         errors.append("category filter control is missing or duplicated")
     if expected_card_categories is not None:
@@ -1302,7 +1404,7 @@ def verify_report(
         != REPORT_STYLESHEET_SHA256
         or
         ".toolbar{position:sticky;top:0;z-index:20" not in style_text
-        or "max-height:50vh;overflow-y:auto" not in style_text
+        or "@media(max-width:520px){header,main{padding:18px 14px}.toolbar{position:static;padding:10px 14px;max-height:none;overflow:visible" not in style_text
     ):
         errors.append("sticky toolbar contract is missing or invalid")
     category_javascript = (
@@ -1339,6 +1441,8 @@ def verify_report(
             profile = expected_authors.get(identity)
             tier = attrs.get("data-author-tier")
             downloads = attrs.get("data-author-downloads")
+            mod_count = attrs.get("data-author-mod-count")
+            first_published = attrs.get("data-author-first-published")
             classes = set((attrs.get("class") or "").split())
             if profile is None:
                 author_errors += 1
@@ -1346,15 +1450,32 @@ def verify_report(
             if (
                 tier != profile.get("tier")
                 or downloads != str(profile.get("downloads"))
+                or mod_count != str(profile.get("mod_count"))
+                or first_published != str(profile.get("first_mod_published_at") or "")
                 or attrs.get("data-author-canonical")
                 != str(profile.get("canonical_author_id"))
                 or "author" not in classes
                 or f"author-tier-{profile.get('tier')}" not in classes
             ):
                 author_errors += 1
+            expected_mod_count = int(profile.get("mod_count", -1))
+            mod_label = (
+                f"{expected_mod_count} known mod"
+                f"{'s' if expected_mod_count != 1 else ''}"
+            )
+            expected_first = profile.get("first_mod_published_at")
+            if expected_first:
+                first_date = parse_datetime(str(expected_first))
+                first_label = (
+                    f"{first_date.strftime('%b')} {first_date.day}, {first_date.year}"
+                )
+                first_evidence = f"first known mod published {first_label}"
+            else:
+                first_evidence = "first known mod publication unknown"
             evidence = (
                 f"{str(profile.get('tier', '')).title()} author · "
-                f"{int(profile.get('downloads', -1)):,} lifetime downloads"
+                f"{int(profile.get('downloads', -1)):,} lifetime downloads · "
+                f"{mod_label} · {first_evidence}"
             )
             if evidence not in attrs.get("title", ""):
                 author_errors += 1
@@ -1362,6 +1483,8 @@ def verify_report(
             if (
                 f"{str(profile.get('tier', '')).title()} author" not in aria_label
                 or f"{int(profile.get('downloads', -1)):,}" not in aria_label
+                or mod_label not in aria_label
+                or first_evidence not in aria_label
             ):
                 author_errors += 1
         if author_errors:

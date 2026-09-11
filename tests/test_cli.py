@@ -199,7 +199,12 @@ class CliTests(unittest.TestCase):
 
     def test_registry_enables_dynamic_author_tiers_for_all_games(self):
         expected = {
-            "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+            "percentiles": {
+                "uncommon": 60,
+                "rare": 70,
+                "epic": 80,
+                "legendary": 90,
+            },
             "mappings_file": "author-mappings.json",
         }
         for game in tracker.GAME_CONFIGS:
@@ -217,7 +222,7 @@ class CliTests(unittest.TestCase):
         for call in generate.call_args_list:
             self.assertEqual(
                 call.kwargs["author_tiers"],
-                {"percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                {"percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                  "mappings_file": "author-mappings.json"},
             )
 
@@ -232,16 +237,17 @@ class CliTests(unittest.TestCase):
         for call in verify.call_args_list:
             self.assertEqual(
                 call.kwargs["author_tiers"],
-                {"percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                {"percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                  "mappings_file": "author-mappings.json"},
             )
 
     def test_registry_rejects_misordered_author_tier_percentiles(self):
         registry = json.loads(json.dumps(tracker.GAME_CONFIGS))
         registry["valheim"]["author_tiers"]["percentiles"] = {
-            "magic": 85,
-            "epic": 60,
-            "legendary": 97,
+            "uncommon": 60,
+            "rare": 70,
+            "epic": 80,
+            "legendary": 75,
         }
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "games.json"
@@ -463,7 +469,7 @@ class CliTests(unittest.TestCase):
                 root,
                 "2026-09-11T02:00:00Z",
                 author_tiers={
-                    "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                    "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                     "mappings_file": "author-mappings.json",
                 },
             )
@@ -473,7 +479,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(
             reputation["cutoffs"],
-            {"magic": 60, "epic": 85, "legendary": 97},
+            {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
         )
         self.assertEqual(reputation["generated_at"], "2026-09-11T02:00:00Z")
         self.assertIn('class="author author-tier-legendary"', page)
@@ -485,7 +491,7 @@ class CliTests(unittest.TestCase):
             tracker.atomic_write_json(root / "data/mods.json", [mod])
             tracker.atomic_write_json(root / "author-mappings.json", {})
             config = {
-                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                 "mappings_file": "author-mappings.json",
             }
             tracker.generate_report(
@@ -518,7 +524,7 @@ class CliTests(unittest.TestCase):
             tracker.atomic_write_json(root / "data/mods.json", [first, second])
             tracker.atomic_write_json(root / "author-mappings.json", {})
             config = {
-                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                 "mappings_file": "author-mappings.json",
             }
             tracker.generate_report(
@@ -553,7 +559,7 @@ class CliTests(unittest.TestCase):
             tracker.atomic_write_json(root / "data/mods.json", [sample("nexus", "1")])
             tracker.atomic_write_json(root / "author-mappings.json", {})
             config = {
-                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                 "mappings_file": "author-mappings.json",
             }
             tracker.generate_report(
@@ -565,7 +571,7 @@ class CliTests(unittest.TestCase):
             reputation_path = root / "data/author-reputation.json"
             original = json.loads(reputation_path.read_text())
             mutations = {
-                "threshold": lambda data: data["cutoffs"].__setitem__("magic", 999),
+                "threshold": lambda data: data["cutoffs"].__setitem__("uncommon", 999),
                 "generated_at": lambda data: data.__setitem__("generated_at", "not-a-time"),
             }
             for field, mutate in mutations.items():
@@ -594,7 +600,7 @@ class CliTests(unittest.TestCase):
                 {"collected_at": "2026-09-10T02:00:00Z"},
             )
             config = {
-                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                 "mappings_file": "author-mappings.json",
             }
             tracker.generate_report(
@@ -625,7 +631,7 @@ class CliTests(unittest.TestCase):
                 {"collected_at": "2026-09-11T02:00:00Z"},
             )
             config = {
-                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
                 "mappings_file": "author-mappings.json",
             }
             tracker.generate_report(
@@ -669,9 +675,10 @@ class CliTests(unittest.TestCase):
                 tracker.atomic_write_json(root / "data/mods.json", mods)
                 tracker.atomic_write_json(root / "author-mappings.json", {})
                 expected_cutoffs[game] = {
-                    "magic": base + 60,
-                    "epic": base + 85,
-                    "legendary": base + 97,
+                    "uncommon": base + 60,
+                    "rare": base + 70,
+                    "epic": base + 80,
+                    "legendary": base + 90,
                 }
 
             args = tracker.build_parser().parse_args(
@@ -695,7 +702,7 @@ class CliTests(unittest.TestCase):
                         for identity in reputation["authors"]
                     )
                 )
-                for tier in ("normal", "magic", "epic", "legendary"):
+                for tier in ("common", "uncommon", "rare", "epic", "legendary"):
                     self.assertIn(f"author-tier-{tier}", page)
 
     def test_collection_snapshot_records_actual_thunderstore_page_counts(self):

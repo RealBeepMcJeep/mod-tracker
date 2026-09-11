@@ -3,9 +3,10 @@
     "author_tiers": {
       "mappings_file": "author-mappings.json",
       "percentiles": {
-        "epic": 85,
-        "legendary": 97,
-        "magic": 60
+        "epic": 80,
+        "legendary": 90,
+        "rare": 70,
+        "uncommon": 60
       }
     },
     "display_name": "PEAK",
@@ -32,9 +33,10 @@
     "author_tiers": {
       "mappings_file": "author-mappings.json",
       "percentiles": {
-        "epic": 85,
-        "legendary": 97,
-        "magic": 60
+        "epic": 80,
+        "legendary": 90,
+        "rare": 70,
+        "uncommon": 60
       }
     },
     "display_name": "R.E.P.O.",
@@ -61,9 +63,10 @@
     "author_tiers": {
       "mappings_file": "author-mappings.json",
       "percentiles": {
-        "epic": 85,
-        "legendary": 97,
-        "magic": 60
+        "epic": 80,
+        "legendary": 90,
+        "rare": 70,
+        "uncommon": 60
       }
     },
     "display_name": "Retro Rewind - Video Store Simulator",
@@ -84,9 +87,10 @@
     "author_tiers": {
       "mappings_file": "author-mappings.json",
       "percentiles": {
-        "epic": 85,
-        "legendary": 97,
-        "magic": 60
+        "epic": 80,
+        "legendary": 90,
+        "rare": 70,
+        "uncommon": 60
       }
     },
     "display_name": "TCG Card Shop Simulator",
@@ -110,9 +114,10 @@
     "author_tiers": {
       "mappings_file": "author-mappings.json",
       "percentiles": {
-        "epic": 85,
-        "legendary": 97,
-        "magic": 60
+        "epic": 80,
+        "legendary": 90,
+        "rare": 70,
+        "uncommon": 60
       }
     },
     "display_name": "Valheim",

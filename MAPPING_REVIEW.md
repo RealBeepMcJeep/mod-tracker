@@ -15,15 +15,17 @@ Only bounded summaries of at most 500 characters were included in the review art
 
 ## Results
 
-- PEAK: 72 Nexus and 156 Thunderstore records; 10 candidates reviewed; 8 mod pairs accepted; 2 rejected; 7 author-alias pairs added.
-- R.E.P.O.: 143 Nexus and 159 Thunderstore records; 4 candidates reviewed; 3 mod pairs accepted; 1 rejected; 3 author-alias pairs added.
+- PEAK: 72 Nexus and 158 Thunderstore records; 10 unique candidates reviewed; 8 mod pairs accepted; 2 rejected; 7 author-alias pairs added.
+- R.E.P.O.: 143 Nexus and 160 Thunderstore records; 4 unique candidates reviewed; 4 mod pairs accepted; none rejected; 3 author-alias pairs added.
 - Retro Rewind: 160 Nexus and 0 Thunderstore records; explicitly recorded as `single-source`; no candidates or mappings.
-- TCG Card Shop Simulator: 160 Nexus and 22 Thunderstore records; 6 candidates reviewed; 4 mod pairs accepted; 2 rejected; 1 author-alias pair added.
-- Valheim: 275 Nexus and 557 Thunderstore records; 79 candidates reviewed across four bounded tranches; 76 new mod pairs accepted; 3 rejected; 16 author-alias pairs added. Together with 41 existing pairs, Valheim now has 117 reciprocal mod pairs.
+- TCG Card Shop Simulator: 160 Nexus and 22 Thunderstore records; 6 unique candidates reviewed; 4 mod pairs accepted; 2 rejected; 1 author-alias pair added.
+- Valheim: 284 Nexus and 585 Thunderstore records; 85 unique candidates reviewed across five bounded tranches; 82 new mod pairs accepted; 3 rejected; 17 author-alias pairs added. Together with 41 existing pairs, Valheim now has 123 reciprocal mod pairs.
 
-Total: 99 candidate pairs reviewed, 91 accepted, 8 rejected, and 27 reciprocal author-alias pairs added.
+Total: 105 unique candidate pairs reviewed, 98 accepted, 7 rejected, and 28 reciprocal author-alias pairs added.
 
 Follow-up report inspection added the exact-handle reciprocal alias `nexus:azumatt` ↔ `thunderstore:azumatt`. The earlier bounded candidate pass excluded the already-mapped BepInExPack mod pair, so it did not surface this author-only mapping; combining the two source-scoped profiles correctly makes Azumatt Legendary.
+
+The 2026-09-11 full pass reviewed a bounded 14-pair refreshed shortlist. It accepted R.E.P.O.'s explicitly attributed `MoneyValueTracker` port plus six Valheim pairs (`StartSpawnOnDeath`, `Spyglass`, `StumpsRegrow`, `CartographySkill`, `XPortal_Patched`, and `PreciseRotation`). The three Advize author decisions reused an existing alias; concrete linked GitHub and Ko-fi evidence added only the new reciprocal `nexus:jd` ↔ `thunderstore:disregardthatisuck` alias. Unsupported uploader identities remained separate.
 
 ## Rejected pairs
 
@@ -31,7 +33,6 @@ These remain deliberately unmapped after fail-closed review:
 
 - PEAK `nexus:13` ↔ `thunderstore:Roose/Piggyback`: title and summary match, but authors conflict without provenance linking the uploaders.
 - PEAK `nexus:95` ↔ `thunderstore:quackandcheese/ItemSpawner`: generic item-spawner similarity and conflicting authors are insufficient.
-- R.E.P.O. `nexus:39` ↔ `thunderstore:Tansinator/Map_Value_Tracker`: similar functionality, but materially different titles and conflicting authors lack identity evidence.
 - TCG Card Shop Simulator `nexus:1193` ↔ `thunderstore:TCGPatch/TCGShopExpansionMod_0703_Patch`: similar patch purpose but conflicting authors and insufficient provenance.
 - TCG Card Shop Simulator `nexus:1116` ↔ `thunderstore:GhostNarwhal/Enhanced_Binder_Sort`: different authors and different binder-feature scope.
 - Valheim `nexus:1356` ↔ `thunderstore:Azumatt/AzuExtendedPlayerInventory`: generic inventory-expansion similarity does not establish the same implementation.
@@ -40,12 +41,12 @@ These remain deliberately unmapped after fail-closed review:
 
 ## Exhaustion and verification
 
-After accepted pairs were applied, the scorer was rerun. The final all-game shortlist contained exactly the eight rejected pairs above and no unseen pair at or above `0.45`. Retro Rewind remained explicitly `single-source`.
+After accepted pairs were applied, the scorer was rerun. The final all-game shortlist contained exactly the seven rejected pairs above and no unseen pair at or above `0.45`. R.E.P.O. had no remaining candidates, and Retro Rewind remained explicitly `single-source`.
 
-Regeneration and strict verification succeeded for all five reports after applying mappings:
+Regeneration and strict verification succeeded for all five local reports after applying the refreshed mappings. These generated release artifacts and `data/author-reputation.json` files are intentionally gitignored; the authoritative mapping inputs are the staged reciprocal JSON files.
 
-- PEAK: 220 canonical cards;
+- PEAK: 222 canonical cards;
 - R.E.P.O.: 299 canonical cards;
 - Retro Rewind: 160 canonical cards;
 - TCG Card Shop Simulator: 178 canonical cards;
-- Valheim: 715 canonical cards.
+- Valheim: 746 canonical cards.

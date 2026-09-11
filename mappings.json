@@ -232,5 +232,17 @@
   "thunderstore:shudnal/ExtraSlotsCustomSlots": {"canonical_group_id": "extra-slots-custom-slots", "matched_to": ["nexus:2911"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "thunderstore:shudnal/HipLantern": {"canonical_group_id": "hip-lantern", "matched_to": ["nexus:2748"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "thunderstore:shudnal/ProtectiveWards": {"canonical_group_id": "protective-wards", "matched_to": ["nexus:2450"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
-  "thunderstore:shudnal/Waystones": {"canonical_group_id": "waystones", "matched_to": ["nexus:2832"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"}
+  "thunderstore:shudnal/Waystones": {"canonical_group_id": "waystones", "matched_to": ["nexus:2832"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
+  "nexus:3636": {"canonical_group_id": "start-spawn-on-death", "matched_to": ["thunderstore:PattPC/StartSpawnOnDeath"], "method": "manual exact title-author and distinctive server-side behavior; author alias withheld"},
+  "thunderstore:PattPC/StartSpawnOnDeath": {"canonical_group_id": "start-spawn-on-death", "matched_to": ["nexus:3636"], "method": "manual exact title-author and distinctive server-side behavior; author alias withheld"},
+  "nexus:2620": {"canonical_group_id": "spyglass", "matched_to": ["thunderstore:Advize/Spyglass"], "method": "manual exact title-author and distinctive feature description"},
+  "thunderstore:Advize/Spyglass": {"canonical_group_id": "spyglass", "matched_to": ["nexus:2620"], "method": "manual exact title-author and distinctive feature description"},
+  "nexus:2981": {"canonical_group_id": "stumps-regrow", "matched_to": ["thunderstore:Advize/StumpsRegrow"], "method": "manual equivalent title-author and distinctive feature description"},
+  "thunderstore:Advize/StumpsRegrow": {"canonical_group_id": "stumps-regrow", "matched_to": ["nexus:2981"], "method": "manual equivalent title-author and distinctive feature description"},
+  "nexus:394": {"canonical_group_id": "cartography-skill", "matched_to": ["thunderstore:Advize/CartographySkill"], "method": "manual equivalent title-author and distinctive feature description"},
+  "thunderstore:Advize/CartographySkill": {"canonical_group_id": "cartography-skill", "matched_to": ["nexus:394"], "method": "manual equivalent title-author and distinctive feature description"},
+  "nexus:3639": {"canonical_group_id": "xportal-patched", "matched_to": ["thunderstore:TeamSmoochie/XPortal_Patched"], "method": "manual exact title and distinctive behavior with project cross-link; author alias withheld"},
+  "thunderstore:TeamSmoochie/XPortal_Patched": {"canonical_group_id": "xportal-patched", "matched_to": ["nexus:3639"], "method": "manual exact title and distinctive behavior with project cross-link; author alias withheld"},
+  "nexus:202": {"canonical_group_id": "precise-rotation", "matched_to": ["thunderstore:disregardthatisuck/PreciseRotation"], "method": "manual exact title-version and linked GitHub and Ko-fi identity"},
+  "thunderstore:disregardthatisuck/PreciseRotation": {"canonical_group_id": "precise-rotation", "matched_to": ["nexus:202"], "method": "manual exact title-version and linked GitHub and Ko-fi identity"}
 }

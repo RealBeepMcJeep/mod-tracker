@@ -222,5 +222,7 @@
       "nexus:yololo"
     ],
     "method": "manual same-mod shortlist review"
-  }
+  },
+  "nexus:jd": {"canonical_author_id": "johndowson", "matched_to": ["thunderstore:disregardthatisuck"], "method": "manual same-mod version plus linked GitHub and Ko-fi identity"},
+  "thunderstore:disregardthatisuck": {"canonical_author_id": "johndowson", "matched_to": ["nexus:jd"], "method": "manual same-mod version plus linked GitHub and Ko-fi identity"}
 }

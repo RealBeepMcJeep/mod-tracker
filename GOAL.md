@@ -108,6 +108,23 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Run this morning's full manual collection pass for all five games and strictly verify every refreshed game without publishing partial results.
 - [x] Regenerate all five reports from the refreshed saved data, publish them as one batch, push both repositories, and verify all five live routes are HTTP 200 and byte-identical.
 
+## Additional Criteria: Five-Tier Reputation, Provenance, and Mapping Pass
+
+- [x] Approve five author tiers with percentile cutoffs at 60/70/80/90: Common (white), Uncommon (green), Rare (blue), Epic (purple), and Legendary (orange).
+- [ ] Add RED→GREEN registry and reputation tests for the exact five-tier schema, ordered cutoffs, boundary classification, empty pools, and all five games.
+- [ ] Persist each canonical author's raw lifetime downloads, distinct known canonical-mod count, and earliest known mod publication timestamp; verify all three independently.
+- [ ] Extend author tooltip and accessible text with rarity, lifetime downloads, known mod count, and earliest known publication date, including singular/plural and unknown-date behavior.
+- [ ] Render `Data last updated at <datetime>` from the maximum parsed mod `updated_at` instant while retaining `Generated <datetime>.`; reject tampered or lexicographically miscomputed values.
+- [ ] Update the five-tier legend, colors, documentation, data-flow documentation, and generated-artifact verifier without adding disclaimer text.
+- [ ] Run all static, unit, regeneration, and strict all-game verification gates; pass an independent fail-closed pre-commit review; commit and push the reputation/provenance milestone.
+- [ ] Add a stdlib-only, RED→GREEN mapping-candidate script that scores only Nexus↔Thunderstore pairs using normalized names, token similarity, Levenshtein distance, descriptions, and author similarity.
+- [ ] Make the candidate script emit a bounded deterministic shortlist with component scores and reasons; never auto-apply fuzzy matches or require runtime LLM ingestion of full catalogs.
+- [ ] Run the candidate tool for every configured game, explicitly record Nexus-only/no-candidate games, and manually inspect the bounded shortlists.
+- [ ] Add only high-confidence reciprocal cross-provider mod and author mappings; reject ambiguous candidates and validate that no same-provider or fuzzy-only identity is made authoritative.
+- [ ] Run all mapping and report verification gates, pass an independent fail-closed review, commit the mapping/tooling milestone, and push `mod-tracker/main`.
+- [ ] Regenerate every report, dry-run and publish all five in one batch, push `public-artifacts/main`, and verify all exact live routes plus the HTTP 404 guard.
+- [ ] Confirm every remaining checklist item is complete, then delete `GOAL.md`, commit that deletion as the final milestone, push, and verify both repositories are clean and synchronized.
+
 ## Definition of Done / Verification
 
 - Run from `/opt/data/projects/mod-tracker`:

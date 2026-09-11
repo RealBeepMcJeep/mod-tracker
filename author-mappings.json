@@ -13,6 +13,13 @@
     ],
     "method": "manual same-mod shortlist review"
   },
+  "nexus:azumatt": {
+    "canonical_author_id": "azumatt",
+    "matched_to": [
+      "thunderstore:azumatt"
+    ],
+    "method": "manual exact-handle follow-up"
+  },
   "nexus:digitalroot": {
     "canonical_author_id": "digitalroot",
     "matched_to": [
@@ -117,6 +124,13 @@
       "nexus:asharppen"
     ],
     "method": "manual same-mod shortlist review"
+  },
+  "thunderstore:azumatt": {
+    "canonical_author_id": "azumatt",
+    "matched_to": [
+      "nexus:azumatt"
+    ],
+    "method": "manual exact-handle follow-up"
   },
   "thunderstore:digitalroot": {
     "canonical_author_id": "digitalroot",

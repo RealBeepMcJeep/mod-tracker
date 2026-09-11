@@ -19,9 +19,11 @@ Only bounded summaries of at most 500 characters were included in the review art
 - R.E.P.O.: 143 Nexus and 159 Thunderstore records; 4 candidates reviewed; 3 mod pairs accepted; 1 rejected; 3 author-alias pairs added.
 - Retro Rewind: 160 Nexus and 0 Thunderstore records; explicitly recorded as `single-source`; no candidates or mappings.
 - TCG Card Shop Simulator: 160 Nexus and 22 Thunderstore records; 6 candidates reviewed; 4 mod pairs accepted; 2 rejected; 1 author-alias pair added.
-- Valheim: 275 Nexus and 557 Thunderstore records; 79 candidates reviewed across four bounded tranches; 76 new mod pairs accepted; 3 rejected; 15 author-alias pairs added. Together with 41 existing pairs, Valheim now has 117 reciprocal mod pairs.
+- Valheim: 275 Nexus and 557 Thunderstore records; 79 candidates reviewed across four bounded tranches; 76 new mod pairs accepted; 3 rejected; 16 author-alias pairs added. Together with 41 existing pairs, Valheim now has 117 reciprocal mod pairs.
 
-Total: 99 candidate pairs reviewed, 91 accepted, 8 rejected, and 26 reciprocal author-alias pairs added.
+Total: 99 candidate pairs reviewed, 91 accepted, 8 rejected, and 27 reciprocal author-alias pairs added.
+
+Follow-up report inspection added the exact-handle reciprocal alias `nexus:azumatt` ↔ `thunderstore:azumatt`. The earlier bounded candidate pass excluded the already-mapped BepInExPack mod pair, so it did not surface this author-only mapping; combining the two source-scoped profiles correctly makes Azumatt Legendary.
 
 ## Rejected pairs
 

@@ -3,7 +3,9 @@
 ## 2026-09-11
 
 - Added a stdlib-only bounded mapping-candidate CLI using normalized names, token overlap, Levenshtein title/author similarity, and description similarity; it skips mapped records, reports single-source games explicitly, and never auto-applies fuzzy matches.
-- Reviewed 99 bounded candidates across all games, manually accepted 91 reciprocal mod pairs and 26 reciprocal author-alias pairs, rejected 8 ambiguous pairs, and recorded the complete pass in `MAPPING_REVIEW.md`; post-mapping strict report counts are PEAK 220, R.E.P.O. 299, Retro Rewind 160, TCG Card Shop Simulator 178, and Valheim 715.
+- Hardened mapping-candidate filesystem access with descriptor-relative `O_NOFOLLOW` traversal, exclusive bounded temporary creation, same-directory atomic replacement, and adversarial symlink and directory-swap tests; the complete suite finished with 134 passing tests and an independent fail-closed review.
+- Reviewed 99 bounded candidates across all games, manually accepted 91 reciprocal mod pairs and 27 reciprocal author-alias pairs, rejected 8 ambiguous pairs, and recorded the complete pass in `MAPPING_REVIEW.md`; post-mapping strict report counts are PEAK 220, R.E.P.O. 299, Retro Rewind 160, TCG Card Shop Simulator 178, and Valheim 715.
+- Added the omitted exact-handle `nexus:azumatt` ↔ `thunderstore:azumatt` author mapping after report inspection exposed split 5,487-download Nexus and 6,773,808-download Thunderstore profiles; the combined 6,779,295-download profile now receives the intended Legendary tier.
 - Kept the complete filter toolbar sticky on desktop while disabling sticky positioning, height capping, and internal toolbar scrolling at 520px and below so mobile report cards regain the full viewport while scrolling.
 - Expanded author rarity to Common/Uncommon/Rare/Epic/Legendary using per-game nearest-rank 60th/70th/80th/90th-percentile cutoffs and white/green/blue/purple/orange styling.
 - Added distinct known-mod counts and first-known-mod publication timestamps to author reputation artifacts, tooltips, ARIA labels, and strict report verification; explicitly mapped cross-provider records for one canonical mod count once.
@@ -15,9 +17,12 @@
 - Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, provenance, tiers, classes, tooltips, ARIA labels, and report freshness metadata.
 - Added fail-closed mapping validation and regression coverage for malformed, missing, duplicate, conflicting, same-provider, nonreciprocal, and unsupported mappings plus pool boundaries, ties, invalid totals, escaping, grouped cards, and all-game isolation.
 - Regenerated and strictly verified all five reports from saved data, published them in one preflighted batch, and confirmed every live route is byte-identical to its generated and committed artifact.
+- Completed the required ordered rollout: published and verified Valheim first, published and verified the other four games, ran the morning all-game manual collection pass, then regenerated and republished the complete five-game cohort.
+- Published the final mapped five-report batch in `public-artifacts` commit `91650cb57ad7167bc35692ea59c191f5705b1304` and Cloudflare Workers version `42cd439e-03fc-4e12-97ef-25447aed2c28`; all five exact routes returned HTTP 200 with byte identity and the unknown-route guard returned HTTP 404.
 - Added a report-wide category dropdown derived from current card categories; category chips are native buttons that select the dropdown and compose with search, source, NSFW, and update-date filters.
-- Made the complete filter toolbar sticky while scrolling, with an accessible region label and bounded internal scrolling on narrow screens.
+- Made the complete filter toolbar sticky while scrolling on desktop, with an accessible region label; at 520px and below it returns to unrestricted normal page flow without a height cap or internal scrolling.
 - Extended strict verification to reject altered category options, per-card category metadata, tag bindings, category JavaScript, or sticky-toolbar semantics and styling.
+- Verified and pushed the completed tracker to the existing `AI-Goes-Fast/mod-tracker` repository, synchronized both project repositories, completed all 55 substantive goal checklist items, and deleted the finished `GOAL.md` in final tracker commit `db04bf223e194e5e8170694f05310679be59d5d0`.
 
 ## 2026-09-10
 

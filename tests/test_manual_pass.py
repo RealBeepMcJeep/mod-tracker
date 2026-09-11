@@ -38,18 +38,67 @@ class ManualPassTests(unittest.TestCase):
             module.stage_report(output, stage)
             self.assertEqual((stage / "index.html").read_bytes(), b"<html>exact</html>")
 
-    def test_publish_command_uses_explicit_registry_destination(self):
+    def test_stage_publication_tree_builds_landing_and_nested_reports(self):
         module = load_manual_pass()
-        command = module.publication_command(
-            Path("/stage"),
-            {"publication": {"section": "reports", "name": "peak-mod-tracker"}},
-            Path("/public-artifacts"),
-            dry_run=True,
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "output"
+            stage = root / "stage/mod-tracking"
+            registry = {
+                "peak": {
+                    "display_name": "PEAK",
+                    "output_subdir": "games/peak",
+                    "publication": {"root": "mod-tracking", "path": "peak"},
+                },
+                "valheim": {
+                    "display_name": "Valheim",
+                    "output_subdir": ".",
+                    "publication": {"root": "mod-tracking", "path": "valheim"},
+                },
+            }
+            (output / "games/peak").mkdir(parents=True)
+            (output / "games/peak/report-hotlinked.html").write_text("peak", encoding="utf-8")
+            output.mkdir(exist_ok=True)
+            (output / "report-hotlinked.html").write_text("valheim", encoding="utf-8")
+
+            entry = module.stage_publication_tree(registry, output, stage)
+
+            self.assertEqual(
+                entry,
+                {
+                    "source": str(stage),
+                    "root": "mod-tracking",
+                    "verify_paths": ["peak", "valheim"],
+                },
+            )
+            self.assertEqual((stage / "peak/index.html").read_text(), "peak")
+            self.assertEqual((stage / "valheim/index.html").read_text(), "valheim")
+            landing = (stage / "index.html").read_text(encoding="utf-8")
+            self.assertIn('href="./peak/"', landing)
+            self.assertIn('href="./valheim/"', landing)
+            self.assertIn("PEAK", landing)
+            self.assertIn("Valheim", landing)
+
+    def test_stage_publication_tree_rejects_unsafe_or_duplicate_paths_before_writing(self):
+        module = load_manual_pass()
+        cases = (
+            {"peak": {"display_name": "PEAK", "output_subdir": ".", "publication": {"root": "mod-tracking", "path": "../escape"}}},
+            {
+                "peak": {"display_name": "PEAK", "output_subdir": ".", "publication": {"root": "mod-tracking", "path": "same"}},
+                "valheim": {"display_name": "Valheim", "output_subdir": ".", "publication": {"root": "mod-tracking", "path": "same"}},
+            },
         )
-        self.assertEqual(command[1], "/public-artifacts/scripts/publish-site.py")
-        self.assertIn("reports", command)
-        self.assertIn("peak-mod-tracker", command)
-        self.assertIn("--dry-run", command)
+        for registry in cases:
+            with self.subTest(registry=registry), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                output = root / "output"
+                output.mkdir()
+                (output / "report-hotlinked.html").write_text("report", encoding="utf-8")
+                staging = root / "stage/mod-tracking"
+                with self.assertRaises(ValueError):
+                    module.stage_publication_tree(registry, output, staging)
+                self.assertFalse(staging.exists())
+                self.assertFalse((root / "stage/escape").exists())
 
     def test_resolve_output_root_is_consistent_outside_project(self):
         module = load_manual_pass()

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import shutil
 import subprocess
@@ -35,28 +36,6 @@ def tracker_command(action: str, game: str, root: Path, api_key_file: Path) -> l
     return command
 
 
-def publication_command(
-    staging: Path,
-    config: dict,
-    public_root: Path,
-    *,
-    dry_run: bool,
-) -> list[str]:
-    """Build one publisher command from the explicit registry destination."""
-    publication = config["publication"]
-    command = [
-        sys.executable,
-        str(public_root / "scripts" / "publish-site.py"),
-        str(staging),
-        publication["name"],
-        "--section",
-        publication["section"],
-    ]
-    if dry_run:
-        command.append("--dry-run")
-    return command
-
-
 def batch_publication_command(manifest: Path, public_root: Path, *, dry_run: bool) -> list[str]:
     """Build the single atomic batch-publisher command."""
     command = [
@@ -79,6 +58,65 @@ def stage_report(game_root: Path, staging: Path) -> Path:
     destination = staging / "index.html"
     shutil.copyfile(source, destination)
     return destination
+
+
+def stage_publication_tree(
+    registry: dict, output_root: Path, staging: Path
+) -> dict[str, object]:
+    """Stage one top-level publication tree with a landing page and game reports."""
+    roots = {config["publication"]["root"] for config in registry.values()}
+    if roots != {"mod-tracking"}:
+        raise ValueError("all games must use the canonical mod-tracking publication root")
+    publication_root = roots.pop()
+    paths = []
+    for key, config in registry.items():
+        publication_path = config["publication"]["path"]
+        if (
+            not isinstance(publication_path, str)
+            or not tracker.SLUG_RE.fullmatch(publication_path)
+            or publication_path != key
+        ):
+            raise ValueError(f"{key} has a noncanonical publication path")
+        paths.append(publication_path)
+    if len(paths) != len(set(paths)):
+        raise ValueError("publication paths must be unique")
+    if staging.name != publication_root:
+        raise ValueError("staging directory must match the publication root")
+    staging.mkdir(parents=True, exist_ok=False)
+    links = []
+    verify_paths = []
+    for key, config in registry.items():
+        game_root = output_root / config["output_subdir"]
+        publication_path = config["publication"]["path"]
+        stage_report(game_root, staging / publication_path)
+        verify_paths.append(publication_path)
+        links.append(
+            f'<li><a href="./{html.escape(publication_path, quote=True)}/">'
+            f'{html.escape(config["display_name"])}</a></li>'
+        )
+    landing = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mod Tracking Reports</title>
+<style>
+:root{color-scheme:dark}body{max-width:54rem;margin:0 auto;padding:3rem 1.25rem;font:16px/1.5 system-ui,sans-serif;background:#0b1020;color:#eef2ff}h1{margin-bottom:.4rem}p{color:#aab5d1}ul{display:grid;gap:.75rem;padding:0;list-style:none}a{display:block;padding:1rem 1.1rem;border:1px solid #33446d;border-radius:.7rem;background:#131c34;color:#8fc7ff;text-decoration:none}a:hover,a:focus{border-color:#8fc7ff;background:#192746}
+</style>
+</head>
+<body>
+<main><h1>Mod Tracking Reports</h1><p>Current mod listings and activity reports by game.</p><ul>
+""" + "\n".join(links) + """
+</ul></main>
+</body>
+</html>
+"""
+    (staging / "index.html").write_text(landing, encoding="utf-8")
+    return {
+        "source": str(staging),
+        "root": publication_root,
+        "verify_paths": verify_paths,
+    }
 
 
 def run_command(command: list[str], *, cwd: Path) -> dict:
@@ -204,21 +242,14 @@ def main(argv=None) -> int:
 
     with tempfile.TemporaryDirectory(prefix="mod-tracker-publish-") as temporary:
         temporary_root = Path(temporary)
-        staging = {}
-        for key in registry:
-            game_root = tracker.game_output_root(args.output_root, key)
-            staging[key] = temporary_root / key
-            stage_report(game_root, staging[key])
-
+        publication_root = next(iter(registry.values()))["publication"]["root"]
+        manifest_entry = stage_publication_tree(
+            registry, args.output_root, temporary_root / publication_root
+        )
         manifest = temporary_root / "publication-manifest.json"
-        manifest.write_text(json.dumps([
-            {
-                "source": str(staging[key]),
-                "section": config["publication"]["section"],
-                "name": config["publication"]["name"],
-            }
-            for key, config in registry.items()
-        ], indent=2), encoding="utf-8")
+        manifest.write_text(
+            json.dumps([manifest_entry], indent=2), encoding="utf-8"
+        )
 
         # Preflight the complete batch before the first external write.
         preflight = run_command(

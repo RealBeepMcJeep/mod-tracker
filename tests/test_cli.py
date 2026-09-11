@@ -14,6 +14,31 @@ from tests.test_tracker import CARD_PAGE
 
 
 class CliTests(unittest.TestCase):
+    def test_registry_uses_mod_tracking_publication_tree(self):
+        registry = tracker.load_game_registry()
+        self.assertEqual(
+            {config["publication"]["root"] for config in registry.values()},
+            {"mod-tracking"},
+        )
+        self.assertEqual(
+            {key: config["publication"]["path"] for key, config in registry.items()},
+            {key: key for key in registry},
+        )
+        for config in registry.values():
+            self.assertNotIn("section", config["publication"])
+            self.assertNotIn("name", config["publication"])
+
+    def test_registry_rejects_noncanonical_publication_root_or_path(self):
+        for field, value in (("root", "other-root"), ("path", "not-peak")):
+            with self.subTest(field=field):
+                registry = json.loads(Path(tracker.GAME_CONFIG_PATH).read_text())
+                registry["peak"]["publication"][field] = value
+                with tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "games.json"
+                    path.write_text(json.dumps(registry), encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "canonical publication"):
+                        tracker.load_game_registry(path)
+
     def test_dual_source_collection_overlaps_provider_work(self):
         thunderstore_started = threading.Event()
         nexus_started = threading.Event()
@@ -400,7 +425,7 @@ class CliTests(unittest.TestCase):
             if "thunderstore" in config["sources"]:
                 self.assertIn("thunderstore_community", config)
                 self.assertIn("thunderstore_pages", config)
-            destination = (config["publication"]["section"], config["publication"]["name"])
+            destination = (config["publication"]["root"], config["publication"]["path"])
             self.assertNotIn(destination, destinations)
             destinations.add(destination)
 

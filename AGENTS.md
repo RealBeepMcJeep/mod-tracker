@@ -44,13 +44,13 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Never commit credentials, cookie headers/jars, generated datasets, raw captures, or temporary files.
 - Optional Nexus page capture must report `captured`, `failed`, or `unavailable` honestly.
 - Do not create cron or require an LLM at runtime.
-- Keep every game's generated state isolated; preserve Valheim's legacy root layout and publication route.
+- Keep every game's generated state isolated; preserve Valheim's legacy local output root. Publish the complete cohort under `/mod-tracking/`, with its landing page at `/mod-tracking/` and each game at `/mod-tracking/<game-key>/`; legacy public assets remain untouched.
 - Implement optional update-date controls only through the shared `update_filter` registry object, renderer, card metadata, JavaScript predicate, and verifier; labels and inclusive UTC cutoffs are configuration, never game-specific branches.
 - Implement author rarity only through shared `author_tiers` registry data: sum raw lifetime downloads per source-scoped/canonical author, merge only reciprocal cross-provider aliases, calculate nearest-rank 60/70/80/90 cutoffs per game, render white/green/blue/purple/orange author metadata with known-mod count and first-publication provenance, and independently recompute it during verification.
 - Keep category filtering shared and source-derived: normalized card metadata and dropdown options must match grouped report categories, category chips must be native buttons, all filters must compose in one predicate, and the verifier must reject altered metadata or interaction code. Keep the toolbar outside the title header so desktop viewport-sticky positioning is not parent-bounded; disable sticky positioning at 520px and below so mobile uses normal document flow.
 - Data, generation, and verification passes do not discover or alter cross-site mappings; only the explicit mapping stage of a mapping or full pass may do so.
 - Use `scripts/mapping_candidates.py` only for explicit mapping passes. Keep output bounded and deterministic, compare only Nexus↔Thunderstore pairs, expose component scores and reasons, and never let similarity output write authoritative mod or author mappings automatically.
-- Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
+- Publish the configured `/mod-tracking/` tree as one preflighted root batch: replace with rollback protection, commit once, deploy once, and verify the landing page plus all five game URLs.
 - Commit only verified milestones. Push when explicitly requested by the active task.
 
 ## Verification

@@ -14,8 +14,8 @@
     "nexus_pages": 2,
     "output_subdir": "games/peak",
     "publication": {
-      "name": "peak-mod-tracker",
-      "section": "reports"
+      "path": "peak",
+      "root": "mod-tracking"
     },
     "require_full_nexus_pages": false,
     "sources": [
@@ -44,8 +44,8 @@
     "nexus_pages": 2,
     "output_subdir": "games/repo",
     "publication": {
-      "name": "repo-mod-tracker",
-      "section": "reports"
+      "path": "repo",
+      "root": "mod-tracking"
     },
     "require_full_nexus_pages": false,
     "sources": [
@@ -74,8 +74,8 @@
     "nexus_pages": 2,
     "output_subdir": "games/retro-rewind",
     "publication": {
-      "name": "retro-rewind-mod-tracker",
-      "section": "reports"
+      "path": "retro-rewind",
+      "root": "mod-tracking"
     },
     "require_full_nexus_pages": false,
     "sources": [
@@ -98,8 +98,8 @@
     "nexus_pages": 2,
     "output_subdir": "games/tcg-card-shop-simulator",
     "publication": {
-      "name": "tcg-card-shop-simulator-mod-tracker",
-      "section": "reports"
+      "path": "tcg-card-shop-simulator",
+      "root": "mod-tracking"
     },
     "require_full_nexus_pages": true,
     "sources": [
@@ -125,8 +125,8 @@
     "nexus_pages": 2,
     "output_subdir": ".",
     "publication": {
-      "name": "valheim-mod-tracker",
-      "section": "reports"
+      "path": "valheim",
+      "root": "mod-tracking"
     },
     "require_full_nexus_pages": true,
     "sources": [

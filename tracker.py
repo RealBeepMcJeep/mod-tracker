@@ -81,11 +81,13 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
             raise ValueError(f"duplicate output_subdir: {normalized_output}")
         output_paths.add(normalized_output)
         publication = config["publication"]
-        if not isinstance(publication, dict) or set(publication) != {"section", "name"}:
+        if not isinstance(publication, dict) or set(publication) != {"root", "path"}:
             raise ValueError(f"{key} has invalid publication")
-        if not all(SLUG_RE.fullmatch(publication.get(field, "")) for field in ("section", "name")):
+        if not all(SLUG_RE.fullmatch(publication.get(field, "")) for field in ("root", "path")):
             raise ValueError(f"{key} has invalid publication component")
-        destination = (publication["section"], publication["name"])
+        if publication["root"] != "mod-tracking" or publication["path"] != key:
+            raise ValueError(f"{key} has noncanonical publication destination")
+        destination = (publication["root"], publication["path"])
         if destination in publication_paths:
             raise ValueError(f"duplicate publication destination: {'/'.join(destination)}")
         publication_paths.add(destination)

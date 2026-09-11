@@ -2,6 +2,8 @@
 
 ## 2026-09-11
 
+- Completed a supervised full pass in canonical order: refreshed all five datasets, reviewed a bounded 14-pair mapping shortlist, accepted 7 mod pairs and one new author alias, regenerated 222/299/160/178/746 canonical cards, and passed strict all-game verification.
+- Moved future publication to one atomic `/mod-tracking/` tree with a landing page and per-game paths at `/mod-tracking/<game-key>/`; the root manifest requires post-deployment verification of all six URLs while leaving legacy public assets untouched.
 - Added a stdlib-only bounded mapping-candidate CLI using normalized names, token overlap, Levenshtein title/author similarity, and description similarity; it skips mapped records, reports single-source games explicitly, and never auto-applies fuzzy matches.
 - Hardened mapping-candidate filesystem access with descriptor-relative `O_NOFOLLOW` traversal, exclusive bounded temporary creation, same-directory atomic replacement, and adversarial symlink and directory-swap tests; the complete suite finished with 134 passing tests and an independent fail-closed review.
 - Reviewed 99 bounded candidates across all games, manually accepted 91 reciprocal mod pairs and 27 reciprocal author-alias pairs, rejected 8 ambiguous pairs, and recorded the complete pass in `MAPPING_REVIEW.md`; post-mapping strict report counts are PEAK 220, R.E.P.O. 299, Retro Rewind 160, TCG Card Shop Simulator 178, and Valheim 715.

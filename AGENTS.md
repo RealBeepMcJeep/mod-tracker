@@ -20,6 +20,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Valheim generated state remains at the project root for compatibility.
 - Other games store generated state under `games/<game-key>/`.
 - Every game root has independent `data/`, `raw/`, `snapshots/`, reports, and verification artifacts.
+- Every game root has an independent version-controlled `author-mappings.json` and generated `data/author-reputation.json`.
 - `TODO.md` — outstanding work only
 - `CHANGELOG.md` — completed milestones grouped by date
 
@@ -36,6 +37,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Do not create cron or require an LLM at runtime.
 - Keep every game's generated state isolated; preserve Valheim's legacy root layout and publication route.
 - Implement optional update-date controls only through the shared `update_filter` registry object, renderer, card metadata, JavaScript predicate, and verifier; labels and inclusive UTC cutoffs are configuration, never game-specific branches.
+- Implement author rarity only through shared `author_tiers` registry data: sum raw lifetime downloads per source-scoped/canonical author, merge only reciprocal cross-provider aliases, calculate nearest-rank 60/85/97 cutoffs per game, render white/blue/purple/orange author metadata, and independently recompute it during verification.
 - Routine manual passes do not discover or alter cross-site mappings.
 - Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
 - Commit only verified milestones. Push when explicitly requested by the active task.

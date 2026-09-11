@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-11
+
+- Added shared, registry-driven author rarity for all five games using each game’s own canonical-author pool and dynamic nearest-rank 60th/85th/97th-percentile cutoffs.
+- Summed only raw lifetime downloads across an author’s stored mods; source identities remain separate unless joined by an explicit reciprocal Nexus/Thunderstore mapping.
+- Added independent version-controlled `author-mappings.json` files and isolated `data/author-reputation.json` artifacts containing generation time, percentiles, raw cutoffs, canonical totals, and tiers.
+- Rendered Normal, Magic, Epic, and Legendary author names in white, blue, purple, and orange with concise legend, tooltip, ARIA, source identity, canonical identity, and raw-total metadata.
+- Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, tiers, classes, tooltips, and ARIA labels.
+- Added fail-closed mapping validation and regression coverage for malformed, missing, duplicate, conflicting, same-provider, nonreciprocal, and unsupported mappings plus pool boundaries, ties, invalid totals, escaping, grouped cards, and all-game isolation.
+
 ## 2026-09-10
 
 - Renamed the local project and private Gitea repository from `thunderstore-mod-tracker` to `mod-tracker`; preserved the dirty working tree and updated `origin` to `AI-Goes-Fast/mod-tracker` on `main`.

@@ -197,6 +197,179 @@ class CliTests(unittest.TestCase):
             tracker.GAME_CONFIGS["tcg-card-shop-simulator"]["update_filter"]
         )
 
+    def test_registry_enables_dynamic_author_tiers_for_all_games(self):
+        expected = {
+            "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+            "mappings_file": "author-mappings.json",
+        }
+        for game in tracker.GAME_CONFIGS:
+            with self.subTest(game=game):
+                self.assertEqual(tracker.GAME_CONFIGS[game]["author_tiers"], expected)
+
+    def test_report_path_passes_author_tiers_for_every_selected_game(self):
+        args = tracker.build_parser().parse_args(["report", "--game", "all"])
+        with tempfile.TemporaryDirectory() as tmp, patch.object(
+            tracker, "generate_report", return_value={"ok": True}
+        ) as generate:
+            tracker._generate_selected_reports(args, "2026-09-11T02:00:00Z")
+
+        self.assertEqual(generate.call_count, len(tracker.GAME_CONFIGS))
+        for call in generate.call_args_list:
+            self.assertEqual(
+                call.kwargs["author_tiers"],
+                {"percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                 "mappings_file": "author-mappings.json"},
+            )
+
+    def test_verify_path_passes_author_tiers_for_every_selected_game(self):
+        args = tracker.build_parser().parse_args(["verify", "--game", "all"])
+        with patch.object(
+            tracker, "verify_output", return_value={"ok": True}
+        ) as verify:
+            tracker._verify_selected_outputs(args)
+
+        self.assertEqual(verify.call_count, len(tracker.GAME_CONFIGS))
+        for call in verify.call_args_list:
+            self.assertEqual(
+                call.kwargs["author_tiers"],
+                {"percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                 "mappings_file": "author-mappings.json"},
+            )
+
+    def test_registry_rejects_misordered_author_tier_percentiles(self):
+        registry = json.loads(json.dumps(tracker.GAME_CONFIGS))
+        registry["valheim"]["author_tiers"]["percentiles"] = {
+            "magic": 85,
+            "epic": 60,
+            "legendary": 97,
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "games.json"
+            path.write_text(json.dumps(registry))
+            with self.assertRaisesRegex(ValueError, "invalid author_tiers percentiles"):
+                tracker.load_game_registry(path)
+
+    def test_registry_rejects_escaping_author_mapping_path(self):
+        registry = json.loads(json.dumps(tracker.GAME_CONFIGS))
+        registry["valheim"]["author_tiers"]["mappings_file"] = "../authors.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "games.json"
+            path.write_text(json.dumps(registry))
+            with self.assertRaisesRegex(ValueError, "invalid author_tiers mappings_file"):
+                tracker.load_game_registry(path)
+
+    def test_author_mapping_loader_accepts_reciprocal_source_identities(self):
+        mappings = {
+            "nexus:jere kuusela": {
+                "canonical_author_id": "jere-kuusela",
+                "matched_to": ["thunderstore:jerekuusela"],
+                "method": "manual",
+            },
+            "thunderstore:jerekuusela": {
+                "canonical_author_id": "jere-kuusela",
+                "matched_to": ["nexus:jere kuusela"],
+                "method": "manual",
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "author-mappings.json"
+            path.write_text(json.dumps(mappings))
+            loaded = tracker.load_author_mappings(path)
+
+        self.assertEqual(loaded, mappings)
+
+    def test_author_mapping_loader_rejects_nonreciprocal_mapping(self):
+        mappings = {
+            "nexus:jere kuusela": {
+                "canonical_author_id": "jere-kuusela",
+                "matched_to": ["thunderstore:jerekuusela"],
+                "method": "manual",
+            }
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "author-mappings.json"
+            path.write_text(json.dumps(mappings))
+            with self.assertRaisesRegex(ValueError, "reciprocal"):
+                tracker.load_author_mappings(path)
+
+    def test_author_mapping_loader_rejects_invalid_source_identity(self):
+        mappings = {
+            "steam:author": {
+                "canonical_author_id": "author",
+                "matched_to": [],
+                "method": "manual",
+            }
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "author-mappings.json"
+            path.write_text(json.dumps(mappings))
+            with self.assertRaisesRegex(ValueError, "source-scoped identity"):
+                tracker.load_author_mappings(path)
+
+    def test_author_mapping_loader_reports_unreadable_or_malformed_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            malformed = root / "malformed.json"
+            malformed.write_text("{not-json")
+            for path in (root / "missing.json", malformed):
+                with self.subTest(path=path.name):
+                    with self.assertRaisesRegex(ValueError, "unable to load author mappings"):
+                        tracker.load_author_mappings(path)
+
+    def test_author_mapping_loader_rejects_same_provider_aliases(self):
+        mappings = {
+            "nexus:alice": {
+                "canonical_author_id": "alice",
+                "matched_to": ["nexus:alice-alt"],
+                "method": "manual",
+            },
+            "nexus:alice-alt": {
+                "canonical_author_id": "alice",
+                "matched_to": ["nexus:alice"],
+                "method": "manual",
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "author-mappings.json"
+            path.write_text(json.dumps(mappings))
+            with self.assertRaisesRegex(ValueError, "cross-provider"):
+                tracker.load_author_mappings(path)
+
+    def test_author_mapping_loader_rejects_malformed_duplicate_or_conflicting_entries(self):
+        valid_pair = {
+            "nexus:alice": {
+                "canonical_author_id": "alice",
+                "matched_to": ["thunderstore:alice"],
+                "method": "manual",
+            },
+            "thunderstore:alice": {
+                "canonical_author_id": "alice",
+                "matched_to": ["nexus:alice"],
+                "method": "manual",
+            },
+        }
+        cases = {}
+        malformed = json.loads(json.dumps(valid_pair))
+        del malformed["nexus:alice"]["method"]
+        cases["malformed"] = malformed
+        duplicate = json.loads(json.dumps(valid_pair))
+        duplicate["nexus:alice"]["matched_to"].append("thunderstore:alice")
+        cases["duplicate"] = duplicate
+        invalid_canonical = json.loads(json.dumps(valid_pair))
+        invalid_canonical["nexus:alice"]["canonical_author_id"] = "Invalid Canonical"
+        cases["invalid canonical"] = invalid_canonical
+        conflicting = json.loads(json.dumps(valid_pair))
+        conflicting["thunderstore:alice"]["canonical_author_id"] = "other-alice"
+        cases["conflicting"] = conflicting
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "author-mappings.json"
+            for name, mappings in cases.items():
+                with self.subTest(case=name):
+                    path.write_text(json.dumps(mappings))
+                    with self.assertRaises(ValueError):
+                        tracker.load_author_mappings(path)
+
     def test_registry_rejects_update_filter_without_explicit_utc_cutoff(self):
         registry = json.loads(json.dumps(tracker.GAME_CONFIGS))
         registry["peak"]["update_filter"]["cutoff"] = "2026-08-10"
@@ -274,6 +447,256 @@ class CliTests(unittest.TestCase):
             saved = json.loads((root / "data/mods.json").read_text())
             self.assertIn("rates", saved[0])
             self.assertEqual(result["cards"], 1)
+
+    def test_generate_report_persists_and_renders_author_reputation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mods = []
+            for downloads in range(1, 101):
+                mod = sample("nexus", str(downloads))
+                mod.update(author=f"Author {downloads}", total_downloads=downloads)
+                mods.append(mod)
+            tracker.atomic_write_json(root / "data/mods.json", mods)
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                author_tiers={
+                    "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                    "mappings_file": "author-mappings.json",
+                },
+            )
+
+            reputation = json.loads((root / "data/author-reputation.json").read_text())
+            page = (root / "report-hotlinked.html").read_text()
+
+        self.assertEqual(
+            reputation["cutoffs"],
+            {"magic": 60, "epic": 85, "legendary": 97},
+        )
+        self.assertEqual(reputation["generated_at"], "2026-09-11T02:00:00Z")
+        self.assertIn('class="author author-tier-legendary"', page)
+
+    def test_verify_output_rejects_missing_author_reputation_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mod = sample("nexus", "1")
+            tracker.atomic_write_json(root / "data/mods.json", [mod])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            config = {
+                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "mappings_file": "author-mappings.json",
+            }
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                update_filter=None,
+                author_tiers=config,
+            )
+            (root / "data/author-reputation.json").unlink()
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                update_filter=None,
+                author_tiers=config,
+                require_reports=True,
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("author reputation" in error for error in result["errors"]))
+
+    def test_verify_output_rejects_missing_author_metadata_on_one_card(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = sample("nexus", "1")
+            first["author"] = "Alice"
+            second = sample("nexus", "2")
+            second["author"] = "Bob"
+            tracker.atomic_write_json(root / "data/mods.json", [first, second])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            config = {
+                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "mappings_file": "author-mappings.json",
+            }
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                update_filter=None,
+                author_tiers=config,
+            )
+            reputation = json.loads(
+                (root / "data/author-reputation.json").read_text()
+            )
+            alice = tracker.render_author_name(first, reputation)
+            for report_name in ("report.html", "report-hotlinked.html"):
+                path = root / report_name
+                path.write_text(path.read_text().replace(alice, "Alice", 1))
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                update_filter=None,
+                author_tiers=config,
+                require_reports=True,
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("rendered author identities" in error for error in result["errors"]))
+
+    def test_verify_output_rejects_tampered_reputation_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tracker.atomic_write_json(root / "data/mods.json", [sample("nexus", "1")])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            config = {
+                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "mappings_file": "author-mappings.json",
+            }
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                update_filter=None,
+                author_tiers=config,
+            )
+            reputation_path = root / "data/author-reputation.json"
+            original = json.loads(reputation_path.read_text())
+            mutations = {
+                "threshold": lambda data: data["cutoffs"].__setitem__("magic", 999),
+                "generated_at": lambda data: data.__setitem__("generated_at", "not-a-time"),
+            }
+            for field, mutate in mutations.items():
+                with self.subTest(field=field):
+                    altered = json.loads(json.dumps(original))
+                    mutate(altered)
+                    tracker.atomic_write_json(reputation_path, altered)
+                    result = tracker.verify_output(
+                        root,
+                        expected_thunderstore_pages=0,
+                        expected_nexus_pages=0,
+                        update_filter=None,
+                        author_tiers=config,
+                        require_reports=True,
+                    )
+                    self.assertFalse(result["ok"], field)
+                    self.assertTrue(any("author reputation" in error for error in result["errors"]))
+
+    def test_verify_output_accepts_valid_author_reputation_after_report_only_regeneration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tracker.atomic_write_json(root / "data/mods.json", [sample("nexus", "1")])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            tracker.atomic_write_json(
+                root / "snapshots/latest.json",
+                {"collected_at": "2026-09-10T02:00:00Z"},
+            )
+            config = {
+                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "mappings_file": "author-mappings.json",
+            }
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                update_filter=None,
+                author_tiers=config,
+            )
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                update_filter=None,
+                author_tiers=config,
+                require_reports=True,
+            )
+
+        self.assertTrue(result["ok"], result["errors"])
+
+    def test_verify_output_rejects_valid_but_substituted_reputation_generation_timestamp(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tracker.atomic_write_json(root / "data/mods.json", [sample("nexus", "1")])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            tracker.atomic_write_json(
+                root / "snapshots/latest.json",
+                {"collected_at": "2026-09-11T02:00:00Z"},
+            )
+            config = {
+                "percentiles": {"magic": 60, "epic": 85, "legendary": 97},
+                "mappings_file": "author-mappings.json",
+            }
+            tracker.generate_report(
+                root,
+                "2026-09-11T02:00:00Z",
+                update_filter=None,
+                author_tiers=config,
+            )
+            reputation_path = root / "data/author-reputation.json"
+            reputation = json.loads(reputation_path.read_text())
+            reputation["generated_at"] = "2026-09-12T02:00:00Z"
+            tracker.atomic_write_json(reputation_path, reputation)
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                update_filter=None,
+                author_tiers=config,
+                require_reports=True,
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("generated_at" in error for error in result["errors"]))
+
+    def test_all_game_reports_isolate_author_pools_and_render_every_tier(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output_root = Path(tmp)
+            expected_cutoffs = {}
+            for game_index, game in enumerate(tracker.GAME_CONFIGS):
+                root = tracker.game_output_root(output_root, game)
+                base = game_index * 1000
+                mods = []
+                for downloads in range(1, 101):
+                    mod = sample("nexus", f"{game_index}-{downloads}")
+                    mod.update(
+                        author=f"{game} Author {downloads}",
+                        total_downloads=base + downloads,
+                    )
+                    mods.append(mod)
+                tracker.atomic_write_json(root / "data/mods.json", mods)
+                tracker.atomic_write_json(root / "author-mappings.json", {})
+                expected_cutoffs[game] = {
+                    "magic": base + 60,
+                    "epic": base + 85,
+                    "legendary": base + 97,
+                }
+
+            args = tracker.build_parser().parse_args(
+                ["report", "--game", "all", "--output-root", str(output_root)]
+            )
+            result = tracker._generate_selected_reports(
+                args, "2026-09-11T02:00:00Z"
+            )
+
+            self.assertTrue(result["ok"])
+            for game in tracker.GAME_CONFIGS:
+                root = tracker.game_output_root(output_root, game)
+                reputation = json.loads(
+                    (root / "data/author-reputation.json").read_text()
+                )
+                page = (root / "report-hotlinked.html").read_text()
+                self.assertEqual(reputation["cutoffs"], expected_cutoffs[game])
+                self.assertTrue(
+                    all(
+                        identity.startswith("nexus:" + game.casefold())
+                        for identity in reputation["authors"]
+                    )
+                )
+                for tier in ("normal", "magic", "epic", "legendary"):
+                    self.assertIn(f"author-tier-{tier}", page)
 
     def test_collection_snapshot_records_actual_thunderstore_page_counts(self):
         actual_counts = {"last-updated": 2, "most-downloaded": 2}

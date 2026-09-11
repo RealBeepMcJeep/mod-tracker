@@ -42,7 +42,7 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
         if not SLUG_RE.fullmatch(key) or not isinstance(config, dict):
             raise ValueError(f"invalid game entry: {key!r}")
         required = {
-            "display_name", "nexus_domain", "nexus_pages", "output_subdir",
+            "author_tiers", "display_name", "nexus_domain", "nexus_pages", "output_subdir",
             "publication", "require_full_nexus_pages", "sources", "update_filter",
         }
         absent = required - set(config)
@@ -88,6 +88,32 @@ def load_game_registry(path: Path = GAME_CONFIG_PATH) -> dict[str, dict]:
         if destination in publication_paths:
             raise ValueError(f"duplicate publication destination: {'/'.join(destination)}")
         publication_paths.add(destination)
+        author_tiers = config["author_tiers"]
+        if author_tiers is not None:
+            if (
+                not isinstance(author_tiers, dict)
+                or set(author_tiers) != {"percentiles", "mappings_file"}
+                or not isinstance(author_tiers["percentiles"], dict)
+                or set(author_tiers["percentiles"]) != {"magic", "epic", "legendary"}
+            ):
+                raise ValueError(f"{key} has invalid author_tiers")
+            percentiles = author_tiers["percentiles"]
+            values = [percentiles[tier] for tier in ("magic", "epic", "legendary")]
+            if (
+                any(not isinstance(value, int) or isinstance(value, bool) for value in values)
+                or not 0 < values[0] < values[1] < values[2] < 100
+            ):
+                raise ValueError(f"{key} has invalid author_tiers percentiles")
+            mappings_file = author_tiers["mappings_file"]
+            mappings_path = Path(mappings_file) if isinstance(mappings_file, str) else Path("..")
+            if (
+                not isinstance(mappings_file, str)
+                or not mappings_file.strip()
+                or mappings_path.is_absolute()
+                or ".." in mappings_path.parts
+                or mappings_path.suffix != ".json"
+            ):
+                raise ValueError(f"{key} has invalid author_tiers mappings_file")
         update_filter = config["update_filter"]
         if update_filter is not None:
             if (
@@ -754,6 +780,129 @@ def apply_manual_mappings(mods: list[dict], mappings: dict) -> list[dict]:
     return result
 
 
+def load_author_mappings(path: Path) -> dict:
+    """Load and validate explicit reciprocal source-scoped author mappings."""
+    try:
+        mappings = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"unable to load author mappings from {path}") from exc
+    if not isinstance(mappings, dict):
+        raise ValueError("author mappings must be a JSON object")
+
+    def valid_identity(value) -> bool:
+        if not isinstance(value, str) or ":" not in value:
+            return False
+        source, author = value.split(":", 1)
+        normalized_author = " ".join(author.split()).casefold()
+        return (
+            source in {"nexus", "thunderstore"}
+            and bool(normalized_author)
+            and value == f"{source}:{normalized_author}"
+        )
+
+    for identity, mapping in mappings.items():
+        if not valid_identity(identity):
+            raise ValueError(f"invalid source-scoped identity: {identity!r}")
+        if not isinstance(mapping, dict) or set(mapping) != {
+            "canonical_author_id", "matched_to", "method"
+        }:
+            raise ValueError(f"invalid author mapping for {identity!r}")
+        canonical = mapping["canonical_author_id"]
+        matched_to = mapping["matched_to"]
+        method = mapping["method"]
+        if (
+            not isinstance(canonical, str)
+            or not SLUG_RE.fullmatch(canonical)
+            or not isinstance(matched_to, list)
+            or not matched_to
+            or len(matched_to) != len(set(matched_to))
+            or not all(valid_identity(target) for target in matched_to)
+            or not isinstance(method, str)
+            or not method.strip()
+        ):
+            raise ValueError(f"invalid author mapping for {identity!r}")
+        source = identity.split(":", 1)[0]
+        if any(target.split(":", 1)[0] == source for target in matched_to):
+            raise ValueError(f"author mapping for {identity!r} must be cross-provider")
+        for target in matched_to:
+            reciprocal = mappings.get(target)
+            if (
+                not isinstance(reciprocal, dict)
+                or identity not in reciprocal.get("matched_to", [])
+                or reciprocal.get("canonical_author_id") != canonical
+            ):
+                raise ValueError(f"author mapping for {identity!r} is not reciprocal")
+    return mappings
+
+
+def author_identity_key(mod: dict) -> str:
+    """Return the normalized source-scoped identity for one mod author."""
+    source = str(mod.get("source") or "").strip().casefold()
+    author = " ".join(str(mod.get("author") or "").split()).casefold()
+    return f"{source}:{author}" if source and author else ""
+
+
+def build_author_reputation(
+    mods: list[dict],
+    config: dict | None,
+    mappings: dict,
+) -> dict | None:
+    """Tier source-scoped authors by raw lifetime-download percentiles."""
+    if config is None:
+        return None
+    canonical_by_identity = {}
+    totals = {}
+    for mod in mods:
+        identity = author_identity_key(mod)
+        if not identity:
+            continue
+        mapping = mappings.get(identity)
+        canonical = (
+            mapping.get("canonical_author_id")
+            if isinstance(mapping, dict) and mapping.get("canonical_author_id")
+            else identity
+        )
+        canonical_by_identity[identity] = canonical
+        raw_downloads = mod.get("total_downloads")
+        if raw_downloads is None:
+            downloads = 0
+        elif isinstance(raw_downloads, bool) or not isinstance(raw_downloads, int):
+            raise ValueError(
+                f"invalid total_downloads for {mod.get('key', '<unknown>')!r}"
+            )
+        else:
+            downloads = max(0, raw_downloads)
+        totals[canonical] = totals.get(canonical, 0) + downloads
+    values = sorted(totals.values())
+    percentiles = config["percentiles"]
+    cutoffs = {
+        tier: values[max(0, math.ceil(percentile / 100 * len(values)) - 1)] if values else 0
+        for tier, percentile in percentiles.items()
+    }
+
+    def tier_for(downloads: int) -> str:
+        if downloads >= cutoffs["legendary"]:
+            return "legendary"
+        if downloads >= cutoffs["epic"]:
+            return "epic"
+        if downloads >= cutoffs["magic"]:
+            return "magic"
+        return "normal"
+
+    return {
+        "percentiles": dict(percentiles),
+        "cutoffs": cutoffs,
+        "authors": {
+            identity: {
+                "canonical_author_id": canonical,
+                "downloads": totals[canonical],
+                "tier": tier_for(totals[canonical]),
+            }
+            for identity, canonical in canonical_by_identity.items()
+        },
+    }
+
+
 def _thumbnail_src(mod: dict, embed: bool, fetch) -> str:
     url = mod.get("thumbnail") or ""
     if not embed or not url:
@@ -778,6 +927,25 @@ def _report_groups(mods):
         if gid: groups.setdefault(gid, []).append(mod)
         else: singles.append([mod])
     return singles + [groups[k] for k in sorted(groups)]
+
+
+def report_author_keys(mods: list[dict], author_reputation: dict | None):
+    """Return the rendered primary author identity for each authored report card."""
+    if author_reputation is None:
+        return None
+    keys = []
+    for members in _report_groups(mods):
+        primary = max(
+            members,
+            key=lambda mod: (
+                timestamp_sort_key(mod.get("updated_at") or ""),
+                mod.get("key", ""),
+            ),
+        )
+        identity = author_identity_key(primary)
+        if identity and identity in author_reputation["authors"]:
+            keys.append(identity)
+    return keys
 
 
 def matches_update_filter(updated_at: str, update_filter: dict | None) -> bool:
@@ -808,6 +976,52 @@ def render_update_filter_control(update_filter: dict | None) -> str:
     )
 
 
+def render_author_name(mod: dict, author_reputation: dict | None) -> str:
+    """Render one author name with optional computed rarity evidence."""
+    author = str(mod.get("author") or "")
+    if author_reputation is None:
+        return escape(author)
+    identity = author_identity_key(mod)
+    profile = author_reputation["authors"].get(identity)
+    if profile is None:
+        return escape(author)
+    tier = profile["tier"]
+    downloads = int(profile["downloads"])
+    canonical = str(profile["canonical_author_id"])
+    evidence = f"{tier.title()} author · {downloads:,} lifetime downloads"
+    aria = f"{author}, {tier.title()} author, {downloads:,} lifetime downloads"
+    return (
+        '<span class="author author-tier-%s" data-author-tier="%s" '
+        'data-author-downloads="%d" data-author-key="%s" '
+        'data-author-canonical="%s" title="%s" '
+        'aria-label="%s">%s</span>'
+        % (
+            tier,
+            tier,
+            downloads,
+            escape(identity, quote=True),
+            escape(canonical, quote=True),
+            escape(evidence, quote=True),
+            escape(aria, quote=True),
+            escape(author),
+        )
+    )
+
+
+def render_author_legend(author_reputation: dict | None) -> str:
+    """Render the concise rarity key only when author tiers are enabled."""
+    if author_reputation is None:
+        return ""
+    items = "".join(
+        f'<span class="author-tier-{tier}">{tier.title()}</span>'
+        for tier in ("normal", "magic", "epic", "legendary")
+    )
+    return (
+        '<div class="author-legend" aria-label="Author rarity legend">'
+        f'<strong>Author rarity</strong>{items}</div>'
+    )
+
+
 def render_report(
     mods,
     generated_at,
@@ -817,6 +1031,7 @@ def render_report(
     game_name="Valheim",
     sources=("thunderstore", "nexus"),
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
+    author_reputation: dict | None = None,
 ):
     now = parse_datetime(generated_at)
     arizona_now = now.astimezone(ZoneInfo("America/Phoenix"))
@@ -851,15 +1066,16 @@ def render_report(
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
         metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
+        author_html = render_author_name(primary, author_reputation)
         return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
 <div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="%s">%s</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="%s">%s</time></div></div></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), escape(primary.get('author','')), escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
-:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%%;overflow-wrap:anywhere}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s.</p><section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, escape(generated_label), '' if pinned else ' hidden', pinned, regular)
+:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-normal:#f2f4f7;--author-magic:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-normal{color:var(--author-normal)}.author-tier-magic{color:var(--author-magic);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%%;overflow-wrap:anywhere}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
         label for source, label in (("thunderstore", "Thunderstore"), ("nexus", "Nexus Mods"))
@@ -880,6 +1096,13 @@ def render_report(
     page = page.replace(
         "{UPDATE_FILTER_CONTROL}", render_update_filter_control(update_filter)
     )
+    page = page.replace("{AUTHOR_LEGEND}", render_author_legend(author_reputation))
+    page = page.replace(
+        "<head>",
+        '<head><meta name="report-generated-at" content="%s">'
+        % escape(generated_at, quote=True),
+        1,
+    )
     return page
 
 
@@ -891,6 +1114,10 @@ class ReportVerifier(HTMLParser):
         self.missing_sort = 0
         self.card_update_metadata = []
         self.update_filter_controls = 0
+        self.author_metadata = []
+        self.card_author_metadata = []
+        self._current_card_authors = None
+        self.report_generated_at = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -900,12 +1127,26 @@ class ReportVerifier(HTMLParser):
             self.update_filter_controls += 1
         if tag == "article" and "mod-card" in (attrs.get("class") or "").split():
             self.cards += 1
+            self._current_card_authors = []
+            self.card_author_metadata.append(self._current_card_authors)
             required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
             self.card_update_metadata.append(
                 (attrs.get("data-sort-updated", ""), attrs.get("data-update-filter"))
             )
+        if tag == "span" and (
+            attrs.get("data-author-tier") or attrs.get("data-author-key")
+        ):
+            self.author_metadata.append(attrs)
+            if self._current_card_authors is not None:
+                self._current_card_authors.append(attrs)
+        if tag == "meta" and attrs.get("name") == "report-generated-at":
+            self.report_generated_at = attrs.get("content")
+
+    def handle_endtag(self, tag):
+        if tag == "article":
+            self._current_card_authors = None
 
 
 def verify_report(
@@ -913,6 +1154,8 @@ def verify_report(
     expected_cards: int | None = None,
     *,
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
+    expected_author_reputation: dict | None = None,
+    expected_author_keys: list[str] | None = None,
 ) -> dict:
     text = path.read_text(encoding="utf-8")
     parser = ReportVerifier()
@@ -943,6 +1186,57 @@ def verify_report(
             metadata_errors += 1
     if metadata_errors:
         errors.append(f"{metadata_errors} cards have incorrect update-filter metadata")
+    if expected_author_reputation is not None:
+        expected_authors = expected_author_reputation.get("authors", {})
+        expected_generated_at = expected_author_reputation.get("generated_at")
+        if parser.report_generated_at != expected_generated_at:
+            errors.append("report and author reputation generated_at do not match")
+        if expected_authors and not parser.author_metadata:
+            errors.append("enabled author reputation has no rendered author metadata")
+        author_errors = 0
+        for attrs in parser.author_metadata:
+            identity = attrs.get("data-author-key")
+            profile = expected_authors.get(identity)
+            tier = attrs.get("data-author-tier")
+            downloads = attrs.get("data-author-downloads")
+            classes = set((attrs.get("class") or "").split())
+            if profile is None:
+                author_errors += 1
+                continue
+            if (
+                tier != profile.get("tier")
+                or downloads != str(profile.get("downloads"))
+                or attrs.get("data-author-canonical")
+                != str(profile.get("canonical_author_id"))
+                or "author" not in classes
+                or f"author-tier-{profile.get('tier')}" not in classes
+            ):
+                author_errors += 1
+            evidence = (
+                f"{str(profile.get('tier', '')).title()} author · "
+                f"{int(profile.get('downloads', -1)):,} lifetime downloads"
+            )
+            if evidence not in attrs.get("title", ""):
+                author_errors += 1
+            aria_label = attrs.get("aria-label", "")
+            if (
+                f"{str(profile.get('tier', '')).title()} author" not in aria_label
+                or f"{int(profile.get('downloads', -1)):,}" not in aria_label
+            ):
+                author_errors += 1
+        if author_errors:
+            errors.append(f"{author_errors} author metadata entries do not match reputation")
+        if expected_author_keys is not None:
+            actual_author_keys = [
+                attrs.get("data-author-key") for attrs in parser.author_metadata
+            ]
+            if sorted(actual_author_keys) != sorted(expected_author_keys):
+                errors.append("rendered author identities do not match report cards")
+            if len(parser.card_author_metadata) != len(expected_author_keys) or any(
+                len(card_authors) != 1
+                for card_authors in parser.card_author_metadata
+            ):
+                errors.append("each report card must contain exactly one author metadata entry")
     required_javascript = (
         "updateFilter=document.querySelector('#update-filter-toggle')",
         "(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')",
@@ -978,6 +1272,7 @@ def generate_report(
     game_name: str = "Valheim",
     sources=("thunderstore", "nexus"),
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
+    author_tiers: dict | None = None,
     thumbnail_fetch=http_fetch,
 ) -> dict:
     mods_path = root / "data/mods.json"
@@ -987,6 +1282,14 @@ def generate_report(
     for mod in mods:
         mod["rates"] = compute_rates(mod, now)
     atomic_write_json(mods_path, mods)
+    author_reputation = None
+    if author_tiers is not None:
+        mappings = load_author_mappings(root / author_tiers["mappings_file"])
+        built_reputation = build_author_reputation(mods, author_tiers, mappings)
+        if built_reputation is None:
+            raise AssertionError("configured author tiers did not produce reputation data")
+        author_reputation = {"generated_at": generated_at, **built_reputation}
+        atomic_write_json(root / "data/author-reputation.json", author_reputation)
     page = render_report(
         mods,
         generated_at,
@@ -995,6 +1298,7 @@ def generate_report(
         game_name=game_name,
         sources=sources,
         update_filter=update_filter,
+        author_reputation=author_reputation,
     )
     atomic_write_bytes(root / "report.html", page.encode("utf-8"))
     hotlinked_page = page if not embed_thumbnails else render_report(
@@ -1004,12 +1308,15 @@ def generate_report(
         game_name=game_name,
         sources=sources,
         update_filter=update_filter,
+        author_reputation=author_reputation,
     )
     atomic_write_bytes(root / "report-hotlinked.html", hotlinked_page.encode("utf-8"))
     result = verify_report(
         root / "report.html",
         expected_cards=len(_report_groups(mods)),
         update_filter=update_filter,
+        expected_author_reputation=author_reputation,
+        expected_author_keys=report_author_keys(mods, author_reputation),
     )
     if not result["ok"]:
         raise RuntimeError("generated report failed verification: " + "; ".join(result["errors"]))
@@ -1023,6 +1330,7 @@ def verify_output(
     expected_nexus_pages: int = 2,
     require_full_nexus_pages: bool = True,
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
+    author_tiers: dict | None = None,
     require_reports: bool = False,
 ) -> dict:
     errors = []
@@ -1132,6 +1440,44 @@ def verify_output(
     incomplete = [item.get("key", "<unknown>") for item in mods if not required.issubset(item)]
     if incomplete:
         errors.append(f"{len(incomplete)} records lack common fields")
+    expected_author_reputation = None
+    reputation_path = root / "data/author-reputation.json"
+    if author_tiers is not None:
+        try:
+            mappings = load_author_mappings(root / author_tiers["mappings_file"])
+            expected_author_reputation = build_author_reputation(
+                mods, author_tiers, mappings
+            )
+            if expected_author_reputation is None:
+                raise ValueError("author reputation could not be built")
+            actual_reputation = _load_json(reputation_path, None)
+            if not isinstance(actual_reputation, dict):
+                errors.append("missing or invalid author reputation artifact")
+            else:
+                actual_core = {
+                    key: value
+                    for key, value in actual_reputation.items()
+                    if key != "generated_at"
+                }
+                if actual_core != expected_author_reputation:
+                    errors.append("author reputation artifact does not match current data")
+                generated_at = actual_reputation.get("generated_at")
+                if not isinstance(generated_at, str):
+                    errors.append("author reputation artifact has invalid generated_at")
+                else:
+                    try:
+                        parse_datetime(generated_at)
+                    except ValueError:
+                        errors.append("author reputation artifact has invalid generated_at")
+                    expected_author_reputation = {
+                        "generated_at": generated_at,
+                        **expected_author_reputation,
+                    }
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append(f"invalid author reputation configuration or data: {exc}")
+    elif reputation_path.exists():
+        errors.append("unexpected author reputation artifact")
+    expected_author_keys = report_author_keys(mods, expected_author_reputation)
     report_result = None
     report_path = root / "report.html"
     hotlinked_path = root / "report-hotlinked.html"
@@ -1140,6 +1486,8 @@ def verify_output(
             report_path,
             expected_cards=len(_report_groups(mods)),
             update_filter=update_filter,
+            expected_author_reputation=expected_author_reputation,
+            expected_author_keys=expected_author_keys,
         )
         errors.extend(report_result["errors"])
     elif require_reports:
@@ -1150,6 +1498,8 @@ def verify_output(
             hotlinked_path,
             expected_cards=len(_report_groups(mods)),
             update_filter=update_filter,
+            expected_author_reputation=expected_author_reputation,
+            expected_author_keys=expected_author_keys,
         )
         errors.extend(hotlinked_result["errors"])
         local_text = report_path.read_text(encoding="utf-8") if report_path.exists() else ""
@@ -1327,6 +1677,7 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
         game_name=config["display_name"],
         sources=config["sources"],
         update_filter=config["update_filter"],
+        author_tiers=config["author_tiers"],
     )
     return {**manifest, "report_cards": report["cards"]}
 
@@ -1361,6 +1712,7 @@ def _generate_selected_reports(args, generated_at: str) -> dict:
             game_name=config["display_name"],
             sources=config["sources"],
             update_filter=config["update_filter"],
+            author_tiers=config["author_tiers"],
         )
     if args.game != "all":
         return results[args.game]
@@ -1379,6 +1731,7 @@ def _verify_selected_outputs(args) -> dict:
             expected_nexus_pages=nexus_pages if "nexus" in config["sources"] else 0,
             require_full_nexus_pages=config["require_full_nexus_pages"],
             update_filter=config["update_filter"],
+            author_tiers=config["author_tiers"],
             require_reports=True,
         )
     if args.game != "all":

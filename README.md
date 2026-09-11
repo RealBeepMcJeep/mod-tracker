@@ -14,7 +14,7 @@ A deterministic, standard-library-only Python pipeline that collects mods from T
 | Retro Rewind - Video Store Simulator | `retrorewindvideostoresimulator` | unavailable; Nexus-only | `games/retro-rewind/` | `/reports/retro-rewind-mod-tracker/` |
 | TCG Card Shop Simulator | `tcgcardshopsimulator` | `tcg-card-shop-simulator` | `games/tcg-card-shop-simulator/` | `/reports/tcg-card-shop-simulator-mod-tracker/` |
 
-The exact registry is version-controlled in [`games.json`](games.json). It defines source support, source identifiers, pagination policy, output directory, display name, an optional shared update-filter label/cutoff, and publication destination. Registry validation rejects missing required games, unsupported sources, unsafe paths, invalid slugs, malformed update filters, and duplicate output/publication destinations.
+The exact registry is version-controlled in [`games.json`](games.json). It defines source support, source identifiers, pagination policy, output directory, display name, shared author-tier percentiles and mapping path, an optional update-filter label/cutoff, and publication destination. Registry validation rejects missing required games, unsupported sources, unsafe paths, invalid slugs, malformed author-tier or update-filter configuration, and duplicate output/publication destinations.
 
 Validated source references:
 
@@ -87,6 +87,8 @@ python3 tracker.py collect --game repo --thunderstore-pages 3 --nexus-pages 1
 Each game root contains only that game’s generated state:
 
 - `data/mods.json` — normalized source records, observations, and computed rates
+- `author-mappings.json` — explicit reciprocal Nexus/Thunderstore author aliases; `{}` is valid when no alias is confirmed
+- `data/author-reputation.json` — generation timestamp, configured percentiles, dynamic raw-download cutoffs, canonical totals, and assigned tiers
 - `raw/thunderstore/listings/` — listing HTML by ranking/page plus `manifest.json` with requested pages, actual fetched counts, and terminal status, where supported
 - `raw/thunderstore/packages/` — public package details, where supported
 - `raw/thunderstore/metrics/` — exact package metrics, where supported
@@ -128,6 +130,8 @@ The current-version rate remains unknown until there are two observations for th
 
 Cross-site grouping is explicit and manual only. The routine manual pass does not discover or add mappings. Mapped pairs render as one `Both` card with separate source links and combined confirmed source metrics; unmapped records remain source-specific.
 
+Author rarity is also explicit and deterministic. Each game independently sums raw lifetime downloads across every stored mod for each source-scoped identity, merges identities only through that game’s reciprocal `author-mappings.json`, and computes nearest-rank cutoffs from that game’s canonical-author pool. The configured bands are Normal below the 60th percentile, Magic at or above the 60th, Epic at or above the 85th, and Legendary at or above the 97th. Ties at a cutoff are promoted together. Author names render white, blue, purple, or orange with matching tier/download tooltip and ARIA metadata plus a concise on-page legend.
+
 Reports provide search, source filters, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. One shared registry-driven update-filter path serves Valheim (`v1 filter`, September 8, 2026), PEAK (`v2.0 filter`, August 10, 2026), and R.E.P.O. (`v0.4 filter`, May 7, 2026); each includes mods updated exactly at or after its UTC cutoff. Games with a null filter omit the control.
 
 ## Verification
@@ -140,6 +144,6 @@ python3 tracker.py verify --game all --output-root .
 git diff --check
 ```
 
-Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
+Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, independently recomputed author reputation, exact rendered author identity/canonical/total/tier/accessibility metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
 
 Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

@@ -127,7 +127,7 @@
  <text x="470" y="732" fill="#94a3b8" font-size="9">append {time, downloads, version}</text><text x="470" y="748" fill="#94a3b8" font-size="9">idempotently to observations[]</text>
 
  <rect x="450" y="793" width="200" height="70" rx="9" fill="#0f172a"/><rect x="450" y="793" width="200" height="70" rx="9" fill="#064e3b66" stroke="#34d399" stroke-width="1.5"/>
- <text x="470" y="820" fill="#fff" font-size="13" font-weight="700">Verification gates</text><text x="470" y="841" fill="#94a3b8" font-size="9">actual page scope · unique IDs · schema</text><text x="470" y="856" fill="#94a3b8" font-size="9">manifest/snapshot · report attributes</text>
+ <text x="470" y="820" fill="#fff" font-size="13" font-weight="700">Verification gates</text><text x="470" y="841" fill="#94a3b8" font-size="9">actual page scope · unique IDs · schema</text><text x="470" y="856" fill="#94a3b8" font-size="9">manifest/snapshot · report + author reputation</text>
 </g>
 
 <!-- storage boxes -->
@@ -150,7 +150,7 @@
  <text x="800" y="619" fill="#fff" font-size="10" font-weight="700">Derived on report generation</text><text x="800" y="637" fill="#94a3b8" font-size="9">lifetime downloads/day</text><text x="800" y="653" fill="#94a3b8" font-size="9">current-version observed delta/day</text>
  <text x="800" y="676" fill="#fbbf24" font-size="8">Version rate needs ≥2 same-version observations</text>
  <line x1="800" y1="693" x2="1015" y2="693" stroke="#312e81"/>
- <text x="800" y="716" fill="#94a3b8" font-size="9">canonical_group_id + manual match metadata</text><text x="800" y="732" fill="#fb7185" font-size="8">No automatic cross-site name matching</text>
+ <text x="800" y="716" fill="#94a3b8" font-size="9">mod mappings + reciprocal author mappings</text><text x="800" y="732" fill="#fb7185" font-size="8">No automatic cross-site name matching</text>
 
  <rect x="780" y="780" width="255" height="80" rx="9" fill="#0f172a"/><rect x="780" y="780" width="255" height="80" rx="9" fill="#4c1d9555" stroke="#a78bfa" stroke-width="1.5"/>
  <text x="800" y="807" fill="#fff" font-size="12" font-weight="700">snapshots/latest.json</text><text x="800" y="828" fill="#94a3b8" font-size="9">time · sources · fresh/stored counts</text><text x="800" y="844" fill="#94a3b8" font-size="9">actual Thunderstore counts · Nexus scope</text>
@@ -164,7 +164,7 @@
  <text x="1140" y="485" fill="#94a3b8" font-size="9">source badge · title · author · version</text><text x="1140" y="501" fill="#94a3b8" font-size="9">summary · category tags · thumbnail</text><text x="1140" y="517" fill="#94a3b8" font-size="9">created/updated dates · total downloads</text><text x="1140" y="533" fill="#94a3b8" font-size="9">endorsements or likes · pinned status</text><text x="1140" y="549" fill="#94a3b8" font-size="9">canonical source URL on clickable card</text>
  <line x1="1140" y1="569" x2="1380" y2="569" stroke="#164e63"/>
  <text x="1140" y="592" fill="#22d3ee" font-size="9">DERIVED / AGGREGATED</text>
- <text x="1140" y="612" fill="#94a3b8" font-size="9">total downloads ÷ age → lifetime/day</text><text x="1140" y="628" fill="#94a3b8" font-size="9">same-version observation delta ÷ time</text><text x="1140" y="644" fill="#94a3b8" font-size="9">pinned Thunderstore cards fixed on top</text>
+ <text x="1140" y="612" fill="#94a3b8" font-size="9">total downloads ÷ age → lifetime/day</text><text x="1140" y="628" fill="#94a3b8" font-size="9">author totals → game-local 60/85/97 rarity</text><text x="1140" y="644" fill="#94a3b8" font-size="9">Normal · Magic · Epic · Legendary author colors</text>
  <line x1="1140" y1="664" x2="1380" y2="664" stroke="#164e63"/>
  <text x="1140" y="687" fill="#22d3ee" font-size="9">CLIENT-SIDE CONTROLS</text>
  <text x="1140" y="706" fill="#94a3b8" font-size="9">search · source filter · sort by updated,</text><text x="1140" y="722" fill="#94a3b8" font-size="9">downloads, lifetime/day, version delta/day</text>
@@ -194,7 +194,7 @@
 <section class="cards">
  <article class="card"><h2><span class="dot" style="background:var(--amber)"></span>Source precedence</h2><ul><li>• Thunderstore listing supplies discovery, presentation metadata, pin state, and ranking appearances.</li><li>• Thunderstore metrics API supplies exact downloads, rating, and latest version.</li><li>• Nexus GraphQL supplies ranked discovery plus most display and metric fields; v1 detail enriches/fills gaps.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--violet)"></span>Persistence model</h2><ul><li>• Nexus and Thunderstore overlap within a dual-source game while keeping independent pacing.</li><li>• Both providers join before normalized data, snapshots, or reports change; failures are aggregated.</li><li>• No database, service, scheduler, or LLM is required for routine collection/report generation.</li></ul></article>
- <article class="card"><h2><span class="dot" style="background:var(--cyan)"></span>Report semantics</h2><ul><li>• The report compares each source record “apples to apples” using common normalized fields.</li><li>• Lifetime rate is computable immediately; current-version observed rate requires two tracker runs.</li><li>• Search, source filtering, and sorting happen locally in the generated HTML.</li></ul></article>
+ <article class="card"><h2><span class="dot" style="background:var(--cyan)"></span>Report semantics</h2><ul><li>• The report compares each source record “apples to apples” using common normalized fields.</li><li>• Author rarity uses raw lifetime totals and dynamic game-local percentile cutoffs.</li><li>• Search, source filtering, and sorting happen locally in the generated HTML.</li></ul></article>
  <article class="card"><h2><span class="dot" style="background:var(--rose)"></span>Deliberate safeguards</h2><ul><li>• Credentials and cookies remain runtime-only and outside Git.</li><li>• Cross-site matches are manual only—never inferred from names.</li><li>• All five game artifacts must verify and all publication targets must dry-run before the first live publish.</li></ul></article>
 </section>
 <p class="footer">Mod Tracker · DATA_FLOW.html · five isolated games · shared stdlib pipeline · independent static-site reports</p>

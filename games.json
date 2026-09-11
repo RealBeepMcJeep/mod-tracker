@@ -1,5 +1,13 @@
 {
   "peak": {
+    "author_tiers": {
+      "mappings_file": "author-mappings.json",
+      "percentiles": {
+        "epic": 85,
+        "legendary": 97,
+        "magic": 60
+      }
+    },
     "display_name": "PEAK",
     "nexus_domain": "peak",
     "nexus_pages": 2,
@@ -21,6 +29,14 @@
     }
   },
   "repo": {
+    "author_tiers": {
+      "mappings_file": "author-mappings.json",
+      "percentiles": {
+        "epic": 85,
+        "legendary": 97,
+        "magic": 60
+      }
+    },
     "display_name": "R.E.P.O.",
     "nexus_domain": "repo",
     "nexus_pages": 2,
@@ -42,6 +58,14 @@
     }
   },
   "retro-rewind": {
+    "author_tiers": {
+      "mappings_file": "author-mappings.json",
+      "percentiles": {
+        "epic": 85,
+        "legendary": 97,
+        "magic": 60
+      }
+    },
     "display_name": "Retro Rewind - Video Store Simulator",
     "nexus_domain": "retrorewindvideostoresimulator",
     "nexus_pages": 2,
@@ -57,6 +81,14 @@
     "update_filter": null
   },
   "tcg-card-shop-simulator": {
+    "author_tiers": {
+      "mappings_file": "author-mappings.json",
+      "percentiles": {
+        "epic": 85,
+        "legendary": 97,
+        "magic": 60
+      }
+    },
     "display_name": "TCG Card Shop Simulator",
     "nexus_domain": "tcgcardshopsimulator",
     "nexus_pages": 2,
@@ -75,6 +107,14 @@
     "update_filter": null
   },
   "valheim": {
+    "author_tiers": {
+      "mappings_file": "author-mappings.json",
+      "percentiles": {
+        "epic": 85,
+        "legendary": 97,
+        "magic": 60
+      }
+    },
     "display_name": "Valheim",
     "nexus_domain": "valheim",
     "nexus_pages": 2,

@@ -23,6 +23,384 @@ def sample(source, source_id, pinned=False, title="Mod"):
 
 
 class ReportTests(unittest.TestCase):
+    def test_author_rarity_uses_dynamic_per_game_percentiles(self):
+        mods = []
+        for downloads in range(1, 101):
+            mod = sample("nexus", str(downloads))
+            mod["author"] = f"Author {downloads}"
+            mod["total_downloads"] = downloads
+            mods.append(mod)
+
+        reputation = tracker.build_author_reputation(
+            mods,
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+
+        self.assertEqual(
+            reputation["cutoffs"],
+            {"magic": 60, "epic": 85, "legendary": 97},
+        )
+        self.assertEqual(reputation["authors"]["nexus:author 59"]["tier"], "normal")
+        self.assertEqual(reputation["authors"]["nexus:author 60"]["tier"], "magic")
+        self.assertEqual(reputation["authors"]["nexus:author 84"]["tier"], "magic")
+        self.assertEqual(reputation["authors"]["nexus:author 85"]["tier"], "epic")
+        self.assertEqual(reputation["authors"]["nexus:author 96"]["tier"], "epic")
+        self.assertEqual(reputation["authors"]["nexus:author 97"]["tier"], "legendary")
+
+    def test_author_reputation_sums_raw_downloads_per_source_scoped_identity(self):
+        nexus_one = sample("nexus", "1")
+        nexus_one.update(author="Shared Name", total_downloads=100)
+        nexus_two = sample("nexus", "2")
+        nexus_two.update(author=" shared   name ", total_downloads=250)
+        thunderstore = sample("thunderstore", "Team/Package")
+        thunderstore.update(author="Shared Name", total_downloads=900)
+
+        reputation = tracker.build_author_reputation(
+            [nexus_one, nexus_two, thunderstore],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+
+        self.assertEqual(reputation["authors"]["nexus:shared name"]["downloads"], 350)
+        self.assertEqual(
+            reputation["authors"]["thunderstore:shared name"]["downloads"], 900
+        )
+
+    def test_author_reputation_combines_only_explicitly_mapped_identities(self):
+        nexus = sample("nexus", "1")
+        nexus.update(author="Shared Name", total_downloads=350)
+        thunderstore = sample("thunderstore", "Team/Package")
+        thunderstore.update(author="SharedName", total_downloads=900)
+        mappings = {
+            "nexus:shared name": {
+                "canonical_author_id": "shared-author",
+                "matched_to": ["thunderstore:sharedname"],
+                "method": "manual",
+            },
+            "thunderstore:sharedname": {
+                "canonical_author_id": "shared-author",
+                "matched_to": ["nexus:shared name"],
+                "method": "manual",
+            },
+        }
+
+        reputation = tracker.build_author_reputation(
+            [nexus, thunderstore],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            mappings,
+        )
+
+        self.assertEqual(reputation["authors"]["nexus:shared name"]["downloads"], 1250)
+        self.assertEqual(
+            reputation["authors"]["thunderstore:sharedname"],
+            reputation["authors"]["nexus:shared name"],
+        )
+        self.assertEqual(
+            reputation["authors"]["nexus:shared name"]["canonical_author_id"],
+            "shared-author",
+        )
+
+    def test_author_reputation_rejects_invalid_download_totals(self):
+        config = {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}}
+        for invalid in (True, "not-a-number"):
+            with self.subTest(invalid=invalid):
+                mod = sample("nexus", "1")
+                mod["total_downloads"] = invalid
+                with self.assertRaisesRegex(ValueError, "total_downloads"):
+                    tracker.build_author_reputation([mod], config, {})
+
+    def test_author_reputation_empty_pool_has_no_profiles(self):
+        reputation = tracker.build_author_reputation(
+            [],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        assert reputation is not None
+        self.assertEqual(reputation["authors"], {})
+        self.assertEqual(
+            reputation["cutoffs"],
+            {"magic": 0, "epic": 0, "legendary": 0},
+        )
+
+    def test_author_reputation_one_author_is_legendary(self):
+        mod = sample("nexus", "1")
+        mod.update(author="Solo", total_downloads=10)
+        reputation = tracker.build_author_reputation(
+            [mod],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        assert reputation is not None
+        self.assertEqual(reputation["cutoffs"], {"magic": 10, "epic": 10, "legendary": 10})
+        self.assertEqual(reputation["authors"]["nexus:solo"]["tier"], "legendary")
+
+    def test_author_reputation_promotes_all_ties_at_a_cutoff(self):
+        totals = (1, 10, 10, 20, 30)
+        mods = []
+        for index, downloads in enumerate(totals):
+            mod = sample("nexus", str(index))
+            mod.update(author=f"Author {index}", total_downloads=downloads)
+            mods.append(mod)
+        reputation = tracker.build_author_reputation(
+            mods,
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        assert reputation is not None
+        self.assertEqual(reputation["cutoffs"]["magic"], 10)
+        self.assertEqual(reputation["authors"]["nexus:author 1"]["tier"], "magic")
+        self.assertEqual(reputation["authors"]["nexus:author 2"]["tier"], "magic")
+
+    def test_author_reputation_skips_missing_authors_and_clamps_negative_totals(self):
+        missing = sample("nexus", "1")
+        missing.update(author="", total_downloads=500)
+        negative = sample("nexus", "2")
+        negative.update(author="Known", total_downloads=-50)
+        absent = sample("nexus", "3")
+        absent.update(author="Known", total_downloads=None)
+        reputation = tracker.build_author_reputation(
+            [missing, negative, absent],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        assert reputation is not None
+        self.assertEqual(set(reputation["authors"]), {"nexus:known"})
+        self.assertEqual(reputation["authors"]["nexus:known"]["downloads"], 0)
+
+    def test_grouped_card_uses_primary_source_identity_with_explicit_combined_author_total(self):
+        nexus = sample("nexus", "1")
+        nexus.update(
+            author="Alice Nexus",
+            total_downloads=100,
+            canonical_group_id="shared-mod",
+            updated_at="2026-09-11T00:00:00Z",
+        )
+        thunderstore = sample("thunderstore", "Alice/Mod")
+        thunderstore.update(
+            author="Alice TS",
+            total_downloads=200,
+            canonical_group_id="shared-mod",
+            updated_at="2026-09-10T00:00:00Z",
+        )
+        mappings = {
+            "nexus:alice nexus": {
+                "canonical_author_id": "alice",
+                "matched_to": ["thunderstore:alice ts"],
+                "method": "manual",
+            },
+            "thunderstore:alice ts": {
+                "canonical_author_id": "alice",
+                "matched_to": ["nexus:alice nexus"],
+                "method": "manual",
+            },
+        }
+        reputation = tracker.build_author_reputation(
+            [nexus, thunderstore],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            mappings,
+        )
+        page = tracker.render_report(
+            [nexus, thunderstore],
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+
+        self.assertEqual(page.count('class="mod-card'), 1)
+        self.assertIn('data-author-key="nexus:alice nexus"', page)
+        self.assertIn('data-author-canonical="alice"', page)
+        self.assertIn('data-author-downloads="300"', page)
+        self.assertEqual(
+            tracker.report_author_keys([nexus, thunderstore], reputation),
+            ["nexus:alice nexus"],
+        )
+
+    def test_report_colors_author_names_by_dynamic_rarity(self):
+        mods = []
+        for downloads in range(1, 101):
+            mod = sample("nexus", str(downloads))
+            mod["author"] = f"Author {downloads}"
+            mod["total_downloads"] = downloads
+            mods.append(mod)
+        config = {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}}
+        reputation = tracker.build_author_reputation(mods, config, {})
+
+        page = tracker.render_report(
+            mods,
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+
+        for tier, author, downloads in (
+            ("normal", "Author 59", 59),
+            ("magic", "Author 60", 60),
+            ("epic", "Author 85", 85),
+            ("legendary", "Author 97", 97),
+        ):
+            self.assertIn(
+                f'class="author author-tier-{tier}" data-author-tier="{tier}"',
+                page,
+            )
+            self.assertIn(
+                f'{tier.title()} author · {downloads:,} lifetime downloads',
+                page,
+            )
+            self.assertIn(f'>{author}</span>', page)
+        self.assertIn("--author-normal:#f2f4f7", page)
+        self.assertIn("--author-magic:#4da3ff", page)
+        self.assertIn("--author-epic:#c084fc", page)
+        self.assertIn("--author-legendary:#fb923c", page)
+        for tier in ("normal", "magic", "epic", "legendary"):
+            self.assertIn(f".author-tier-{tier}{{color:var(--author-{tier})", page)
+
+    def test_author_rendering_escapes_identity_text_and_canonical_metadata(self):
+        mod = sample("nexus", "1")
+        mod["author"] = 'Alice <Admin> & "Team"'
+        identity = 'nexus:alice <admin> & "team"'
+        mappings = {
+            identity: {
+                "canonical_author_id": "alice-team",
+                "matched_to": ["thunderstore:alice-team"],
+                "method": "manual",
+            },
+            "thunderstore:alice-team": {
+                "canonical_author_id": "alice-team",
+                "matched_to": [identity],
+                "method": "manual",
+            },
+        }
+        reputation = tracker.build_author_reputation(
+            [mod],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            mappings,
+        )
+
+        rendered = tracker.render_author_name(mod, reputation)
+
+        self.assertIn("Alice &lt;Admin&gt; &amp; &quot;Team&quot;", rendered)
+        self.assertIn(
+            'data-author-key="nexus:alice &lt;admin&gt; &amp; &quot;team&quot;"',
+            rendered,
+        )
+        self.assertIn('data-author-canonical="alice-team"', rendered)
+
+    def test_author_rarity_report_includes_accessible_legend(self):
+        mod = sample("nexus", "1")
+        reputation = tracker.build_author_reputation(
+            [mod],
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+
+        page = tracker.render_report(
+            [mod],
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+
+        self.assertIn('class="author-legend" aria-label="Author rarity legend"', page)
+        self.assertIn(".author-legend{display:flex", page)
+        for tier in ("Normal", "Magic", "Epic", "Legendary"):
+            self.assertIn(f'>{tier}</span>', page)
+
+    def test_verifier_rejects_missing_author_metadata_for_one_card(self):
+        first = sample("nexus", "1")
+        first["author"] = "Alice"
+        second = sample("nexus", "2")
+        second["author"] = "Bob"
+        mods = [first, second]
+        reputation = tracker.build_author_reputation(
+            mods,
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        page = tracker.render_report(
+            mods,
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+        page = page.replace(tracker.render_author_name(first, reputation), "Alice", 1)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path,
+                expected_cards=2,
+                expected_author_reputation=reputation,
+                expected_author_keys=["nexus:alice", "nexus:bob"],
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertIn("rendered author identities do not match report cards", result["errors"])
+
+    def test_verifier_rejects_tampered_author_reputation_metadata(self):
+        mods = [sample("nexus", "1")]
+        mods[0].update(author="Alice", total_downloads=100)
+        config = {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}}
+        reputation = tracker.build_author_reputation(mods, config, {})
+        page = tracker.render_report(
+            mods,
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+        changes = {
+            "tier": ('data-author-tier="legendary"', 'data-author-tier="normal"'),
+            "downloads": ('data-author-downloads="100"', 'data-author-downloads="999"'),
+            "identity": ('data-author-key="nexus:alice"', 'data-author-key="nexus:mallory"'),
+            "canonical": ('data-author-canonical="nexus:alice"', 'data-author-canonical="nexus:mallory"'),
+            "class": ('class="author author-tier-legendary"', 'class="author author-tier-normal"'),
+            "tooltip": ('title="Legendary author', 'title="Normal author'),
+            "aria": ('aria-label="Alice, Legendary author', 'aria-label="Alice, Normal author'),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            for field, (old, new) in changes.items():
+                with self.subTest(field=field):
+                    tampered = page.replace(old, new, 1)
+                    self.assertNotEqual(tampered, page)
+                    path.write_text(tampered)
+                    result = tracker.verify_report(
+                        path,
+                        expected_cards=1,
+                        update_filter=tracker.DEFAULT_UPDATE_FILTER,
+                        expected_author_reputation=reputation,
+                        expected_author_keys=["nexus:alice"],
+                    )
+                    self.assertFalse(result["ok"], field)
+                    self.assertTrue(any("author" in error for error in result["errors"]))
+
+    def test_verifier_rejects_author_metadata_moved_and_duplicated_between_same_author_cards(self):
+        first = sample("nexus", "1")
+        second = sample("nexus", "2")
+        first["author"] = second["author"] = "Alice"
+        mods = [first, second]
+        reputation = tracker.build_author_reputation(
+            mods,
+            {"percentiles": {"magic": 60, "epic": 85, "legendary": 97}},
+            {},
+        )
+        page = tracker.render_report(
+            mods, "2026-09-11T02:00:00Z", author_reputation=reputation
+        )
+        author_html = tracker.render_author_name(first, reputation)
+        tampered = page.replace(author_html, "", 1)
+        tampered = tampered.replace(author_html, author_html + author_html, 1)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(tampered)
+            result = tracker.verify_report(
+                path,
+                expected_cards=2,
+                expected_author_reputation=reputation,
+                expected_author_keys=["nexus:alice", "nexus:alice"],
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("author metadata" in error for error in result["errors"]))
+
     def test_embedded_local_report_still_writes_hotlinked_publication_artifact(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

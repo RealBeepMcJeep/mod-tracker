@@ -101,6 +101,13 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Regenerate and strictly verify all five reports from saved data, publish them in one preflighted batch, push `public-artifacts/main`, and verify all five live routes are HTTP 200 and byte-identical.
 - [x] Use the existing `AI-Goes-Fast/mod-tracker` Gitea repository and verify its `main` branch is reachable before pushing this milestone.
 
+## Additional Criteria: Ordered Morning Publication Pass
+
+- [x] Regenerate Valheim from saved data, strictly verify it, publish it alone, and verify its live route before starting any other game.
+- [ ] Regenerate and strictly verify the other four games, publish them as one batch, and verify their four live routes before starting the manual pass.
+- [ ] Run this morning's full manual collection pass for all five games and strictly verify every refreshed game without publishing partial results.
+- [ ] Regenerate all five reports from the refreshed saved data, publish them as one batch, push both repositories, and verify all five live routes are HTTP 200 and byte-identical.
+
 ## Definition of Done / Verification
 
 - Run from `/opt/data/projects/mod-tracker`:

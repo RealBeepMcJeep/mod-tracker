@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import re
@@ -948,6 +949,24 @@ def report_author_keys(mods: list[dict], author_reputation: dict | None):
     return keys
 
 
+def report_category_sets(mods: list[dict]) -> list[list[str]]:
+    """Return normalized categories in the exact card-rendering order."""
+    groups = _report_groups(mods)
+    ordered = [
+        *[group for group in groups if any(mod.get("pinned") for mod in group)],
+        *[group for group in groups if not any(mod.get("pinned") for mod in group)],
+    ]
+    return [
+        sorted({
+            " ".join(str(category).split()).casefold()
+            for mod in group
+            for category in mod.get("categories", [])
+            if " ".join(str(category).split())
+        })
+        for group in ordered
+    ]
+
+
 def matches_update_filter(updated_at: str, update_filter: dict | None) -> bool:
     """Classify one update timestamp against an optional inclusive UTC cutoff."""
     return bool(
@@ -1022,6 +1041,10 @@ def render_author_legend(author_reputation: dict | None) -> str:
     )
 
 
+REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();"
+REPORT_STYLESHEET_SHA256 = "b75b3a9ad44f9af5181015887705666b72c57595b4ea5844176cfa92bb574a76"
+
+
 def render_report(
     mods,
     generated_at,
@@ -1038,6 +1061,17 @@ def render_report(
     generated_label = (
         f"{arizona_now.strftime('%b')} {arizona_now.day}, {arizona_now.year} at "
         f"{arizona_now.strftime('%I:%M %p').lstrip('0')} {arizona_now.tzname()}"
+    )
+    categories = {}
+    for mod in mods:
+        for category in mod.get("categories", []):
+            label = " ".join(str(category).split())
+            if label:
+                categories.setdefault(label.casefold(), label)
+    category_options = '<option value="">All categories</option>' + "".join(
+        '<option value="%s">%s</option>'
+        % (escape(value, quote=True), escape(categories[value]))
+        for value in sorted(categories)
     )
     def card(members):
         members = sorted(members, key=lambda m: m['source'])
@@ -1061,21 +1095,31 @@ def render_report(
         lifetime_label = 'Combined lifetime / day' if both else 'Lifetime / day'
         adult = any(m.get('adult_content') for m in members)
         pinned = any(m.get('pinned') for m in members)
-        cats = sorted({x for m in members for x in m.get('categories',[])})
+        category_labels = {}
+        for member in members:
+            for category in member.get('categories', []):
+                category_label = " ".join(str(category).split())
+                if category_label:
+                    category_labels.setdefault(category_label.casefold(), category_label)
+        category_values = sorted(category_labels)
+        cats = [category_labels[value] for value in category_values]
+        category_data = escape(
+            json.dumps(category_values, separators=(",", ":")), quote=True
+        )
         search = ' '.join([x for m in members for x in [m.get('title',''),m.get('author','')]+m.get('categories',[])]).lower()
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
         metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
         author_html = render_author_name(primary, author_reputation)
-        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
+        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-categories="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
 <div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="%s">%s</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="%s">%s</time></div></div></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<span class="tag">%s</span>'%escape(x) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), category_data, escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<button type="button" class="tag" data-category="%s">%s</button>' % (escape(" ".join(str(x).split()).casefold(), quote=True), escape(str(x))) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
-:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-normal:#f2f4f7;--author-magic:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-normal{color:var(--author-normal)}.author-tier-magic{color:var(--author-magic);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%%;overflow-wrap:anywhere}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p><div class="toolbar"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div></header><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
+:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-normal:#f2f4f7;--author-magic:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-normal{color:var(--author-normal)}.author-tier-magic{color:var(--author-magic);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{padding:10px 14px;max-height:50vh;overflow-y:auto;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count');function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase();let n=0;cards.forEach(c=>{const show=c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true');c.hidden=!show;if(show)n++});count.textContent=n+' result'+(n===1?'':'s');for(const id of ['pinned-group','regular-group']){const g=document.getElementById(id),key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');[...g.children].sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])).forEach(c=>g.appendChild(c))}}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',update));const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
         label for source, label in (("thunderstore", "Thunderstore"), ("nexus", "Nexus Mods"))
@@ -1096,6 +1140,7 @@ def render_report(
     page = page.replace(
         "{UPDATE_FILTER_CONTROL}", render_update_filter_control(update_filter)
     )
+    page = page.replace("{CATEGORY_OPTIONS}", category_options)
     page = page.replace("{AUTHOR_LEGEND}", render_author_legend(author_reputation))
     page = page.replace(
         "<head>",
@@ -1118,18 +1163,61 @@ class ReportVerifier(HTMLParser):
         self.card_author_metadata = []
         self._current_card_authors = None
         self.report_generated_at = None
+        self.category_controls = 0
+        self.category_options = []
+        self.card_category_metadata = []
+        self.card_category_buttons = []
+        self._current_card_category_buttons = None
+        self._in_category_filter = False
+        self.sticky_toolbars = 0
+        self._in_script = False
+        self._in_style = False
+        self.script_parts = []
+        self.style_parts = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "script":
+            self._in_script = True
+        if tag == "style":
+            self._in_style = True
         if attrs.get("id"):
             self.ids.add(attrs["id"])
         if tag == "input" and attrs.get("id") == "update-filter-toggle":
             self.update_filter_controls += 1
+        if tag == "select" and attrs.get("id") == "category-filter":
+            self.category_controls += 1
+            self._in_category_filter = True
+        if tag == "option" and self._in_category_filter:
+            self.category_options.append(attrs.get("value"))
+        if (
+            tag == "div"
+            and "toolbar" in (attrs.get("class") or "").split()
+            and attrs.get("role") == "region"
+            and attrs.get("aria-label") == "Mod filters"
+        ):
+            self.sticky_toolbars += 1
         if tag == "article" and "mod-card" in (attrs.get("class") or "").split():
             self.cards += 1
             self._current_card_authors = []
             self.card_author_metadata.append(self._current_card_authors)
-            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter"}
+            self._current_card_category_buttons = []
+            self.card_category_buttons.append(self._current_card_category_buttons)
+            raw_categories = attrs.get("data-categories")
+            try:
+                if not isinstance(raw_categories, str):
+                    raise ValueError
+                parsed_categories = json.loads(raw_categories)
+                if (
+                    not isinstance(parsed_categories, list)
+                    or any(not isinstance(value, str) for value in parsed_categories)
+                    or parsed_categories != sorted(set(parsed_categories))
+                ):
+                    raise ValueError
+            except (TypeError, ValueError, json.JSONDecodeError):
+                parsed_categories = None
+            self.card_category_metadata.append(parsed_categories)
+            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter", "data-categories"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
             self.card_update_metadata.append(
@@ -1141,12 +1229,28 @@ class ReportVerifier(HTMLParser):
             self.author_metadata.append(attrs)
             if self._current_card_authors is not None:
                 self._current_card_authors.append(attrs)
+        if tag == "button" and "tag" in (attrs.get("class") or "").split():
+            if self._current_card_category_buttons is not None:
+                self._current_card_category_buttons.append(attrs.get("data-category"))
         if tag == "meta" and attrs.get("name") == "report-generated-at":
             self.report_generated_at = attrs.get("content")
 
     def handle_endtag(self, tag):
         if tag == "article":
             self._current_card_authors = None
+            self._current_card_category_buttons = None
+        if tag == "select" and self._in_category_filter:
+            self._in_category_filter = False
+        if tag == "script":
+            self._in_script = False
+        if tag == "style":
+            self._in_style = False
+
+    def handle_data(self, data):
+        if self._in_script:
+            self.script_parts.append(data)
+        if self._in_style:
+            self.style_parts.append(data)
 
 
 def verify_report(
@@ -1156,14 +1260,18 @@ def verify_report(
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     expected_author_reputation: dict | None = None,
     expected_author_keys: list[str] | None = None,
+    expected_card_categories: list[list[str]] | None = None,
 ) -> dict:
     text = path.read_text(encoding="utf-8")
     parser = ReportVerifier()
     parser.feed(text)
+    script_text = "".join(parser.script_parts)
+    stylesheet_text = "".join(parser.style_parts)
+    style_text = re.sub(r"/\*.*?\*/", "", stylesheet_text, flags=re.DOTALL)
     errors = []
     if expected_cards is not None and parser.cards != expected_cards:
         errors.append(f"expected {expected_cards} cards, found {parser.cards}")
-    required_ids = {"pinned-group", "regular-group", "search", "source-filter", "sort", "nsfw-toggle"}
+    required_ids = {"pinned-group", "regular-group", "search", "source-filter", "category-filter", "sort", "nsfw-toggle"}
     expected_control = render_update_filter_control(update_filter)
     if update_filter is not None:
         required_ids.add("update-filter-toggle")
@@ -1175,6 +1283,38 @@ def verify_report(
         errors.append("missing report controls or fixed groups")
     if parser.missing_sort:
         errors.append(f"{parser.missing_sort} cards lack sort/navigation attributes")
+    if parser.category_controls != 1:
+        errors.append("category filter control is missing or duplicated")
+    if expected_card_categories is not None:
+        if parser.card_category_metadata != expected_card_categories:
+            errors.append("card category metadata does not match source records")
+        if parser.card_category_buttons != expected_card_categories:
+            errors.append("category tag buttons do not match card metadata")
+        expected_options = [""] + sorted({
+            category
+            for categories in expected_card_categories
+            for category in categories
+        })
+        if parser.category_options != expected_options:
+            errors.append("category filter options do not match report categories")
+    if parser.sticky_toolbars != 1 or (
+        hashlib.sha256(stylesheet_text.encode("utf-8")).hexdigest()
+        != REPORT_STYLESHEET_SHA256
+        or
+        ".toolbar{position:sticky;top:0;z-index:20" not in style_text
+        or "max-height:50vh;overflow-y:auto" not in style_text
+    ):
+        errors.append("sticky toolbar contract is missing or invalid")
+    category_javascript = (
+        "category=document.querySelector('#category-filter')",
+        "(!category.value||JSON.parse(c.dataset.categories).includes(category.value))",
+        "[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])]",
+        "e.stopPropagation();category.value=tag.dataset.category;update();category.focus()",
+    )
+    if script_text != REPORT_JAVASCRIPT or any(
+        fragment not in script_text for fragment in category_javascript
+    ):
+        errors.append("category filter JavaScript contract is missing or invalid")
     metadata_errors = 0
     for updated_at, actual in parser.card_update_metadata:
         try:
@@ -1240,9 +1380,9 @@ def verify_report(
     required_javascript = (
         "updateFilter=document.querySelector('#update-filter-toggle')",
         "(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')",
-        "[search,source,sort,nsfw,...(updateFilter?[updateFilter]:[])]",
+        "[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])]",
     )
-    if not all(fragment in text for fragment in required_javascript):
+    if not all(fragment in script_text for fragment in required_javascript):
         errors.append("missing shared update-filter JavaScript")
     return {"ok": not errors, "cards": parser.cards, "errors": errors}
 
@@ -1317,6 +1457,7 @@ def generate_report(
         update_filter=update_filter,
         expected_author_reputation=author_reputation,
         expected_author_keys=report_author_keys(mods, author_reputation),
+        expected_card_categories=report_category_sets(mods),
     )
     if not result["ok"]:
         raise RuntimeError("generated report failed verification: " + "; ".join(result["errors"]))
@@ -1488,6 +1629,7 @@ def verify_output(
             update_filter=update_filter,
             expected_author_reputation=expected_author_reputation,
             expected_author_keys=expected_author_keys,
+            expected_card_categories=report_category_sets(mods),
         )
         errors.extend(report_result["errors"])
     elif require_reports:
@@ -1500,6 +1642,7 @@ def verify_output(
             update_filter=update_filter,
             expected_author_reputation=expected_author_reputation,
             expected_author_keys=expected_author_keys,
+            expected_card_categories=report_category_sets(mods),
         )
         errors.extend(hotlinked_result["errors"])
         local_text = report_path.read_text(encoding="utf-8") if report_path.exists() else ""

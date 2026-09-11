@@ -132,7 +132,7 @@ Cross-site grouping is explicit and manual only. The routine manual pass does no
 
 Author rarity is also explicit and deterministic. Each game independently sums raw lifetime downloads across every stored mod for each source-scoped identity, merges identities only through that game’s reciprocal `author-mappings.json`, and computes nearest-rank cutoffs from that game’s canonical-author pool. The configured bands are Normal below the 60th percentile, Magic at or above the 60th, Epic at or above the 85th, and Legendary at or above the 97th. Ties at a cutoff are promoted together. Author names render white, blue, purple, or orange with matching tier/download tooltip and ARIA metadata plus a concise on-page legend.
 
-Reports provide search, source filters, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. One shared registry-driven update-filter path serves Valheim (`v1 filter`, September 8, 2026), PEAK (`v2.0 filter`, August 10, 2026), and R.E.P.O. (`v0.4 filter`, May 7, 2026); each includes mods updated exactly at or after its UTC cutoff. Games with a null filter omit the control.
+Reports provide search, source and category dropdowns, NSFW visibility (off by default and statically hidden without JavaScript), and numeric/date sorting using raw `data-*` values. Clicking a category chip selects that category in the dropdown and reapplies every filter together. The complete filter toolbar remains at the top while scrolling and becomes internally scrollable at a bounded height on narrow screens. One shared registry-driven update-filter path serves Valheim (`v1 filter`, September 8, 2026), PEAK (`v2.0 filter`, August 10, 2026), and R.E.P.O. (`v0.4 filter`, May 7, 2026); each includes mods updated exactly at or after its UTC cutoff. Games with a null filter omit the control.
 
 ## Verification
 
@@ -144,6 +144,6 @@ python3 tracker.py verify --game all --output-root .
 git diff --check
 ```
 
-Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, independently recomputed author reputation, exact rendered author identity/canonical/total/tier/accessibility metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
+Strict CLI verification checks configured and actual raw-page scope, Thunderstore listing-manifest/snapshot agreement, valid terminal short pages, stale-page absence, source-record uniqueness and required fields, both report artifacts, exact canonical card counts, required controls and sort metadata, source-derived category options/card metadata/buttons, category JavaScript, sticky responsive toolbar behavior, independently recomputed author reputation, exact rendered author identity/canonical/total/tier/accessibility metadata, matching hotlinked/local bytes, and absence of embedded `data:image/` content from the publication artifact.
 
 Project status is in [`TODO.md`](TODO.md); completed milestones are in [`CHANGELOG.md`](CHANGELOG.md).

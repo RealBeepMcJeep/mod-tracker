@@ -38,6 +38,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Keep every game's generated state isolated; preserve Valheim's legacy root layout and publication route.
 - Implement optional update-date controls only through the shared `update_filter` registry object, renderer, card metadata, JavaScript predicate, and verifier; labels and inclusive UTC cutoffs are configuration, never game-specific branches.
 - Implement author rarity only through shared `author_tiers` registry data: sum raw lifetime downloads per source-scoped/canonical author, merge only reciprocal cross-provider aliases, calculate nearest-rank 60/85/97 cutoffs per game, render white/blue/purple/orange author metadata, and independently recompute it during verification.
+- Keep category filtering shared and source-derived: normalized card metadata and dropdown options must match grouped report categories, category chips must be native buttons, all filters must compose in one predicate, and the verifier must reject altered metadata or interaction code. Keep the toolbar outside the title header so viewport-sticky positioning is not parent-bounded; cap its narrow-screen height.
 - Routine manual passes do not discover or alter cross-site mappings.
 - Publish all configured sites as one preflighted batch: replace with rollback protection, commit once, deploy once, verify every URL.
 - Commit only verified milestones. Push when explicitly requested by the active task.

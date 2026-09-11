@@ -89,6 +89,18 @@ Complete dynamic author-rarity support for Valheim first and then all other conf
 - [x] Fetch a nonexistent report route and confirm it still returns HTTP 404.
 - [x] Update the `multi-game-mod-tracker` skill with any reusable dynamic author-tier, mapping, verification, or all-game publication lessons not already documented.
 
+## Additional Criteria: Category Filter and Sticky Controls
+
+- [x] Add RED→GREEN renderer tests for a category dropdown populated from the current report’s categories, including an all-categories option and HTML escaping.
+- [x] Add RED→GREEN interaction-contract tests proving category filtering composes with search, source, NSFW, and update-date filters.
+- [x] Make every category tag a keyboard-accessible button that selects its category in the dropdown and reapplies filtering without navigating the card.
+- [x] Make the search, dropdowns, and checkboxes remain visible at the top while scrolling, with responsive styling that does not obscure report content.
+- [x] Extend strict report verification to require the shared category control, card category metadata, category predicate, tag-to-filter behavior, and sticky toolbar contract.
+- [x] Update project documentation, run all static and generated-report gates, and pass an independent fail-closed pre-commit review.
+- [ ] Commit and push the verified tracker milestone; confirm local `HEAD` equals `origin/main` and the worktree is clean.
+- [ ] Regenerate and strictly verify all five reports from saved data, publish them in one preflighted batch, push `public-artifacts/main`, and verify all five live routes are HTTP 200 and byte-identical.
+- [x] Use the existing `AI-Goes-Fast/mod-tracker` Gitea repository and verify its `main` branch is reachable before pushing this milestone.
+
 ## Definition of Done / Verification
 
 - Run from `/opt/data/projects/mod-tracker`:

@@ -450,6 +450,146 @@ class ReportTests(unittest.TestCase):
         self.assertIn("@media(max-width:520px)", page)
         self.assertIn("location.href", page)
 
+    def test_report_category_filter_lists_unique_escaped_categories(self):
+        first = sample("nexus", "1")
+        first["categories"] = ["Utility", 'A&B <Tools>']
+        second = sample("thunderstore", "Team/Two")
+        second["categories"] = ["utility", "Libraries"]
+
+        page = tracker.render_report([first, second], "2026-09-09T20:00:00Z")
+
+        self.assertIn(
+            '<select id="category-filter"><option value="">All categories</option>',
+            page,
+        )
+        self.assertIn(
+            '<option value="a&amp;b &lt;tools&gt;">A&amp;B &lt;Tools&gt;</option>',
+            page,
+        )
+        self.assertIn('<option value="libraries">Libraries</option>', page)
+        self.assertEqual(page.count('<option value="utility">'), 1)
+
+    def test_category_filter_composes_with_every_existing_filter(self):
+        mod = sample("nexus", "1")
+        mod["categories"] = ["Utility", "Libraries"]
+
+        page = tracker.render_report([mod], "2026-09-09T20:00:00Z")
+
+        self.assertIn(
+            'data-categories="[&quot;libraries&quot;,&quot;utility&quot;]"',
+            page,
+        )
+        self.assertIn("category=document.querySelector('#category-filter')", page)
+        self.assertIn(
+            "(!category.value||JSON.parse(c.dataset.categories).includes(category.value))",
+            page,
+        )
+        self.assertIn(
+            "[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])]",
+            page,
+        )
+
+    def test_category_tags_are_buttons_that_activate_the_category_filter(self):
+        mod = sample("nexus", "1")
+        mod["categories"] = ['A&B <Tools>']
+
+        page = tracker.render_report([mod], "2026-09-09T20:00:00Z")
+
+        self.assertIn(
+            '<button type="button" class="tag" data-category="a&amp;b &lt;tools&gt;">A&amp;B &lt;Tools&gt;</button>',
+            page,
+        )
+        self.assertIn("const tags=[...document.querySelectorAll('.tag[data-category]')]", page)
+        self.assertIn(
+            "e.stopPropagation();category.value=tag.dataset.category;update();category.focus()",
+            page,
+        )
+        self.assertIn("if(!e.target.closest('a,button,input,select'))", page)
+
+    def test_report_controls_stick_to_viewport_without_mobile_obstruction(self):
+        page = tracker.render_report(
+            [sample("nexus", "1")], "2026-09-09T20:00:00Z"
+        )
+
+        self.assertIn('</header><div class="toolbar" role="region" aria-label="Mod filters">', page)
+        header = page.split("</header>", 1)[0]
+        self.assertNotIn('class="toolbar"', header)
+        self.assertIn(
+            ".toolbar{position:sticky;top:0;z-index:20;display:flex",
+            page,
+        )
+        self.assertIn("background:var(--bg);border-bottom:1px solid var(--line)", page)
+        self.assertIn(
+            "@media(max-width:520px){header,main{padding:18px 14px}.toolbar{padding:10px 14px;max-height:50vh;overflow-y:auto",
+            page,
+        )
+
+    def test_verifier_rejects_tampered_category_and_sticky_contracts(self):
+        mod = sample("nexus", "1")
+        mod["categories"] = ["Utility", "Libraries"]
+        page = tracker.render_report([mod], "2026-09-09T20:00:00Z")
+        expected_categories = [["libraries", "utility"]]
+        mutations = {
+            "control": ('id="category-filter"', 'id="category-filter-broken"'),
+            "card metadata": (
+                'data-categories="[&quot;libraries&quot;,&quot;utility&quot;]"',
+                'data-categories="[]"',
+            ),
+            "tag binding": ('data-category="libraries"', 'data-category="other"'),
+            "predicate": (
+                "(!category.value||JSON.parse(c.dataset.categories).includes(category.value))",
+                "true",
+            ),
+            "predicate hidden in comment": (
+                "(!category.value||JSON.parse(c.dataset.categories).includes(category.value))",
+                "true/*(!category.value||JSON.parse(c.dataset.categories).includes(category.value))*/",
+            ),
+            "tag handler": (
+                "e.stopPropagation();category.value=tag.dataset.category;update();category.focus()",
+                "e.stopPropagation()",
+            ),
+            "sticky toolbar": ("position:sticky;top:0;z-index:20", "position:static"),
+            "active sticky override": (
+                "position:sticky;top:0;z-index:20",
+                "position:sticky;top:0;z-index:20;position:static",
+            ),
+            "sticky toolbar hidden in comment": (
+                "position:sticky;top:0;z-index:20",
+                "position:static/*position:sticky;top:0;z-index:20*/",
+            ),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            for field, (old, new) in mutations.items():
+                with self.subTest(field=field):
+                    self.assertIn(old, page)
+                    path.write_text(page.replace(old, new, 1))
+                    result = tracker.verify_report(
+                        path,
+                        expected_cards=1,
+                        expected_card_categories=expected_categories,
+                    )
+                    self.assertFalse(result["ok"], field)
+                    self.assertTrue(any("category" in error or "sticky" in error for error in result["errors"]))
+
+    def test_card_categories_deduplicate_case_variants_before_render_and_verify(self):
+        mod = sample("nexus", "1")
+        mod["categories"] = ["Utility", "utility"]
+
+        page = tracker.render_report([mod], "2026-09-09T20:00:00Z")
+        self.assertEqual(page.count('data-category="utility"'), 1)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path,
+                expected_cards=1,
+                expected_card_categories=[["utility"]],
+            )
+        self.assertTrue(result["ok"], result["errors"])
+
     def test_report_renders_uploaded_and_updated_as_aligned_rows(self):
         page = tracker.render_report(
             [sample("thunderstore", "A/B")],
@@ -707,7 +847,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn('.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}', page)
         self.assertIn('.badges{display:flex;gap:6px;flex-wrap:wrap', page)
         self.assertIn('.tags{display:flex;flex-wrap:wrap;gap:4px}', page)
-        self.assertIn('.tag{background:#252a31;color:var(--muted);margin:2px;max-width:100%;overflow-wrap:anywhere}', page)
+        self.assertIn('.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%;overflow-wrap:anywhere;cursor:pointer}', page)
+        self.assertIn('.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}', page)
         self.assertNotIn('.control,input{width:100%}', page)
 
     def test_all_configured_games_share_update_filter_renderer(self):

@@ -9,6 +9,9 @@
 - Extended strict verification to recompute reputation and reject missing or altered artifacts, card identities, canonical IDs, totals, tiers, classes, tooltips, and ARIA labels.
 - Added fail-closed mapping validation and regression coverage for malformed, missing, duplicate, conflicting, same-provider, nonreciprocal, and unsupported mappings plus pool boundaries, ties, invalid totals, escaping, grouped cards, and all-game isolation.
 - Regenerated and strictly verified all five reports from saved data, published them in one preflighted batch, and confirmed every live route is byte-identical to its generated and committed artifact.
+- Added a report-wide category dropdown derived from current card categories; category chips are native buttons that select the dropdown and compose with search, source, NSFW, and update-date filters.
+- Made the complete filter toolbar sticky while scrolling, with an accessible region label and bounded internal scrolling on narrow screens.
+- Extended strict verification to reject altered category options, per-card category metadata, tag bindings, category JavaScript, or sticky-toolbar semantics and styling.
 
 ## 2026-09-10
 

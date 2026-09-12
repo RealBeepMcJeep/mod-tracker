@@ -992,7 +992,7 @@ class ReportTests(unittest.TestCase):
         )
         self.assertIn("PEAK mods across Thunderstore and Nexus Mods.", page)
 
-    def test_grouped_search_indexes_titles_authors_and_short_descriptions_by_relevance(self):
+    def test_grouped_search_indexes_titles_authors_and_short_descriptions(self):
         nexus = sample("nexus", "1", title="WolfPack")
         nexus.update(
             author="Neobotics",
@@ -1026,34 +1026,82 @@ class ReportTests(unittest.TestCase):
             page,
         )
         self.assertIn(
-            'data-search-description="control all your tame creatures at the same time gameplay target your tames and send them to attack npcs"',
+            'data-search-description="control all your tame creatures at the same time target your tames and send them to attack"',
             page,
         )
-        self.assertIn("function searchRank(c,q)", tracker.REPORT_JAVASCRIPT)
-        self.assertIn("const relevance=searchRank(a,q)-searchRank(b,q)", tracker.REPORT_JAVASCRIPT)
-        self.assertIn("if(relevance)return relevance", tracker.REPORT_JAVASCRIPT)
+        self.assertNotIn("gameplay", page.split('data-search-description="', 1)[1].split('"', 1)[0])
+        self.assertNotIn("npcs", page.split('data-search-description="', 1)[1].split('"', 1)[0])
+        self.assertIn('placeholder="Title, author, description"', page)
 
-    def test_verifier_rejects_missing_search_indexes_or_relevance_program(self):
+    def test_search_filters_without_overriding_the_selected_sort(self):
+        script = tracker.REPORT_JAVASCRIPT
+        self.assertIn("c.dataset.search.includes(q)", script)
+        self.assertNotIn("searchRank", script)
+        self.assertNotIn("relevance", script)
+        self.assertIn(
+            ".sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key]))",
+            script,
+        )
+
+    def test_search_normalizes_ascii_whitespace_symmetrically(self):
+        script = tracker.REPORT_JAVASCRIPT
+        self.assertIn(
+            "function normalizeSearch(value){return value.replace(/^[ \\t\\n\\r\\f\\v]+|[ \\t\\n\\r\\f\\v]+$/g,'').toLowerCase().replace(/[ \\t\\n\\r\\f\\v]+/g,' ')}",
+            script,
+        )
+        self.assertIn("const q=normalizeSearch(search.value)", script)
+        page = tracker.render_report(
+            [sample("nexus", "1", title="  Straße\tName\nWith  Spaces  ")],
+            "2026-09-11T02:00:00Z",
+        )
+        self.assertIn('data-search-title="straße name with spaces"', page)
+        controls = "Alpha\u001cBeta\u0085Gamma\ufeffDelta"
+        page = tracker.render_report(
+            [sample("nexus", "1", title=controls)],
+            "2026-09-11T02:00:00Z",
+        )
+        self.assertIn(f'data-search-title="{controls.lower()}"', page)
+
+    def test_verifier_rejects_missing_search_indexes_or_sort_preserving_search_program(self):
         page = tracker.render_report(
             [sample("nexus", "1", title="WolfPack")],
             "2026-09-11T02:00:00Z",
         )
         changes = {
-            "title index": ("data-search-title=", "data-broken-search-title="),
-            "author index": ("data-search-author=", "data-broken-search-author="),
+            "title index": (
+                "data-search-title=", "data-broken-search-title=", "search field"
+            ),
+            "author index": (
+                "data-search-author=", "data-broken-search-author=", "search field"
+            ),
             "description index": (
                 "data-search-description=",
                 "data-broken-search-description=",
+                "search field",
             ),
-            "relevance program": (
-                "function searchRank(c,q)",
-                "function brokenSearchRank(c,q)",
+            "search filter": (
+                "c.dataset.search.includes(q)",
+                "c.dataset.searchTitle.includes(q)",
+                "search JavaScript",
+            ),
+            "query normalization": (
+                "function normalizeSearch(value){return value.replace(/^[ \\t\\n\\r\\f\\v]+|[ \\t\\n\\r\\f\\v]+$/g,'').toLowerCase().replace(/[ \\t\\n\\r\\f\\v]+/g,' ')}",
+                "function normalizeSearch(value){return value.toLowerCase()}",
+                "search JavaScript",
+            ),
+            "sort override": (
+                ".sort((a,b)=>sort.value==='updated'?",
+                ".sort((a,b)=>q?0:sort.value==='updated'?",
+                "search JavaScript",
             ),
         }
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "report.html"
-            for field, (old, new) in changes.items():
+            path.write_text(page)
+            pristine = tracker.verify_report(path, expected_cards=1)
+            self.assertTrue(pristine["ok"], pristine["errors"])
+            for field, (old, new, expected_error) in changes.items():
                 with self.subTest(field=field):
                     tampered = page.replace(old, new, 1)
                     self.assertNotEqual(tampered, page)
@@ -1061,7 +1109,7 @@ class ReportTests(unittest.TestCase):
                     result = tracker.verify_report(path, expected_cards=1)
                     self.assertFalse(result["ok"], field)
                     self.assertTrue(
-                        any("search relevance" in error for error in result["errors"]),
+                        any(expected_error in error for error in result["errors"]),
                         result["errors"],
                     )
 

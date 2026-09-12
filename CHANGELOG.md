@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-12
+
+- Changed report search to match grouped mod titles, displayed/native author names, and retained descriptions using symmetric lowercase and collapsed ASCII-whitespace normalization, without category-label matching or relevance reordering; the selected numeric/date sort now remains authoritative for both empty and nonempty queries, with strict tamper coverage for field indexes, query normalization, filtering, and sort preservation.
+
 ## 2026-09-11
 
 - Added explicit reciprocal per-mod `credited_author` attribution for shared port-publisher namespaces, combined each attributed creator’s Nexus and Thunderstore metrics without a global publisher alias, and corrected `Craft Build Smelt Cook Fuel Pull From Containers` to render `aedenthorn` as Legendary with 1,171,005 lifetime downloads.

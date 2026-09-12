@@ -20,7 +20,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import tracker  # noqa: E402
 
 
-def tracker_command(action: str, game: str, root: Path, api_key_file: Path) -> list[str]:
+def tracker_command(
+    action: str, game: str, root: Path, api_key_file: Path, *, no_report: bool = False
+) -> list[str]:
     """Build one shell-free tracker command."""
     command = [
         sys.executable,
@@ -33,6 +35,8 @@ def tracker_command(action: str, game: str, root: Path, api_key_file: Path) -> l
     ]
     if action == "collect":
         command.extend(["--nexus-api-key-file", str(api_key_file)])
+        if no_report:
+            command.append("--no-report")
     return command
 
 
@@ -52,6 +56,8 @@ def batch_publication_command(manifest: Path, public_root: Path, *, dry_run: boo
 def stage_report(game_root: Path, staging: Path) -> Path:
     """Stage only the verified hotlinked report as index.html."""
     source = game_root / "report-hotlinked.html"
+    if any(path.is_symlink() for path in (source, *source.parents)):
+        raise ValueError(f"publication report path must not contain a symlink: {source}")
     if not source.is_file():
         raise FileNotFoundError(source)
     staging.mkdir(parents=True, exist_ok=False)

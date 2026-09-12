@@ -4,6 +4,8 @@
 
 - [ ] Repeat desktop and narrow-screen screenshot inspection when a working local browser runner is available.
 - [ ] When a user-exported Nexus cookie file is available outside the repository, run a fresh Nexus collection and verify authenticated detail-page capture statuses.
+- [ ] Add a simple unattended-run log retention policy if accumulated run directories become large enough to require pruning.
+- [ ] Add automated pre/post-run digests for `mappings.json` and `author-mappings.json` if explicit mapping-immutability auditing is needed later.
 
 ## Deferred ideas
 

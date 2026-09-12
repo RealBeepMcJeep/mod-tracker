@@ -2,6 +2,7 @@
 
 ## 2026-09-11
 
+- Added the stdlib-only unattended runner and flat no-agent wrapper with a nonblocking whole-run lock, sequential five-game collection, fail-closed source and anomaly gates, sanitized atomic run records, complete-tree publication, no-change handling, public-repository push verification, and exact live HTTP/byte checks; exercised the essential success and failure paths, passed the 179-test suite and full static/strict gates, and received a clean independent fail-closed review.
 - Reduced the six-hour automation scope to deterministic collection, generation, strict verification, publication, push, and live verification using existing mappings as read-only inputs; deferred future mod/author reconciliation and any persistent review queue to `TODO.md`, removed the abandoned uncommitted queue implementation, and revalidated the clean 139-test baseline plus all five saved datasets and reports.
 - Added accessible client-side pagination to every single-file report: the complete filtered result set uses fixed 100-card pages, pinned cards count toward the limit, filter/sort changes reset to page 1, and strict verification rejects altered controls or pagination logic.
 - Completed a supervised full pass in canonical order: refreshed all five datasets, reviewed a bounded 14-pair mapping shortlist, accepted 7 mod pairs and one new author alias, regenerated 222/299/160/178/746 canonical cards, and passed strict all-game verification.

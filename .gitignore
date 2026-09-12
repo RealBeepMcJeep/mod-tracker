@@ -21,6 +21,7 @@ games/*/*
 !scripts/
 !scripts/manual-pass.py
 !scripts/mapping_candidates.py
+!scripts/unattended_run.py
 !tests/
 !tests/**
 
@@ -38,3 +39,4 @@ report-hotlinked.html
 **/*.tmp
 **/__pycache__/
 **/*.pyc
+.unattended-runs/

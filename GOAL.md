@@ -1,77 +1,63 @@
-# Goal: Fully Automated Six-Hour Mod-Tracker Passes
+# Goal: Automated Six-Hour Mod-Tracker Passes
 
-Build and enable a deterministic, standard-library-only, fail-closed automation pipeline for the five-game mod tracker. It must refresh and publish verified reports every six hours using the existing approved mod and author mappings as read-only inputs. Further cross-provider mapping discovery and reconciliation are deferred to `TODO.md` and are not part of the scheduled path.
+Build and enable a deterministic, standard-library-only scheduled pipeline for all five games. It must collect current data, generate and verify reports, publish the complete site, verify the live result, and report each run to Telegram. Existing mod and author mappings are read-only inputs; mapping discovery and reconciliation remain deferred manual work in `TODO.md`.
 
-## Approved behavior
+## Scheduled workflow
 
-### Scheduled full pass
+1. Acquire one nonblocking lock. If another automated pass is running, exit immediately without collecting or publishing.
+2. Process all five games sequentially. Within a dual-source game, Nexus Mods and Thunderstore may run concurrently while keeping their independent pacing.
+3. If any required source or game fails, stop before report generation and publication. Never publish a partial cohort.
+4. Generate all reports and run strict all-game verification. The scheduled path uses existing mappings but never runs mapping discovery or reconciliation.
+5. Compare each game's card count with the previous successful run. Block publication when the absolute change is at least 25 cards and the percentage change is greater than 10%, unless a one-run override is explicitly recorded. Treat a zero-to-nonzero baseline as requiring review.
+6. Stage the landing page and all five reports as one `mod-tracking` tree. Publish it through `/opt/data/projects/public-artifacts/scripts/publish-site.py` only after the complete cohort passes verification.
+7. Commit and push `public-artifacts/main` when publication bytes changed. When bytes are unchanged, skip the empty commit, push, and deployment.
+8. Verify the live landing page and all five game routes against the generated artifacts, and confirm an unknown child route returns HTTP 404.
+9. Write a sanitized per-run log and `summary.json`, then emit a compact Telegram result containing status, duration, per-game counts, anomaly state, publication state, and relevant Git SHAs.
 
-1. Run at 12:00 AM, 6:00 AM, 12:00 PM, and 6:00 PM in `America/Phoenix` using cron expression `0 */6 * * *`.
-2. Process games sequentially. For a dual-source game, collect Nexus Mods and Thunderstore concurrently with at most one standard-library worker per provider while preserving each provider's independent pacing; join results deterministically.
-3. Any required provider or game collection failure aborts generation and publication for the entire cohort and preserves the prior live site. Aggregate provider failures accurately rather than publishing partial data.
-4. Generate every report using only the existing version-controlled `mappings.json` and `author-mappings.json` files. The scheduled path must not discover, queue, infer, reconcile, or mutate mappings.
-5. Strictly verify every local report and publication artifact before the first external write.
-6. Abort publication when a game's canonical card-count change is both greater than 10% and at least 25 cards unless an explicit one-run override is recorded in the run log.
-7. Run from isolated clean worktrees under one shared nonblocking lock. Abort on remote divergence or a non-fast-forward push; never auto-rebase scheduled changes.
-8. Publish through the existing `/opt/data/projects/public-artifacts/scripts/publish-site.py` batch publisher, push `public-artifacts/main`, and verify the exact landing page and all five live game routes plus a nonexistent-route HTTP 404 check.
-9. If generated publication bytes are unchanged, skip empty commits, pushes, and deployment while still completing strict local and live verification and reporting success.
-10. If a verified local pass succeeds but publication, deployment, push, or live verification fails, retain complete diagnostics and a recoverable publication state. Preserve the prior live site where possible and never report the run as fully successful.
-11. Send a compact Telegram summary after every scheduled invocation, including success/failure, stage durations, per-game record/card counts, anomaly results, publication/deployment status, and relevant Git SHAs.
+## Basic operating rules
 
-### Client-side report pagination
-
-1. Keep exactly one self-contained HTML file per game report; do not create page files or server endpoints.
-2. Paginate the current filtered result set in fixed increments of 100 cards.
-3. Pinned cards count toward the 100-card page size.
-4. Provide accessible Previous and Next controls plus a live page indicator.
-5. Search, sort, category, source, NSFW, update-date, and other filters operate over the complete card set before pagination.
-6. Any filter or sort change resets to page 1.
-7. Strict verification binds and validates the pagination markup, behavior, and canonical client script.
-
-### Logging and retention
-
-1. Create a durable project-local run directory for every invocation, including interrupted and failed runs.
-2. Record run ID, start/end timestamps, stage status and duration, sanitized command arguments, separate stdout/stderr, provider counts and pagination evidence, report counts, anomaly results and overrides, Git SHAs, publication manifest, deployment/version output, live HTTP and byte-identity checks, and final `summary.json`.
-3. Never log credentials, authorization headers, API-key values, cookies, or secret-bearing environments or commands.
-4. Retain detailed logs for 90 days and always keep at least the latest 100 runs; maintain a `latest` pointer to the newest completed invocation.
-5. Make log, state, and lock paths injectable for isolated tests and ignore runtime state in Git.
-
-### Implementation and operating constraints
-
-1. Keep the complete runtime Python-standard-library-only: no package installation, database, service, frontend framework, or scheduled-path LLM call.
-2. Read the Nexus key only from `~/.config/nexus-mods/api-key`; require a nonempty regular file with mode `0600`. Never expose the value in repositories, process arguments, logs, summaries, reports, manifests, or child-process environments that do not require it, and never loosen the file mode.
-3. Preserve source-scoped `nexus:` and `thunderstore:` identities and all existing explicit reciprocal mappings. The scheduled path treats mapping files as immutable configuration and performs no fuzzy identity matching.
-4. `--dry-run` suppresses publication, deployment, and public-repository pushes only. It still persists successfully collected data and generates and verifies local artifacts.
-5. Use the existing public-artifacts batch publisher without modifying it unless the reduced workflow cannot be represented. Preserve legacy static assets and publish one atomic `mod-tracking` tree with `publication.root == "mod-tracking"` and each `publication.path == <game key>`.
-6. Keep reports self-contained server-rendered static HTML with client-side pagination and no Preact or other frontend framework.
-7. Fail closed on symlinks, traversal, filesystem races, incomplete writes, malformed state, repository divergence, unverifiable publication state, or missing required outputs.
-8. Hold one nonblocking whole-run `flock` across automated passes. The flat Hermes no-agent wrapper lives under `/opt/data/scripts`; project implementation and runtime state remain under the project directory.
-9. Send scheduled summaries to the configured originating Telegram thread. If persisted gateway destination fields are missing or insufficient, stop delivery rather than guessing another destination.
-10. Keep the existing mapping-candidate utility available only for future explicit manual work recorded in `TODO.md`; it is never invoked by the automated full pass.
+- Use Python's standard library only. Scheduled execution must not install packages, use a database, invoke an LLM, or discover mappings.
+- Read the Nexus key only from `~/.config/nexus-mods/api-key`. Require a nonempty regular file with mode `0600`, keep it out of command arguments and generated artifacts, and redact secrets from logs and summaries.
+- Use existing registry paths and fixed internal stage names. Reject absolute paths, traversal, and symlinks where runtime paths are accepted.
+- Write JSON state and final summaries atomically. A failed run must not be marked successful or replace the latest-success pointer.
+- Keep enough per-run output to diagnose collection, verification, publication, push, or live-site failures.
+- `--dry-run` still performs collection, generation, and local verification, but does not publish, deploy, or push `public-artifacts`.
+- Refuse to publish when either repository is unexpectedly dirty or its local `main` has diverged from `origin/main`. Never auto-rebase a scheduled run.
+- Preserve the previous live site when a run fails before deployment. If deployment occurred but a later check failed, report that state accurately.
+- Send scheduled output to the configured Telegram thread. Do not guess a destination if the persisted delivery target is incomplete.
 
 ## Implementation milestones
 
-- [x] Document the reduced mapping-free automated/full-pass contract in project guidance.
-- [x] Add client-side 100-card report pagination using strict RED → GREEN → REFACTOR tests.
-- [ ] Add the shared lock, isolated-worktree orchestrator, source-completeness gate, count-anomaly gate, durable stage logs, retention, no-change handling, Git operations, publication, and recovery using strict TDD.
-- [ ] Add a flat no-agent wrapper beneath `/opt/data/scripts` and verify its exact stdout/stderr/exit-code contract.
-- [ ] Exercise success, no-change, provider-failure, anomaly-block, publication-failure, remote-divergence, interrupted-run, and overlapping-run paths.
-- [ ] Run the complete unit, syntax, JSON, stdlib-import, deterministic-output, strict all-game, publication dry-run, Git-diff, and security gates.
-- [ ] Obtain independent fail-closed review; fix and re-review every security, logic, or requirement finding.
-- [ ] Commit and push each verified milestone; synchronize both repositories.
-- [ ] Run a successful real scheduled-path rehearsal and verify its local, repository, publication, live-route, log, and summary outputs.
-- [ ] Create the Hermes cron job paused, read back its exact definition, exercise it once, verify run history, delivery, and ticker prerequisites, and enable it only after every acceptance gate passes.
-- [ ] Move completed checklist material to `CHANGELOG.md`, delete `GOAL.md`, and leave only genuinely deferred work in `TODO.md`.
+- [x] Document the mapping-free full-pass contract and move mapping reconciliation to `TODO.md`.
+- [x] Finish and test the unattended runner: lock, collection, verification, anomaly gate, logging, publication, push, and live verification.
+- [x] Add and test the flat no-agent wrapper under `/opt/data/scripts`.
+- [x] Exercise the essential paths: overlap, provider failure, anomaly block, no change, dry run, publication failure, and success.
+- [x] Run the complete project gates and obtain an independent review of the integrated scheduled path.
+- [ ] Commit and push the verified implementation; confirm both repositories are clean and synchronized.
+- [ ] Complete one real scheduled-path publication and verify its logs, repository state, deployed artifacts, six live routes, and unknown-route 404.
+- [ ] Create the Hermes cron job paused at `0 */6 * * *` in `America/Phoenix`, read back its persisted definition, run it once, verify run history and Telegram delivery, then enable it.
+- [ ] Record completed work in `CHANGELOG.md`, leave only deferred work in `TODO.md`, and delete this file after every acceptance criterion passes.
 
 ## Definition of done
 
-- Every new behavior has a test that was observed failing before implementation and passing afterward.
-- `python3 -m unittest discover -s tests -v`, Python compilation, JSON validation, a standard-library import audit, deterministic-output checks, `git diff --check`, and `python3 tracker.py verify --game all --output-root .` all pass.
-- Generated reports remain single-file HTML, show no more than 100 matching cards per client-side page, expose working accessible pagination controls, and pass strict tamper tests.
-- Scheduled runs never discover or modify mod or author mappings; existing mappings remain valid read-only inputs.
-- Scheduled runs cannot overlap manual automation and cannot publish partial collections or suspicious count changes.
-- Every run has reviewable, sanitized, retained diagnostics and emits an accurate compact Telegram summary.
-- Automatic collection, generation, strict verification, publication, public-repository push, and live verification are proven on the real scheduled path; failures are accurately recorded and recoverable.
-- Both repositories finish clean and synchronized with their respective `origin/main` branches.
-- The exact `/mod-tracking/` landing page and all five game routes return the verified current artifacts; an unknown route returns HTTP 404.
-- The Hermes job is a verified no-agent script job scheduled at `0 */6 * * *` for Phoenix time and is enabled only after the paused rehearsal passes.
+- All five games complete collection, report generation, and strict verification as one cohort without scheduled mapping discovery or reconciliation.
+- Required source failures and suspicious count changes prevent publication; overlapping runs do no work.
+- Unchanged publication bytes skip commit, push, and deployment while local and live verification still pass.
+- Every invocation leaves an accurate sanitized run summary, and successful scheduled output reaches the intended Telegram thread.
+- The publisher receives one complete atomic `mod-tracking` tree.
+- `https://public-artifacts.xioustic-5f1.workers.dev/mod-tracking/` and all five game routes return HTTP 200 with the expected artifacts; an unknown child route returns HTTP 404.
+- The following checks pass:
+
+```bash
+python3 -m unittest -v tests.test_unattended_run
+python3 -m unittest discover -s tests -v
+python3 -m py_compile tracker.py scripts/manual-pass.py scripts/mapping_candidates.py scripts/unattended_run.py
+python3 -m json.tool games.json >/dev/null
+python3 tracker.py verify --game all --output-root .
+git diff --check
+git diff --cached --check
+```
+
+- The scheduled-path import audit finds no third-party Python imports.
+- Local and `origin/main` hashes match for both `mod-tracker` and `public-artifacts`, and both working trees are clean.
+- The enabled Hermes job is a no-agent script job scheduled every six hours in Phoenix time.

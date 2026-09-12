@@ -1861,6 +1861,11 @@ def build_parser() -> argparse.ArgumentParser:
     collect.add_argument("--nexus-cookie-file", type=Path)
     collect.add_argument("--mappings", type=Path)
     collect.add_argument("--embed-thumbnails", action="store_true")
+    collect.add_argument(
+        "--no-report",
+        action="store_true",
+        help="persist collection data without rendering a report",
+    )
     report = subparsers.add_parser("report", help="regenerate report from persisted data")
     report.add_argument("--game", choices=(*GAME_CONFIGS, "all"), default="valheim")
     report.add_argument("--output-root", type=Path, default=Path("."))
@@ -1988,16 +1993,18 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
         "nexus_pages": nexus_pages if "nexus" in selected_sources else 0,
     }
     atomic_write_json(root / "snapshots/latest.json", manifest)
-    report = generate_report(
-        root,
-        collected_at,
-        embed_thumbnails=args.embed_thumbnails,
-        game_name=config["display_name"],
-        sources=config["sources"],
-        update_filter=config["update_filter"],
-        author_tiers=config["author_tiers"],
-    )
-    return {**manifest, "report_cards": report["cards"]}
+    report = None
+    if not args.no_report:
+        report = generate_report(
+            root,
+            collected_at,
+            embed_thumbnails=args.embed_thumbnails,
+            game_name=config["display_name"],
+            sources=config["sources"],
+            update_filter=config["update_filter"],
+            author_tiers=config["author_tiers"],
+        )
+    return {**manifest, "report_cards": report["cards"] if report else None}
 
 
 def run_collection(args) -> dict:

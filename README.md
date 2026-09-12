@@ -61,6 +61,21 @@ python3 scripts/manual-pass.py --dry-run
 
 The wrapper attempts collection for every game and reports per-game failures as JSON. Within a dual-source game, both provider results or errors are joined in deterministic source order; one provider failure cannot partially merge normalized data, rewrite snapshots/reports, or allow publication. It never performs a real publication if any collection, verification, staging, or publisher preflight fails.
 
+## Unattended no-agent pass
+
+The scheduled mapping-free runner collects each game without rendering an
+intermediate report, then runs one all-game report and verification cohort:
+
+```bash
+python3 /opt/data/scripts/mod-tracker-unattended.py --dry-run
+```
+
+The flat wrapper uses `exec` so its stdout, stderr, and exit code are exactly
+those of `scripts/unattended_run.py`. Runtime state is kept under
+`.unattended-runs/`; retention and mapping reconciliation are intentionally
+deferred. Isolated rehearsals can inject `--project-root`, `--output-root`,
+`--public-artifacts-root`, `--state-root`, `--lock-file`, and `--live-base-url`.
+
 ## Individual commands
 
 ```bash

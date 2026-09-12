@@ -16,6 +16,13 @@ def load_manual_pass():
 
 
 class ManualPassTests(unittest.TestCase):
+    def test_tracker_collect_command_supports_no_report_for_unattended_cohort(self):
+        module = load_manual_pass()
+        command = module.tracker_command(
+            "collect", "peak", Path("/tracker"), Path("/key"), no_report=True
+        )
+        self.assertIn("--no-report", command)
+
     def test_build_tracker_command_is_shell_free_and_game_specific(self):
         module = load_manual_pass()
         command = module.tracker_command("collect", "peak", Path("/tracker"), Path("/key"))
@@ -37,6 +44,26 @@ class ManualPassTests(unittest.TestCase):
             (output / "report-hotlinked.html").write_bytes(b"<html>exact</html>")
             module.stage_report(output, stage)
             self.assertEqual((stage / "index.html").read_bytes(), b"<html>exact</html>")
+
+    def test_stage_report_rejects_symlinked_report(self):
+        module = load_manual_pass()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "game"
+            output.mkdir()
+            outside = root / "outside.html"
+            outside.write_text("outside", encoding="utf-8")
+            (output / "report-hotlinked.html").symlink_to(outside)
+            with self.assertRaises(ValueError):
+                module.stage_report(output, root / "stage")
+
+            real_game = root / "real-game"
+            real_game.mkdir()
+            (real_game / "report-hotlinked.html").write_text("outside", encoding="utf-8")
+            linked_game = root / "linked-game"
+            linked_game.symlink_to(real_game, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                module.stage_report(linked_game, root / "stage-2")
 
     def test_stage_publication_tree_builds_landing_and_nested_reports(self):
         module = load_manual_pass()

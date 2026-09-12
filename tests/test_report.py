@@ -284,6 +284,64 @@ class ReportTests(unittest.TestCase):
             ["nexus:alice nexus"],
         )
 
+    def test_per_mod_creator_attribution_combines_sites_without_aliasing_shared_publisher(self):
+        nexus_alice = sample("nexus", "1", title="Alice Mod")
+        nexus_alice.update(
+            author="Alice Creator",
+            total_downloads=600,
+            canonical_group_id="alice-mod",
+            credited_author="nexus:alice creator",
+            updated_at="2026-09-10T00:00:00Z",
+        )
+        port_alice = sample("thunderstore", "SharedPorts/AliceMod", title="Alice Mod")
+        port_alice.update(
+            author="Shared Ports",
+            total_downloads=50,
+            canonical_group_id="alice-mod",
+            credited_author="nexus:alice creator",
+            updated_at="2026-09-11T00:00:00Z",
+        )
+        nexus_bob = sample("nexus", "2", title="Bob Mod")
+        nexus_bob.update(
+            author="Bob Creator",
+            total_downloads=10,
+            canonical_group_id="bob-mod",
+            credited_author="nexus:bob creator",
+        )
+        port_bob = sample("thunderstore", "SharedPorts/BobMod", title="Bob Mod")
+        port_bob.update(
+            author="Shared Ports",
+            total_downloads=20,
+            canonical_group_id="bob-mod",
+            credited_author="nexus:bob creator",
+        )
+        mods = [nexus_alice, port_alice, nexus_bob, port_bob]
+
+        reputation = tracker.build_author_reputation(
+            mods,
+            {"percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90}},
+            {},
+        )
+        assert reputation is not None
+        page = tracker.render_report(
+            mods,
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+
+        self.assertEqual(reputation["authors"]["nexus:alice creator"]["downloads"], 650)
+        self.assertEqual(reputation["authors"]["nexus:bob creator"]["downloads"], 30)
+        self.assertNotIn("thunderstore:shared ports", reputation["authors"])
+        self.assertIn('data-author-key="nexus:alice creator"', page)
+        self.assertIn('data-author-downloads="650"', page)
+        self.assertIn('data-author-tier="legendary"', page)
+        self.assertIn('>Alice Creator</span>', page)
+        self.assertNotIn('>Shared Ports</span>', page)
+        self.assertEqual(
+            tracker.report_author_keys(mods, reputation),
+            ["nexus:alice creator", "nexus:bob creator"],
+        )
+
     def test_report_colors_author_names_by_dynamic_rarity(self):
         mods = []
         for downloads in range(1, 101):
@@ -516,6 +574,7 @@ class ReportTests(unittest.TestCase):
             "class": ('class="author author-tier-legendary"', 'class="author author-tier-common"'),
             "tooltip": ('title="Legendary author', 'title="Common author'),
             "aria": ('aria-label="Alice, Legendary author', 'aria-label="Alice, Common author'),
+            "visible name": (">Alice</span>", ">Mallory</span>"),
         }
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -933,6 +992,79 @@ class ReportTests(unittest.TestCase):
         )
         self.assertIn("PEAK mods across Thunderstore and Nexus Mods.", page)
 
+    def test_grouped_search_indexes_titles_authors_and_short_descriptions_by_relevance(self):
+        nexus = sample("nexus", "1", title="WolfPack")
+        nexus.update(
+            author="Neobotics",
+            summary="Control all your tame creatures at the same time",
+            categories=["Gameplay"],
+            canonical_group_id="wolfpack",
+        )
+        thunderstore = sample("thunderstore", "Ports/WolfPack", title="Wolf Pack Port")
+        thunderstore.update(
+            author="Port Publisher",
+            summary="Target your tames and send them to attack",
+            categories=["NPCs"],
+            canonical_group_id="wolfpack",
+            credited_author="nexus:neobotics",
+        )
+        reputation = tracker.build_author_reputation(
+            [nexus, thunderstore],
+            {"percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90}},
+            {},
+        )
+
+        page = tracker.render_report(
+            [nexus, thunderstore],
+            "2026-09-11T02:00:00Z",
+            author_reputation=reputation,
+        )
+
+        self.assertIn('data-search-title="wolfpack wolf pack port"', page)
+        self.assertIn(
+            'data-search-author="neobotics port publisher"',
+            page,
+        )
+        self.assertIn(
+            'data-search-description="control all your tame creatures at the same time gameplay target your tames and send them to attack npcs"',
+            page,
+        )
+        self.assertIn("function searchRank(c,q)", tracker.REPORT_JAVASCRIPT)
+        self.assertIn("const relevance=searchRank(a,q)-searchRank(b,q)", tracker.REPORT_JAVASCRIPT)
+        self.assertIn("if(relevance)return relevance", tracker.REPORT_JAVASCRIPT)
+
+    def test_verifier_rejects_missing_search_indexes_or_relevance_program(self):
+        page = tracker.render_report(
+            [sample("nexus", "1", title="WolfPack")],
+            "2026-09-11T02:00:00Z",
+        )
+        changes = {
+            "title index": ("data-search-title=", "data-broken-search-title="),
+            "author index": ("data-search-author=", "data-broken-search-author="),
+            "description index": (
+                "data-search-description=",
+                "data-broken-search-description=",
+            ),
+            "relevance program": (
+                "function searchRank(c,q)",
+                "function brokenSearchRank(c,q)",
+            ),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            for field, (old, new) in changes.items():
+                with self.subTest(field=field):
+                    tampered = page.replace(old, new, 1)
+                    self.assertNotEqual(tampered, page)
+                    path.write_text(tampered)
+                    result = tracker.verify_report(path, expected_cards=1)
+                    self.assertFalse(result["ok"], field)
+                    self.assertTrue(
+                        any("search relevance" in error for error in result["errors"]),
+                        result["errors"],
+                    )
+
     def test_nexus_only_report_does_not_claim_thunderstore(self):
         page = tracker.render_report(
             [sample("nexus", "12")],
@@ -954,6 +1086,85 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(mapped[0]["canonical_group_id"], "circlet")
         self.assertEqual(mapped[0]["match"]["method"], "manual")
         self.assertIsNone(mods[0]["canonical_group_id"])
+
+    def test_manual_mapping_applies_reciprocal_per_mod_creator_attribution(self):
+        nexus = sample("nexus", "40")
+        nexus["author"] = "aedenthorn"
+        port = sample("thunderstore", "ValheimPortMods/Craft")
+        port["author"] = "ValheimPortMods"
+        mappings = {
+            "nexus:40": {
+                "canonical_group_id": "craft",
+                "matched_to": ["thunderstore:ValheimPortMods/Craft"],
+                "method": "manual",
+                "credited_author": "nexus:aedenthorn",
+            },
+            "thunderstore:ValheimPortMods/Craft": {
+                "canonical_group_id": "craft",
+                "matched_to": ["nexus:40"],
+                "method": "manual",
+                "credited_author": "nexus:aedenthorn",
+            },
+        }
+
+        mapped = tracker.apply_manual_mappings([nexus, port], mappings)
+
+        self.assertEqual(
+            [mod["credited_author"] for mod in mapped],
+            ["nexus:aedenthorn", "nexus:aedenthorn"],
+        )
+
+    def test_manual_mapping_rejects_invalid_per_mod_creator_attribution(self):
+        nexus = sample("nexus", "40")
+        nexus["author"] = "aedenthorn"
+        port = sample("thunderstore", "ValheimPortMods/Craft")
+        port["author"] = "ValheimPortMods"
+        valid = {
+            "nexus:40": {
+                "canonical_group_id": "craft",
+                "matched_to": ["thunderstore:ValheimPortMods/Craft"],
+                "method": "manual",
+                "credited_author": "nexus:aedenthorn",
+            },
+            "thunderstore:ValheimPortMods/Craft": {
+                "canonical_group_id": "craft",
+                "matched_to": ["nexus:40"],
+                "method": "manual",
+                "credited_author": "nexus:aedenthorn",
+            },
+        }
+        cases = {}
+        one_way = {key: dict(value) for key, value in valid.items()}
+        del one_way["thunderstore:ValheimPortMods/Craft"]["credited_author"]
+        cases["one-way"] = one_way
+        conflicting = {key: dict(value) for key, value in valid.items()}
+        conflicting["thunderstore:ValheimPortMods/Craft"]["credited_author"] = "thunderstore:valheimportmods"
+        cases["conflicting"] = conflicting
+        non_normalized = {key: dict(value) for key, value in valid.items()}
+        non_normalized["nexus:40"]["credited_author"] = "Nexus:Aedenthorn"
+        non_normalized["thunderstore:ValheimPortMods/Craft"]["credited_author"] = "Nexus:Aedenthorn"
+        cases["non-normalized"] = non_normalized
+        missing_creator = {key: dict(value) for key, value in valid.items()}
+        missing_creator["nexus:40"]["credited_author"] = "nexus:missing"
+        missing_creator["thunderstore:ValheimPortMods/Craft"]["credited_author"] = "nexus:missing"
+        cases["missing creator"] = missing_creator
+        ghost_key = {
+            key: {**value, "matched_to": list(value["matched_to"])}
+            for key, value in valid.items()
+        }
+        ghost_key["thunderstore:ValheimPortMods/Craft"]["matched_to"].append("nexus:999")
+        ghost_key["nexus:999"] = {
+            "canonical_group_id": "craft",
+            "matched_to": ["thunderstore:ValheimPortMods/Craft"],
+            "method": "manual",
+            "credited_author": "nexus:aedenthorn",
+        }
+        cases["nonexistent mapping key"] = ghost_key
+
+        for name, mappings in cases.items():
+            with self.subTest(case=name):
+                with self.assertRaisesRegex(ValueError, "creator attribution"):
+                    tracker.apply_manual_mappings([nexus, port], mappings)
 
     def test_mapped_sources_render_as_one_both_card_with_two_links(self):
         thunderstore = sample("thunderstore", "A/B", title="Shared")

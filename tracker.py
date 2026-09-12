@@ -771,18 +771,68 @@ def collect_nexus(
 
 def apply_manual_mappings(mods: list[dict], mappings: dict) -> list[dict]:
     """Apply only explicit cross-source grouping metadata; never infer matches."""
+    mod_keys = {mod.get("key") for mod in mods}
+    group_authors = {}
+    for mod in mods:
+        mapping = mappings.get(mod.get("key"))
+        if not isinstance(mapping, dict) or not mapping.get("canonical_group_id"):
+            continue
+        source = str(mod.get("source") or "").strip().casefold()
+        author = " ".join(str(mod.get("author") or "").split()).casefold()
+        if source and author:
+            group_authors.setdefault(mapping["canonical_group_id"], set()).add(
+                f"{source}:{author}"
+            )
+    for key, mapping in mappings.items():
+        if not isinstance(mapping, dict) or "credited_author" not in mapping:
+            continue
+        credited = mapping["credited_author"]
+        if not isinstance(credited, str) or ":" not in credited:
+            raise ValueError(f"invalid creator attribution for {key!r}")
+        source, author = credited.split(":", 1)
+        normalized = f"{source}:{' '.join(author.split()).casefold()}"
+        if source not in {"nexus", "thunderstore"} or credited != normalized:
+            raise ValueError(f"invalid creator attribution for {key!r}")
+        group = mapping.get("canonical_group_id")
+        targets = mapping.get("matched_to")
+        if (
+            not isinstance(key, str)
+            or ":" not in key
+            or key not in mod_keys
+            or not isinstance(group, str)
+            or not group
+            or not isinstance(targets, list)
+            or not targets
+            or any(not isinstance(target, str) or target not in mod_keys for target in targets)
+            or credited not in group_authors.get(group, set())
+        ):
+            raise ValueError(f"invalid creator attribution for {key!r}")
+        for target in targets:
+            if not isinstance(target, str):
+                raise ValueError(f"invalid creator attribution for {key!r}")
+            reciprocal = mappings.get(target)
+            if (
+                key.split(":", 1)[0] == target.split(":", 1)[0]
+                or not isinstance(reciprocal, dict)
+                or key not in reciprocal.get("matched_to", [])
+                or reciprocal.get("canonical_group_id") != group
+                or reciprocal.get("credited_author") != credited
+            ):
+                raise ValueError(f"creator attribution for {key!r} is not reciprocal")
     result = []
     for mod in mods:
         copied = dict(mod)
         mapping = mappings.get(mod["key"])
         if mapping:
             copied["canonical_group_id"] = mapping.get("canonical_group_id")
+            copied["credited_author"] = mapping.get("credited_author")
             copied["match"] = {
                 "method": mapping.get("method", "manual"),
                 "matched_to": list(mapping.get("matched_to", [])),
             }
         else:
             copied.setdefault("canonical_group_id", None)
+            copied.setdefault("credited_author", None)
             copied.setdefault("match", None)
         result.append(copied)
     return result
@@ -850,6 +900,12 @@ def author_identity_key(mod: dict) -> str:
     return f"{source}:{author}" if source and author else ""
 
 
+def reputation_author_key(mod: dict) -> str:
+    """Return an explicit per-mod credited creator or the publishing account."""
+    credited = mod.get("credited_author")
+    return str(credited) if credited else author_identity_key(mod)
+
+
 def build_author_reputation(
     mods: list[dict],
     config: dict | None,
@@ -859,13 +915,21 @@ def build_author_reputation(
     if config is None:
         return None
     canonical_by_identity = {}
+    display_names = {}
+    native_display_names = set()
     totals = {}
     mod_keys = {}
     first_published = {}
     for mod in mods:
-        identity = author_identity_key(mod)
+        native_identity = author_identity_key(mod)
+        identity = reputation_author_key(mod)
         if not identity:
             continue
+        if native_identity == identity:
+            display_names[identity] = " ".join(str(mod.get("author") or "").split())
+            native_display_names.add(identity)
+        elif identity not in native_display_names:
+            display_names[identity] = identity.split(":", 1)[-1]
         mapping = mappings.get(identity)
         canonical = (
             mapping.get("canonical_author_id")
@@ -894,6 +958,13 @@ def build_author_reputation(
             created = parse_datetime(str(created_at))
             if canonical not in first_published or created < first_published[canonical]:
                 first_published[canonical] = created
+    canonical_display_names = {}
+    for identity, canonical in sorted(canonical_by_identity.items()):
+        candidate = display_names[identity]
+        priority = (0 if identity.startswith("nexus:") else 1, identity)
+        current = canonical_display_names.get(canonical)
+        if current is None or priority < current[0]:
+            canonical_display_names[canonical] = (priority, candidate)
     values = sorted(totals.values())
     percentiles = config["percentiles"]
     cutoffs = {
@@ -918,6 +989,7 @@ def build_author_reputation(
         "authors": {
             identity: {
                 "canonical_author_id": canonical,
+                "display_name": canonical_display_names[canonical][1],
                 "downloads": totals[canonical],
                 "mod_count": len(mod_keys[canonical]),
                 "first_mod_published_at": (
@@ -971,7 +1043,7 @@ def report_author_keys(mods: list[dict], author_reputation: dict | None):
                 mod.get("key", ""),
             ),
         )
-        identity = author_identity_key(primary)
+        identity = reputation_author_key(primary)
         if identity and identity in author_reputation["authors"]:
             keys.append(identity)
     return keys
@@ -1028,10 +1100,11 @@ def render_author_name(mod: dict, author_reputation: dict | None) -> str:
     author = str(mod.get("author") or "")
     if author_reputation is None:
         return escape(author)
-    identity = author_identity_key(mod)
+    identity = reputation_author_key(mod)
     profile = author_reputation["authors"].get(identity)
     if profile is None:
         return escape(author)
+    author = str(profile.get("display_name") or author)
     tier = profile["tier"]
     downloads = int(profile["downloads"])
     mod_count = int(profile["mod_count"])
@@ -1087,7 +1160,7 @@ def render_author_legend(author_reputation: dict | None) -> str:
     )
 
 
-REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count'),pagination=document.querySelector('#pagination'),previousPage=document.querySelector('#previous-page'),nextPage=document.querySelector('#next-page'),pageIndicator=document.querySelector('#page-indicator'),pinnedGroup=document.querySelector('#pinned-group'),regularGroup=document.querySelector('#regular-group'),pinnedSection=document.querySelector('#pinned-section'),regularSection=document.querySelector('#regular-section');const pageSize=100;let currentPage=1;function matchingCards(group,q){const key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');return [...group.children].filter(c=>c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')).sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key]))}function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.toLowerCase(),pinned=matchingCards(pinnedGroup,q),regular=matchingCards(regularGroup,q);pinned.forEach(c=>pinnedGroup.appendChild(c));regular.forEach(c=>regularGroup.appendChild(c));const matching=[...pinned,...regular];const totalPages=Math.ceil(matching.length/pageSize);if(totalPages)currentPage=Math.min(currentPage,totalPages);else currentPage=1;const start=(currentPage-1)*pageSize;const pageCards=matching.slice(start,start+pageSize);const pageSet=new Set(pageCards);cards.forEach(c=>c.hidden=!pageSet.has(c));pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup);regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup);count.textContent=matching.length+' result'+(matching.length===1?'':'s');pageIndicator.textContent='Page '+(totalPages?currentPage:0)+' of '+totalPages;previousPage.disabled=currentPage<=1||!totalPages;nextPage.disabled=!totalPages||currentPage>=totalPages;pagination.hidden=totalPages<=1}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',()=>{currentPage=1;update()}));previousPage.addEventListener('click',()=>{if(currentPage>1){currentPage--;update()}});nextPage.addEventListener('click',()=>{currentPage++;update()});const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();"
+REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count'),pagination=document.querySelector('#pagination'),previousPage=document.querySelector('#previous-page'),nextPage=document.querySelector('#next-page'),pageIndicator=document.querySelector('#page-indicator'),pinnedGroup=document.querySelector('#pinned-group'),regularGroup=document.querySelector('#regular-group'),pinnedSection=document.querySelector('#pinned-section'),regularSection=document.querySelector('#regular-section');const pageSize=100;let currentPage=1;function searchRank(c,q){if(!q)return 0;if(c.dataset.searchTitle.includes(q))return 0;if(c.dataset.searchAuthor.includes(q))return 1;return 2}function matchingCards(group,q){const key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');return [...group.children].filter(c=>c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')).sort((a,b)=>{const relevance=searchRank(a,q)-searchRank(b,q);if(relevance)return relevance;return sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key])})}function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=search.value.trim().toLowerCase(),pinned=matchingCards(pinnedGroup,q),regular=matchingCards(regularGroup,q);pinned.forEach(c=>pinnedGroup.appendChild(c));regular.forEach(c=>regularGroup.appendChild(c));const matching=[...pinned,...regular];const totalPages=Math.ceil(matching.length/pageSize);if(totalPages)currentPage=Math.min(currentPage,totalPages);else currentPage=1;const start=(currentPage-1)*pageSize;const pageCards=matching.slice(start,start+pageSize);const pageSet=new Set(pageCards);cards.forEach(c=>c.hidden=!pageSet.has(c));pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup);regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup);count.textContent=matching.length+' result'+(matching.length===1?'':'s');pageIndicator.textContent='Page '+(totalPages?currentPage:0)+' of '+totalPages;previousPage.disabled=currentPage<=1||!totalPages;nextPage.disabled=!totalPages||currentPage>=totalPages;pagination.hidden=totalPages<=1}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',()=>{currentPage=1;update()}));previousPage.addEventListener('click',()=>{if(currentPage>1){currentPage--;update()}});nextPage.addEventListener('click',()=>{currentPage++;update()});const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();"
 REPORT_STYLESHEET_SHA256 = "34011f7d32fca4414fcf666d9bdaa197c90a27e307ee7f63b8b966c3bee34d1f"
 
 
@@ -1168,20 +1241,42 @@ def render_report(
         category_data = escape(
             json.dumps(category_values, separators=(",", ":")), quote=True
         )
-        search = ' '.join([x for m in members for x in [m.get('title',''),m.get('author','')]+m.get('categories',[])]).lower()
+        def search_index(values):
+            seen = set()
+            normalized = []
+            for value in values:
+                text = " ".join(str(value or "").split()).casefold()
+                if text and text not in seen:
+                    seen.add(text)
+                    normalized.append(text)
+            return " ".join(normalized)
+        title_search = search_index(m.get("title", "") for m in members)
+        author_values = [m.get("author", "") for m in members]
+        if author_reputation is not None:
+            for member in members:
+                profile = author_reputation["authors"].get(reputation_author_key(member))
+                if profile is not None:
+                    author_values.append(profile.get("display_name", ""))
+        author_search = search_index(author_values)
+        description_search = search_index(
+            value
+            for member in members
+            for value in [member.get("summary", ""), *member.get("categories", [])]
+        )
+        search = " ".join((title_search, author_search, description_search))
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
         metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
         author_html = render_author_name(primary, author_reputation)
-        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-categories="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
+        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-categories="%s" data-search-title="%s" data-search-author="%s" data-search-description="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
 <div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="%s">%s</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="%s">%s</time></div></div></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), category_data, escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<button type="button" class="tag" data-category="%s">%s</button>' % (escape(" ".join(str(x).split()).casefold(), quote=True), escape(str(x))) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), category_data, escape(title_search,quote=True), escape(author_search,quote=True), escape(description_search,quote=True), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<button type="button" class="tag" data-category="%s">%s</button>' % (escape(" ".join(str(x).split()).casefold(), quote=True), escape(str(x))) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
 :root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-common:#f2f4f7;--author-uncommon:#4ade80;--author-rare:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-common{color:var(--author-common)}.author-tier-uncommon{color:var(--author-uncommon);text-shadow:0 0 7px rgba(74,222,128,.28)}.author-tier-rare{color:var(--author-rare);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}.pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px 0}.pagination button{min-height:44px;padding:10px 16px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;font:inherit;font-weight:700;cursor:pointer}.pagination button:disabled{opacity:.5;cursor:not-allowed}.page-indicator{min-width:92px;text-align:center;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{position:static;padding:10px 14px;max-height:none;overflow:visible;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section id="regular-section"><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><nav class="pagination" id="pagination" aria-label="Report pages"><button type="button" id="previous-page">Previous</button><span class="page-indicator" id="page-indicator" aria-live="polite">Page 1 of 1</span><button type="button" id="next-page">Next</button></nav><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>{REPORT_JAVASCRIPT}</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, description, category"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section id="regular-section"><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><nav class="pagination" id="pagination" aria-label="Report pages"><button type="button" id="previous-page">Previous</button><span class="page-indicator" id="page-indicator" aria-live="polite">Page 1 of 1</span><button type="button" id="next-page">Next</button></nav><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>{REPORT_JAVASCRIPT}</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
         label for source, label in (("thunderstore", "Thunderstore"), ("nexus", "Nexus Mods"))
@@ -1227,11 +1322,13 @@ class ReportVerifier(HTMLParser):
         self.cards = 0
         self.ids = set()
         self.missing_sort = 0
+        self.missing_search = 0
         self.card_update_metadata = []
         self.update_filter_controls = 0
         self.author_metadata = []
         self.card_author_metadata = []
         self._current_card_authors = None
+        self._current_author_metadata = None
         self.report_generated_at = None
         self.report_data_last_updated_at = None
         self.report_data_last_updated_count = 0
@@ -1319,13 +1416,21 @@ class ReportVerifier(HTMLParser):
             required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter", "data-categories"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
+            search_required = {
+                "data-search", "data-search-title", "data-search-author",
+                "data-search-description",
+            }
+            if not search_required.issubset(attrs):
+                self.missing_search += 1
             self.card_update_metadata.append(
                 (attrs.get("data-sort-updated", ""), attrs.get("data-update-filter"))
             )
         if tag == "span" and (
             attrs.get("data-author-tier") or attrs.get("data-author-key")
         ):
+            attrs["_visible_text"] = ""
             self.author_metadata.append(attrs)
+            self._current_author_metadata = attrs
             if self._current_card_authors is not None:
                 self._current_card_authors.append(attrs)
         if tag == "button" and "tag" in (attrs.get("class") or "").split():
@@ -1338,6 +1443,8 @@ class ReportVerifier(HTMLParser):
             self.report_data_last_updated_count += 1
 
     def handle_endtag(self, tag):
+        if tag == "span" and self._current_author_metadata is not None:
+            self._current_author_metadata = None
         if tag == "article":
             self._current_card_authors = None
             self._current_card_category_buttons = None
@@ -1349,6 +1456,10 @@ class ReportVerifier(HTMLParser):
             self._in_style = False
 
     def handle_data(self, data):
+        if self._current_author_metadata is not None:
+            self._current_author_metadata["_visible_text"] = (
+                str(self._current_author_metadata.get("_visible_text") or "") + data
+            )
         if self._in_script:
             self.script_parts.append(data)
         if self._in_style:
@@ -1393,6 +1504,8 @@ def verify_report(
         errors.append("pagination control semantics are missing or invalid")
     if parser.missing_sort:
         errors.append(f"{parser.missing_sort} cards lack sort/navigation attributes")
+    if parser.missing_search:
+        errors.append(f"{parser.missing_search} cards lack search relevance attributes")
     try:
         latest_update = max(
             (
@@ -1469,6 +1582,18 @@ def verify_report(
         fragment not in script_text for fragment in pagination_javascript
     ):
         errors.append("pagination JavaScript contract is missing or invalid")
+    search_javascript = (
+        "function searchRank(c,q)",
+        "c.dataset.searchTitle.includes(q)",
+        "c.dataset.searchAuthor.includes(q)",
+        "const relevance=searchRank(a,q)-searchRank(b,q)",
+        "if(relevance)return relevance",
+        "search.value.trim().toLowerCase()",
+    )
+    if script_text != REPORT_JAVASCRIPT or any(
+        fragment not in script_text for fragment in search_javascript
+    ):
+        errors.append("search relevance JavaScript contract is missing or invalid")
     metadata_errors = 0
     for updated_at, actual in parser.card_update_metadata:
         try:
@@ -1506,6 +1631,10 @@ def verify_report(
                 or first_published != str(profile.get("first_mod_published_at") or "")
                 or attrs.get("data-author-canonical")
                 != str(profile.get("canonical_author_id"))
+                or (
+                    profile.get("display_name") is not None
+                    and attrs.get("_visible_text") != str(profile.get("display_name"))
+                )
                 or "author" not in classes
                 or f"author-tier-{profile.get('tier')}" not in classes
             ):
@@ -1756,6 +1885,23 @@ def verify_output(
     incomplete = [item.get("key", "<unknown>") for item in mods if not required.issubset(item)]
     if incomplete:
         errors.append(f"{len(incomplete)} records lack common fields")
+    try:
+        authoritative_mods = apply_manual_mappings(
+            mods,
+            _load_json(root / "mappings.json", {}),
+        )
+        mapping_fields = ("canonical_group_id", "match", "credited_author")
+        mapping_mismatches = sum(
+            any(persisted.get(field) != authoritative.get(field) for field in mapping_fields)
+            for persisted, authoritative in zip(mods, authoritative_mods)
+        )
+        if mapping_mismatches:
+            errors.append(
+                f"{mapping_mismatches} records disagree with authoritative mappings"
+            )
+        mods = authoritative_mods
+    except (KeyError, TypeError, ValueError) as exc:
+        errors.append(f"invalid authoritative mappings: {exc}")
     expected_author_reputation = None
     reputation_path = root / "data/author-reputation.json"
     if author_tiers is not None:

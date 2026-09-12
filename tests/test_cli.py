@@ -646,6 +646,79 @@ class CliTests(unittest.TestCase):
 
         self.assertTrue(result["ok"], result["errors"])
 
+    def test_verify_output_rejects_persisted_attribution_that_disagrees_with_mappings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nexus = sample("nexus", "40")
+            nexus.update(author="aedenthorn", canonical_group_id=None, match=None)
+            port = sample("thunderstore", "Ports/Craft")
+            port.update(author="Shared Ports", canonical_group_id=None, match=None)
+            tracker.atomic_write_json(root / "data/mods.json", [nexus, port])
+            tracker.atomic_write_json(root / "author-mappings.json", {})
+            tracker.atomic_write_json(
+                root / "mappings.json",
+                {
+                    "nexus:40": {
+                        "canonical_group_id": "craft",
+                        "credited_author": "nexus:aedenthorn",
+                        "matched_to": ["thunderstore:Ports/Craft"],
+                        "method": "manual",
+                    },
+                    "thunderstore:Ports/Craft": {
+                        "canonical_group_id": "craft",
+                        "credited_author": "nexus:aedenthorn",
+                        "matched_to": ["nexus:40"],
+                        "method": "manual",
+                    },
+                },
+            )
+            tracker.atomic_write_json(
+                root / "snapshots/latest.json",
+                {"collected_at": "2026-09-10T02:00:00Z"},
+            )
+            config = {
+                "percentiles": {"uncommon": 60, "rare": 70, "epic": 80, "legendary": 90},
+                "mappings_file": "author-mappings.json",
+            }
+            generated_at = "2026-09-11T02:00:00Z"
+            tracker.generate_report(
+                root,
+                generated_at,
+                update_filter=None,
+                author_tiers=config,
+            )
+            tampered_mods = json.loads((root / "data/mods.json").read_text())
+            for mod in tampered_mods:
+                mod["credited_author"] = None
+            tracker.atomic_write_json(root / "data/mods.json", tampered_mods)
+            reputation = tracker.build_author_reputation(tampered_mods, config, {})
+            assert reputation is not None
+            persisted_reputation = {"generated_at": generated_at, **reputation}
+            tracker.atomic_write_json(
+                root / "data/author-reputation.json",
+                persisted_reputation,
+            )
+            page = tracker.render_report(
+                tampered_mods,
+                generated_at,
+                update_filter=None,
+                author_reputation=persisted_reputation,
+            )
+            (root / "report.html").write_text(page)
+            (root / "report-hotlinked.html").write_text(page)
+
+            result = tracker.verify_output(
+                root,
+                expected_thunderstore_pages=0,
+                expected_nexus_pages=0,
+                update_filter=None,
+                author_tiers=config,
+                require_reports=True,
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("authoritative mappings" in error for error in result["errors"]))
+
     def test_verify_output_rejects_valid_but_substituted_reputation_generation_timestamp(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

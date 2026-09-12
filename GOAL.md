@@ -33,7 +33,7 @@ Build and enable a deterministic, standard-library-only scheduled pipeline for a
 - [x] Add and test the flat no-agent wrapper under `/opt/data/scripts`.
 - [x] Exercise the essential paths: overlap, provider failure, anomaly block, no change, dry run, publication failure, and success.
 - [x] Run the complete project gates and obtain an independent review of the integrated scheduled path.
-- [ ] Commit and push the verified implementation; confirm both repositories are clean and synchronized.
+- [x] Commit and push the verified implementation; confirm both repositories are clean and synchronized.
 - [ ] Complete one real scheduled-path publication and verify its logs, repository state, deployed artifacts, six live routes, and unknown-route 404.
 - [ ] Create the Hermes cron job paused at `0 */6 * * *` in `America/Phoenix`, read back its persisted definition, run it once, verify run history and Telegram delivery, then enable it.
 - [ ] Record completed work in `CHANGELOG.md`, leave only deferred work in `TODO.md`, and delete this file after every acceptance criterion passes.

@@ -473,8 +473,20 @@ def _counts_from_verification(output: dict, games: list[str]) -> dict[str, int]:
     return counts
 
 
-def verify_live(base_url: str, staging_root: Path, registry: dict) -> dict:
+def verify_live(
+    base_url: str,
+    staging_root: Path,
+    registry: dict,
+    *,
+    attempts: int = 6,
+    retry_delay: float = 10,
+    sleeper=time.sleep,
+) -> dict:
     """Compare exact staged bytes with every live route and require child 404."""
+    if attempts < 1:
+        raise ValueError("live verification attempts must be positive")
+    if retry_delay < 0:
+        raise ValueError("live verification retry delay must not be negative")
     base_url = base_url.rstrip("/")
     root_name = next(iter(registry.values()))["publication"]["root"]
     staged = Path(staging_root) / root_name
@@ -483,15 +495,24 @@ def verify_live(base_url: str, staging_root: Path, registry: dict) -> dict:
     for key, config in registry.items():
         expected[f"/mod-tracking/{config['publication']['path']}/"] = staged / config["publication"]["path"] / "index.html"
     for route, path in expected.items():
-        request = Request(base_url + route, headers={"User-Agent": "mod-tracker-unattended/1"})
-        with urlopen(request, timeout=30) as response:
-            if response.status != 200:
-                raise RuntimeError(f"live route returned HTTP {response.status}: {route}")
-            actual = response.read()
         expected_bytes = path.read_bytes()
-        checks[route] = {"status": response.status, "bytes_match": actual == expected_bytes}
-        if actual != expected_bytes:
-            raise RuntimeError(f"live route does not match staged bytes: {route}")
+        for attempt in range(attempts):
+            request = Request(base_url + route, headers={"User-Agent": "mod-tracker-unattended/1"})
+            try:
+                with urlopen(request, timeout=30) as response:
+                    status = response.status
+                    actual = response.read()
+            except HTTPError as exc:
+                status = exc.code
+                actual = b""
+            if status == 200 and actual == expected_bytes:
+                checks[route] = {"status": status, "bytes_match": True}
+                break
+            if attempt + 1 == attempts:
+                if status != 200:
+                    raise RuntimeError(f"live route returned HTTP {status}: {route}")
+                raise RuntimeError(f"live route does not match staged bytes: {route}")
+            sleeper(retry_delay)
     unknown = "/mod-tracking/__unattended-unknown__/"
     try:
         urlopen(Request(base_url + unknown, headers={"User-Agent": "mod-tracker-unattended/1"}), timeout=30)

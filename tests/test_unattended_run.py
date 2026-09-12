@@ -407,7 +407,65 @@ class UnattendedRunTests(unittest.TestCase):
 
             with patch.object(module, "urlopen", return_value=Response()):
                 with self.assertRaisesRegex(RuntimeError, "HTTP 206"):
-                    module.verify_live("https://example.invalid", root, registry)
+                    module.verify_live(
+                        "https://example.invalid",
+                        root,
+                        registry,
+                        attempts=1,
+                        retry_delay=0,
+                        sleeper=lambda _seconds: None,
+                    )
+
+    def test_live_verification_retries_the_same_exact_url_for_http_error_and_stale_bytes(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            staged = root / "mod-tracking"
+            (staged / "peak").mkdir(parents=True)
+            (staged / "index.html").write_bytes(b"landing-new")
+            (staged / "peak/index.html").write_bytes(b"peak-new")
+            registry = {"peak": {"publication": {"root": "mod-tracking", "path": "peak"}}}
+            calls = []
+            sleeps = []
+            landing_reads = iter((b"landing-old", b"landing-new"))
+            landing_attempt = 0
+
+            class Response:
+                status = 200
+                def __init__(self, body): self.body = body
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def read(self): return self.body
+
+            def fake_urlopen(request, timeout):
+                nonlocal landing_attempt
+                calls.append(request.full_url)
+                if request.full_url.endswith("/__unattended-unknown__/"):
+                    raise module.HTTPError(request.full_url, 404, "missing", {}, None)
+                if request.full_url.endswith("/mod-tracking/"):
+                    landing_attempt += 1
+                    if landing_attempt == 1:
+                        raise module.HTTPError(request.full_url, 503, "unavailable", {}, None)
+                    return Response(next(landing_reads))
+                return Response(b"peak-new")
+
+            with patch.object(module, "urlopen", side_effect=fake_urlopen):
+                result = module.verify_live(
+                    "https://example.invalid",
+                    root,
+                    registry,
+                    attempts=3,
+                    retry_delay=10,
+                    sleeper=sleeps.append,
+                )
+            self.assertTrue(result["ok"])
+            self.assertEqual(sleeps, [10, 10])
+            self.assertEqual(calls[:3], [
+                "https://example.invalid/mod-tracking/",
+                "https://example.invalid/mod-tracking/",
+                "https://example.invalid/mod-tracking/",
+            ])
+            self.assertTrue(all("?" not in url for url in calls))
 
     def test_run_id_and_stage_names_reject_path_escape_forms(self):
         module = load_module()

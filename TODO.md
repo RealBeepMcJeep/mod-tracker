@@ -1,6 +1,6 @@
 # TODO
 
-> Audited against implementation history through `ba9cac9`; all items below remain open.
+> Audited against implementation history through `3154433`; all items below remain open.
 
 ## Deferred ideas
 

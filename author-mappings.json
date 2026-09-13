@@ -250,11 +250,11 @@
   "nexus:nussbacker": {"canonical_author_id": "nussbacker", "matched_to": ["thunderstore:nussbackermods"], "method": "manual two exact-title same-mod refreshed shortlist review"},
   "thunderstore:nussbackermods": {"canonical_author_id": "nussbacker", "matched_to": ["nexus:nussbacker"], "method": "manual two exact-title same-mod refreshed shortlist review"},
   "nexus:blacks7ardev": {"canonical_author_id": "blacks7ar", "matched_to": ["thunderstore:blacks7ar"], "method": "manual exact-title same-mod refreshed shortlist review with matching description"},
-  "thunderstore:blacks7ar": {"canonical_author_id": "blacks7ar", "matched_to": ["nexus:blacks7ardev"], "method": "manual exact-title same-mod refreshed shortlist review with matching description"},
+  "thunderstore:blacks7ar": {"canonical_author_id": "blacks7ar", "matched_to": ["nexus:blacks7ar", "nexus:blacks7ardev"], "method": "legacy author audit: repeated official same-project publications across both Nexus handles"},
   "nexus:stonaar": {"canonical_author_id": "stonaar", "matched_to": ["thunderstore:stonaar"], "method": "manual same-mod refreshed shortlist review"},
   "thunderstore:stonaar": {"canonical_author_id": "stonaar", "matched_to": ["nexus:stonaar"], "method": "manual same-mod refreshed shortlist review"},
   "nexus:valheimmodding": {"canonical_author_id": "valheimmodding", "matched_to": ["thunderstore:valheimmodding"], "method": "manual two same-package refreshed shortlist reviews"},
-  "thunderstore:valheimmodding": {"canonical_author_id": "valheimmodding", "matched_to": ["nexus:valheimmodding"], "method": "manual two same-package refreshed shortlist reviews"},
+  "thunderstore:valheimmodding": {"canonical_author_id": "valheimmodding", "matched_to": ["nexus:valheim modding", "nexus:valheimmodding"], "method": "legacy author audit: Jotunn's official Nexus mirror and ValheimModding uploader/team identity"},
   "nexus:midnightsfx": {"canonical_author_id": "midnightsfx", "matched_to": ["thunderstore:midnightmods"], "method": "manual provenance review: matching project repository, donation identity, version, and feature set"},
   "thunderstore:midnightmods": {"canonical_author_id": "midnightsfx", "matched_to": ["nexus:midnightsfx"], "method": "manual provenance review: matching project repository, donation identity, version, and feature set"},
   "nexus:gemhunter1": {"canonical_author_id": "gemhunter1", "matched_to": ["thunderstore:gemhunter1"], "method": "manual exact-handle author audit with four mapped groups"},
@@ -277,5 +277,7 @@
   "nexus:kadrio": {"canonical_author_id": "kadrio", "matched_to": ["thunderstore:kadrios"], "method": "manual author audit: reciprocal mirrors, project repository, and donation identity"},
   "thunderstore:kadrios": {"canonical_author_id": "kadrio", "matched_to": ["nexus:kadrio"], "method": "manual author audit: reciprocal mirrors, project repository, and donation identity"},
   "nexus:nandor89": {"canonical_author_id": "nandor", "matched_to": ["thunderstore:nandor"], "method": "manual author audit: matching project and NandorTheModder support identity"},
-  "thunderstore:nandor": {"canonical_author_id": "nandor", "matched_to": ["nexus:nandor89"], "method": "manual author audit: matching project and NandorTheModder support identity"}
+  "thunderstore:nandor": {"canonical_author_id": "nandor", "matched_to": ["nexus:nandor89"], "method": "manual author audit: matching project and NandorTheModder support identity"},
+  "nexus:blacks7ar": {"canonical_author_id": "blacks7ar", "matched_to": ["thunderstore:blacks7ar"], "method": "legacy author audit: repeated official same-project publications across both Nexus handles"},
+  "nexus:valheim modding": {"canonical_author_id": "valheimmodding", "matched_to": ["thunderstore:valheimmodding"], "method": "legacy author audit: Jotunn's official Nexus mirror and ValheimModding uploader/team identity"}
 }

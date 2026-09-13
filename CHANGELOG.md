@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-13
+
+- Completed a fail-closed legacy re-audit of all 169 authoritative mod groups and 57 author groups across five games. Removed four fork/port/provenance-uncertain mappings, added seven stable evidence/confidence entries to `PENDING_MAPPING_REVIEW.md`, added two omitted source-handle variants to confirmed author identities, and assigned MassFarming pair-scoped credit to Xeio without aliasing publisher k942.
+- Added synchronized accessible pagination controls above and below every report while retaining the exact 100-card client-side page size, shared pinned-card limit, filter/sort ordering, and page-reset behavior.
+- Added deterministic exact-canonical-author filtering through a toolbar dropdown and native author buttons, including toggle-to-clear behavior, visible/ARIA active state, composition with every existing filter, and strict verifier coverage. Cards now use explicit title/source links rather than inaccessible nested pseudo-link wrappers.
+- Hardened mapping application so removing an authoritative mapping clears stale persisted grouping, attribution, and match fields. Regenerated and strictly verified saved-data reports at PEAK 253, R.E.P.O. 307, Retro Rewind 161, TCG Card Shop Simulator 188, and Valheim 1,118; the full suite passed 193 tests plus compile, JSON, deterministic shortlist, stdlib-import, and whitespace gates.
+
 ## 2026-09-12
 
 - Completed a fresh, bounded manual cross-provider mapping pass over all five saved corpora: accepted 30 new Valheim mod pairs, added 29 evidenced author identity groups across Valheim/R.E.P.O./TCG, and assigned pair-scoped creator credit to 15 groups without globally aliasing shared publishers or fork maintainers. Valheim canonical cards fell exactly from 1,066 to 1,036; the final scorer contained only 13 documented rejects plus the suppressed ShelledGhost PlanBuild fork; all 188 tests, deterministic/compile/JSON/stdlib/whitespace gates, strict five-game verification, and an independent fail-closed review passed. Mapping commit: `ba9cac9e0f77ebd99e28fffebbb5254b322d2f5e`.

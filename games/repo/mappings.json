@@ -40,7 +40,5 @@
       "nexus:45"
     ],
     "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"
-  },
-  "nexus:39": {"canonical_group_id": "map-value-tracker", "credited_author": "thunderstore:tansinator", "matched_to": ["thunderstore:Tansinator/Map_Value_Tracker"], "method": "manual attribution review: Nexus identifies a port of Tansinator's original implementation"},
-  "thunderstore:Tansinator/Map_Value_Tracker": {"canonical_group_id": "map-value-tracker", "credited_author": "thunderstore:tansinator", "matched_to": ["nexus:39"], "method": "manual attribution review: Nexus identifies a port of Tansinator's original implementation"}
+  }
 }

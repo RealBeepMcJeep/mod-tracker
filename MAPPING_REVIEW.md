@@ -37,6 +37,23 @@ The independent full-corpus author track added 29 canonical cross-provider ident
 
 Fifteen canonical groups gained pair-scoped creator attribution: Valheim `equipmentsheet`, `feastmaster`, `here-comes-the-vein`, `instant-monster-loot-drop`, `inventorylink`, `no-rain-damage`, `not-so-needy-crafting-station`, `planbuild`, `radialrebind`, `ship-config`, `station-range-plus`, `terrain-shaper-plus`, `terramizer`, and `terramizerserver`; plus R.E.P.O. `map-value-tracker`. Attribution is reciprocal within each mod pair and credits the evidenced creator without globally merging unrelated publisher profiles.
 
+## 2026-09-13 complete legacy re-audit
+
+The audit mechanically covered all 169 authoritative cross-provider mod groups and all 57 canonical author groups across the five games. Ten non-overlapping evidence batches returned one structured disposition per group; exact inventory coverage and uniqueness were then checked programmatically. A second fail-closed review reconciled the batch flags against primary provider pages, linked repositories, uploader identities, package namespaces, matching project histories, and exact record keys.
+
+Four mod pairs were removed from authoritative mappings and entered into `PENDING_MAPPING_REVIEW.md`:
+
+- Valheim `nexus:164` ↔ `thunderstore:cjayride/InstantMonsterLootDrop`: Thunderstore explicitly identifies its package as a fork of aedenthorn's Nexus implementation.
+- R.E.P.O. `nexus:39` ↔ `thunderstore:Tansinator/Map_Value_Tracker`: Nexus explicitly identifies its package as a MelonLoader port of Tansinator's Thunderstore/BepInEx implementation.
+- Valheim `nexus:3009` ↔ `thunderstore:MilkyTeam/ShipConfig`: exact title/version/release timing is strong, but current primary pages do not establish MilkyTeam ↔ gjglasgow publisher provenance.
+- Valheim `nexus:3639` ↔ `thunderstore:TeamSmoochie/XPortal_Patched`: publisher handles and timing align, but Nexus 3639 is hidden and the Thunderstore package links the distinct original Nexus record 2239.
+
+No canonical author group required removal. Direct cross-links, repeated official same-project publication, source repositories, uploader ownership, package/config namespaces, or exact source handles resolved every flagged identity. The audit added the omitted `nexus:blacks7ar` handle to canonical author `blacks7ar` and `nexus:valheim modding` to the `valheimmodding` team, with reciprocal Thunderstore coverage. MassFarming remained one artifact because Thunderstore links Xeio's project source; both reciprocal mod entries now use pair-scoped `credited_author: nexus:xeio` without aliasing publisher `k942` to Xeio.
+
+A project being a fork or rewrite of a third project is not itself grounds to separate its Nexus and Thunderstore mirrors. Pairs such as Atos Arrows JVL, BetterDiving, TreesReborn, Triple Bronze JVL, Grantapher's Valheim Plus, and XPortal were retained where both endpoints represent the same derived artifact. The durable pending queue now holds seven mod-pair entries: the four audit removals plus unresolved Piggyback, TCG expansion patch, and EliteCreatures candidates. No author-identity entry remains open.
+
+After the audit edits and report-navigation implementation, generation and strict verification succeeded from saved data without provider collection: PEAK 253 cards, R.E.P.O. 307, Retro Rewind 161, TCG Card Shop Simulator 188, and Valheim 1,118. The deterministic all-game shortlist was byte-identical across two runs, all mapping JSON parsed, the standard-library import audit passed, and the full suite passed 193 tests. The final counts include the four additional cards created by clearing stale persisted grouping fields for the removed mappings.
+
 ## Rejected pairs
 
 These remain deliberately unmapped after fail-closed review:

@@ -646,7 +646,7 @@ class ReportTests(unittest.TestCase):
                 "data:image/", (root / "report-hotlinked.html").read_text()
             )
 
-    def test_report_has_source_badges_clickable_cards_fixed_pins_and_sort_controls(self):
+    def test_report_has_source_badges_explicit_links_fixed_pins_and_sort_controls(self):
         mods = [sample("thunderstore", "A/Pinned", True, "Pinned"), sample("nexus", "79", False, "Nexus")]
 
         page = tracker.render_report(mods, "2026-09-09T20:00:00Z")
@@ -654,7 +654,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(page.count('class="mod-card'), 2)
         self.assertIn(">Thunderstore</span>", page)
         self.assertIn(">Nexus Mods</span>", page)
-        self.assertIn('data-url="https://example.test/A/Pinned"', page)
+        self.assertIn('<h2><a href="https://example.test/A/Pinned">Pinned</a></h2>', page)
         self.assertIn('id="pinned-group"', page)
         self.assertIn('id="regular-group"', page)
         self.assertIn('data-sort-lifetime-rate=', page)
@@ -671,7 +671,103 @@ class ReportTests(unittest.TestCase):
         self.assertIn("minmax(280px,1fr)", page)
         self.assertIn("min-height:44px", page)
         self.assertIn("@media(max-width:520px)", page)
-        self.assertIn("location.href", page)
+
+
+    def test_report_cards_use_explicit_links_without_nested_pseudo_link_wrapper(self):
+        page = tracker.render_report(
+            [sample("nexus", "1")], "2026-09-09T20:00:00Z"
+        )
+
+        self.assertIn('<h2><a href="https://example.test/1">Mod</a></h2>', page)
+        self.assertNotIn('role="link"', page)
+        self.assertNotIn('tabindex="0"', page)
+        self.assertNotIn('data-url=', page)
+        self.assertNotIn("location.href", page)
+
+    def test_report_renders_synchronized_top_and_bottom_pagination_controls(self):
+        page = tracker.render_report(
+            [sample("nexus", str(index), False, f"Mod {index}") for index in range(101)],
+            "2026-09-09T20:00:00Z",
+        )
+
+        self.assertEqual(page.count('class="pagination"'), 2)
+        self.assertIn('<nav class="pagination" id="pagination-top" aria-label="Report pages">', page)
+        self.assertIn('<nav class="pagination" id="pagination-bottom" aria-label="Report pages">', page)
+        for control_id in (
+            "previous-page-top", "page-indicator-top", "next-page-top",
+            "previous-page-bottom", "page-indicator-bottom", "next-page-bottom",
+        ):
+            self.assertIn(f'id="{control_id}"', page)
+        self.assertIn("paginations=[", page)
+
+    def test_report_renders_exact_author_filter_controls_and_canonical_identity(self):
+        mod = sample("nexus", "1")
+        mod["author"] = "Alice"
+        reputation = {
+            "generated_at": "2026-09-09T20:00:00Z",
+            "authors": {
+                "nexus:alice": {
+                    "canonical_author_id": "alice-canonical",
+                    "display_name": "Alice",
+                    "downloads": 10,
+                    "mod_count": 1,
+                    "first_mod_published_at": "2021-01-01T00:00:00Z",
+                    "tier": "rare",
+                }
+            },
+        }
+        page = tracker.render_report([mod], "2026-09-09T20:00:00Z", author_reputation=reputation)
+
+        self.assertIn('id="author-filter"', page)
+        self.assertIn('id="clear-author-filter"', page)
+        self.assertIn('type="button" class="author-button"', page)
+        self.assertIn('data-author-canonical="alice-canonical"', page)
+        self.assertIn("c.dataset.authorCanonical===author.value", page)
+        self.assertIn("author.value===b.dataset.authorCanonical?'':b.dataset.authorCanonical", page)
+        self.assertIn("author-filter-active", page)
+        self.assertIn("e.stopPropagation()", page)
+
+    def test_author_filter_ignores_reputation_profiles_not_rendered_on_cards(self):
+        mod = sample("nexus", "1")
+        mod["author"] = "Alice"
+        reputation = {
+            "generated_at": "2026-09-09T20:00:00Z",
+            "authors": {
+                "nexus:alice": {
+                    "canonical_author_id": "alice-canonical",
+                    "display_name": "Alice",
+                    "downloads": 10,
+                    "mod_count": 1,
+                    "first_mod_published_at": "2021-01-01T00:00:00Z",
+                    "tier": "rare",
+                },
+                "thunderstore:publisher": {
+                    "canonical_author_id": "unrendered-publisher",
+                    "display_name": "Publisher",
+                    "downloads": 20,
+                    "mod_count": 1,
+                    "first_mod_published_at": "2021-01-01T00:00:00Z",
+                    "tier": "epic",
+                },
+            },
+        }
+        page = tracker.render_report(
+            [mod], "2026-09-09T20:00:00Z", author_reputation=reputation
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.html"
+            path.write_text(page)
+            result = tracker.verify_report(
+                path,
+                expected_cards=1,
+                expected_author_reputation=reputation,
+                expected_author_keys=["nexus:alice"],
+                expected_card_categories=[["gameplay"]],
+            )
+
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertNotIn('value="unrendered-publisher"', page)
 
     def test_report_paginates_the_filtered_single_file_card_set_by_100(self):
         mods = [sample("thunderstore", "Team/Pinned", True, "Pinned")]
@@ -680,10 +776,12 @@ class ReportTests(unittest.TestCase):
         page = tracker.render_report(mods, "2026-09-09T20:00:00Z")
 
         self.assertEqual(page.count('class="mod-card'), 101)
-        self.assertIn('id="pagination"', page)
-        self.assertIn('id="previous-page"', page)
-        self.assertIn('id="next-page"', page)
-        self.assertIn('id="page-indicator"', page)
+        self.assertIn('id="pagination-top"', page)
+        self.assertIn('id="pagination-bottom"', page)
+        self.assertIn('id="previous-page-top"', page)
+        self.assertIn('id="next-page-bottom"', page)
+        self.assertIn('id="page-indicator-top"', page)
+        self.assertIn('id="page-indicator-bottom"', page)
         self.assertIn('aria-live="polite"', page)
         self.assertIn("const pageSize=100", page)
         self.assertIn("const totalPages=Math.ceil(matching.length/pageSize)", page)
@@ -699,22 +797,22 @@ class ReportTests(unittest.TestCase):
             "2026-09-09T20:00:00Z",
         )
         mutations = {
-            "controls": ('id="next-page"', 'id="next-page-broken"'),
+            "controls": ('id="next-page-top"', 'id="next-page-top-broken"'),
             "navigation landmark": (
-                '<nav class="pagination" id="pagination" aria-label="Report pages">',
-                '<div class="pagination" id="pagination" aria-label="Report pages">',
+                '<nav class="pagination" id="pagination-top" aria-label="Report pages">',
+                '<div class="pagination" id="pagination-top" aria-label="Report pages">',
             ),
             "previous button type": (
-                '<button type="button" id="previous-page">Previous</button>',
-                '<button id="previous-page">Previous</button>',
+                '<button type="button" id="previous-page-top">Previous</button>',
+                '<button id="previous-page-top">Previous</button>',
             ),
             "next button element": (
-                '<button type="button" id="next-page">Next</button>',
-                '<div id="next-page">Next</div>',
+                '<button type="button" id="next-page-top">Next</button>',
+                '<div id="next-page-top">Next</div>',
             ),
             "page indicator live region": (
-                '<span class="page-indicator" id="page-indicator" aria-live="polite">',
-                '<span class="page-indicator" id="page-indicator" aria-live="off">',
+                '<span class="page-indicator" id="page-indicator-top" aria-live="polite">',
+                '<span class="page-indicator" id="page-indicator-top" aria-live="off">',
             ),
             "page size": ("const pageSize=100", "const pageSize=101"),
             "filtered slice": (
@@ -791,7 +889,7 @@ class ReportTests(unittest.TestCase):
             "e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()",
             page,
         )
-        self.assertIn("if(!e.target.closest('a,button,input,select'))", page)
+
 
     def test_report_controls_stick_to_viewport_without_mobile_obstruction(self):
         page = tracker.render_report(
@@ -1124,6 +1222,21 @@ class ReportTests(unittest.TestCase):
         subtitle = page.split('<p class="subtitle">', 1)[1].split("</p>", 1)[0]
         self.assertIn("on Nexus Mods.", subtitle)
         self.assertNotIn("Thunderstore", subtitle)
+
+    def test_manual_mapping_clears_stale_metadata_for_unmapped_records(self):
+        stale = sample("nexus", "79")
+        stale.update(
+            canonical_group_id="removed-group",
+            credited_author="nexus:old-author",
+            match={"method": "removed", "matched_to": ["thunderstore:A/B"]},
+        )
+
+        mapped = tracker.apply_manual_mappings([stale], {})
+
+        self.assertIsNone(mapped[0]["canonical_group_id"])
+        self.assertIsNone(mapped[0]["credited_author"])
+        self.assertIsNone(mapped[0]["match"])
+        self.assertEqual(stale["canonical_group_id"], "removed-group")
 
     def test_manual_mapping_only_applies_explicit_metadata(self):
         mods = [sample("nexus", "79")]

@@ -92,7 +92,7 @@
   "nexus:1569": {"canonical_group_id": "bone-arrows-jvl", "matched_to": ["thunderstore:Digitalroot/Bone_Arrows_JVL"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "nexus:1600": {"canonical_group_id": "valharvest", "matched_to": ["thunderstore:Frenvius/Valharvest"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "nexus:1615": {"canonical_group_id": "requipme", "matched_to": ["thunderstore:Neobotics/RequipMe"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
-  "nexus:164": {"canonical_group_id": "instant-monster-loot-drop", "credited_author": "nexus:aedenthorn", "matched_to": ["thunderstore:cjayride/InstantMonsterLootDrop"], "method": "manual attribution review: Thunderstore identifies a fork of aedenthorn's original implementation"},
+
   "nexus:1655": {"canonical_group_id": "reely-spectacklelure", "matched_to": ["thunderstore:Neobotics/Reely_SpecTackleLure"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
   "nexus:1658": {"canonical_group_id": "slope-combat-assistance", "matched_to": ["thunderstore:Digitalroot/Digitalroots_Slope_Combat_Assistance"], "method": "manual bounded shortlist review: matching identity or explicit port/fork evidence"},
   "nexus:1665": {"canonical_group_id": "max-dungeon-rooms", "matched_to": ["thunderstore:Digitalroot/Max_Dungeon_Rooms"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
@@ -156,7 +156,7 @@
   "nexus:3635": {"canonical_group_id": "radialrebind", "credited_author": "nexus:brosbe4foes", "matched_to": ["thunderstore:TheKeybindPolice/RadialRebind"], "method": "manual attribution review: Thunderstore links the BrosBe4Foes source repository"},
   "nexus:374": {"canonical_group_id": "easy-spawner", "matched_to": ["thunderstore:Cooleyy/EasySpawner"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
   "nexus:40": {"canonical_group_id": "craft-build-smelt-cook-fuel-pull-from-containers", "credited_author": "nexus:aedenthorn", "matched_to": ["thunderstore:ValheimPortMods/Craft_Build_Smelt_Cook_Fuel_Pull_From_Containers"], "method": "manual attribution: Nexus original creator credited for shared Thunderstore port"},
-  "nexus:527": {"canonical_group_id": "massfarming", "matched_to": ["thunderstore:k942/MassFarming"], "method": "manual bounded shortlist review: matching identity or explicit port/fork evidence"},
+  "nexus:527": {"canonical_group_id": "massfarming", "credited_author": "nexus:xeio", "matched_to": ["thunderstore:k942/MassFarming"], "method": "legacy audit: Thunderstore links Xeio's MassFarming repository and credits Xeio and contributors"},
   "thunderstore:ASharpPen/Custom_Raids": {"canonical_group_id": "custom-raids", "matched_to": ["nexus:278"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
   "thunderstore:Advize/PlantEasily": {"canonical_group_id": "plant-easily", "matched_to": ["nexus:2350"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "thunderstore:Advize/PlantEverything": {"canonical_group_id": "plant-everything", "matched_to": ["nexus:1042"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
@@ -225,9 +225,9 @@
   "thunderstore:Valesthor/Health_Stamina_Eitr_Manager": {"canonical_group_id": "health-stamina-eitr-manager", "matched_to": ["nexus:3559"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "thunderstore:ValheimPortMods/Craft_Build_Smelt_Cook_Fuel_Pull_From_Containers": {"canonical_group_id": "craft-build-smelt-cook-fuel-pull-from-containers", "credited_author": "nexus:aedenthorn", "matched_to": ["nexus:40"], "method": "manual attribution: Nexus original creator credited for shared Thunderstore port"},
   "thunderstore:Yololo/Innangard": {"canonical_group_id": "innangard", "matched_to": ["nexus:3607"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
-  "thunderstore:cjayride/InstantMonsterLootDrop": {"canonical_group_id": "instant-monster-loot-drop", "credited_author": "nexus:aedenthorn", "matched_to": ["nexus:164"], "method": "manual attribution review: Thunderstore identifies a fork of aedenthorn's original implementation"},
+
   "thunderstore:ishid4/BetterArchery": {"canonical_group_id": "better-archery", "matched_to": ["nexus:348"], "method": "manual bounded shortlist review: normalized title and compatible descriptions"},
-  "thunderstore:k942/MassFarming": {"canonical_group_id": "massfarming", "matched_to": ["nexus:527"], "method": "manual bounded shortlist review: matching identity or explicit port/fork evidence"},
+  "thunderstore:k942/MassFarming": {"canonical_group_id": "massfarming", "credited_author": "nexus:xeio", "matched_to": ["nexus:527"], "method": "legacy audit: Thunderstore links Xeio's MassFarming repository and credits Xeio and contributors"},
   "thunderstore:malafein/ShipwrightsTouch": {"canonical_group_id": "shipwright-s-touch", "matched_to": ["nexus:3200"], "method": "manual bounded shortlist review: matching identity or explicit port/fork evidence"},
   "thunderstore:shudnal/ExtraSlotsCustomSlots": {"canonical_group_id": "extra-slots-custom-slots", "matched_to": ["nexus:2911"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
   "thunderstore:shudnal/HipLantern": {"canonical_group_id": "hip-lantern", "matched_to": ["nexus:2748"], "method": "manual bounded shortlist review: normalized title, author, and compatible descriptions"},
@@ -241,8 +241,7 @@
   "thunderstore:Advize/StumpsRegrow": {"canonical_group_id": "stumps-regrow", "matched_to": ["nexus:2981"], "method": "manual equivalent title-author and distinctive feature description"},
   "nexus:394": {"canonical_group_id": "cartography-skill", "matched_to": ["thunderstore:Advize/CartographySkill"], "method": "manual equivalent title-author and distinctive feature description"},
   "thunderstore:Advize/CartographySkill": {"canonical_group_id": "cartography-skill", "matched_to": ["nexus:394"], "method": "manual equivalent title-author and distinctive feature description"},
-  "nexus:3639": {"canonical_group_id": "xportal-patched", "matched_to": ["thunderstore:TeamSmoochie/XPortal_Patched"], "method": "manual exact title and distinctive behavior with project cross-link; author alias withheld"},
-  "thunderstore:TeamSmoochie/XPortal_Patched": {"canonical_group_id": "xportal-patched", "matched_to": ["nexus:3639"], "method": "manual exact title and distinctive behavior with project cross-link; author alias withheld"},
+
   "nexus:202": {"canonical_group_id": "precise-rotation", "matched_to": ["thunderstore:disregardthatisuck/PreciseRotation"], "method": "manual exact title-version and linked GitHub and Ko-fi identity"},
   "thunderstore:disregardthatisuck/PreciseRotation": {"canonical_group_id": "precise-rotation", "matched_to": ["nexus:202"], "method": "manual exact title-version and linked GitHub and Ko-fi identity"},
   "nexus:2524": {"canonical_group_id": "paved-road-no-level", "matched_to": ["thunderstore:DeathWizsh/PavedRoadNoLevel"], "method": "manual refreshed shortlist: exact normalized title, author, and compatible descriptions"},
@@ -301,8 +300,7 @@
   "thunderstore:MathiasDecrock/PlanBuild": {"canonical_group_id": "planbuild", "credited_author": "nexus:marcopogo and jules", "matched_to": ["nexus:1125"], "method": "manual provenance review: official package shares source repository and credits MarcoPogo/MathiasDecrock and Jules"},
   "nexus:2104": {"canonical_group_id": "feastmaster", "credited_author": "nexus:gjglasgow", "matched_to": ["thunderstore:MilkyTeam/FeastMaster"], "method": "manual provenance review: matching version and features with Gerald Glasgow source repository"},
   "thunderstore:MilkyTeam/FeastMaster": {"canonical_group_id": "feastmaster", "credited_author": "nexus:gjglasgow", "matched_to": ["nexus:2104"], "method": "manual provenance review: matching version and features with Gerald Glasgow source repository"},
-  "nexus:3009": {"canonical_group_id": "ship-config", "credited_author": "nexus:gjglasgow", "matched_to": ["thunderstore:MilkyTeam/ShipConfig"], "method": "manual provenance review: matching version, upload date, implementation, and Gerald Glasgow source repository"},
-  "thunderstore:MilkyTeam/ShipConfig": {"canonical_group_id": "ship-config", "credited_author": "nexus:gjglasgow", "matched_to": ["nexus:3009"], "method": "manual provenance review: matching version, upload date, implementation, and Gerald Glasgow source repository"},
+
   "nexus:3137": {"canonical_group_id": "star-level-system", "matched_to": ["thunderstore:MidnightMods/StarLevelSystem"], "method": "manual provenance review: matching version, project repository, donation identity, and feature set"},
   "thunderstore:MidnightMods/StarLevelSystem": {"canonical_group_id": "star-level-system", "matched_to": ["nexus:3137"], "method": "manual provenance review: matching version, project repository, donation identity, and feature set"}
 }

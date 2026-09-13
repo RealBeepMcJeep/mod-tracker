@@ -831,9 +831,9 @@ def apply_manual_mappings(mods: list[dict], mappings: dict) -> list[dict]:
                 "matched_to": list(mapping.get("matched_to", [])),
             }
         else:
-            copied.setdefault("canonical_group_id", None)
-            copied.setdefault("credited_author", None)
-            copied.setdefault("match", None)
+            copied["canonical_group_id"] = None
+            copied["credited_author"] = None
+            copied["match"] = None
         result.append(copied)
     return result
 
@@ -1125,24 +1125,34 @@ def render_author_name(mod: dict, author_reputation: dict | None) -> str:
         f"{author}, {tier.title()} author, {downloads:,} lifetime downloads, "
         f"{mod_label}, {first_evidence}"
     )
-    return (
+    metadata = (
         '<span class="author author-tier-%s" data-author-tier="%s" '
         'data-author-downloads="%d" data-author-mod-count="%d" '
         'data-author-first-published="%s" data-author-key="%s" '
         'data-author-canonical="%s" title="%s" '
         'aria-label="%s">%s</span>'
         % (
-            tier,
-            tier,
-            downloads,
-            mod_count,
+            tier, tier, downloads, mod_count,
             escape(str(first_published or ""), quote=True),
-            escape(identity, quote=True),
-            escape(canonical, quote=True),
-            escape(evidence, quote=True),
-            escape(aria, quote=True),
+            escape(identity, quote=True), escape(canonical, quote=True),
+            escape(evidence, quote=True), escape(aria, quote=True),
             escape(author),
         )
+    )
+    return (
+        '<button type="button" class="author-button" data-author-key="%s" '
+        'data-author-canonical="%s" aria-pressed="false">%s</button>'
+        % (escape(identity, quote=True), escape(canonical, quote=True), metadata)
+    )
+
+
+def render_pagination(position: str) -> str:
+    """Render one accessible pagination control set."""
+    return (
+        f'<nav class="pagination" id="pagination-{position}" aria-label="Report pages">'
+        f'<button type="button" id="previous-page-{position}">Previous</button>'
+        f'<span class="page-indicator" id="page-indicator-{position}" aria-live="polite">Page 1 of 1</span>'
+        f'<button type="button" id="next-page-{position}">Next</button></nav>'
     )
 
 
@@ -1160,8 +1170,8 @@ def render_author_legend(author_reputation: dict | None) -> str:
     )
 
 
-REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count'),pagination=document.querySelector('#pagination'),previousPage=document.querySelector('#previous-page'),nextPage=document.querySelector('#next-page'),pageIndicator=document.querySelector('#page-indicator'),pinnedGroup=document.querySelector('#pinned-group'),regularGroup=document.querySelector('#regular-group'),pinnedSection=document.querySelector('#pinned-section'),regularSection=document.querySelector('#regular-section');const pageSize=100;let currentPage=1;function normalizeSearch(value){return value.replace(/^[ \\t\\n\\r\\f\\v]+|[ \\t\\n\\r\\f\\v]+$/g,'').toLowerCase().replace(/[ \\t\\n\\r\\f\\v]+/g,' ')}function matchingCards(group,q){const key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');return [...group.children].filter(c=>c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')).sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key]))}function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=normalizeSearch(search.value),pinned=matchingCards(pinnedGroup,q),regular=matchingCards(regularGroup,q);pinned.forEach(c=>pinnedGroup.appendChild(c));regular.forEach(c=>regularGroup.appendChild(c));const matching=[...pinned,...regular];const totalPages=Math.ceil(matching.length/pageSize);if(totalPages)currentPage=Math.min(currentPage,totalPages);else currentPage=1;const start=(currentPage-1)*pageSize;const pageCards=matching.slice(start,start+pageSize);const pageSet=new Set(pageCards);cards.forEach(c=>c.hidden=!pageSet.has(c));pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup);regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup);count.textContent=matching.length+' result'+(matching.length===1?'':'s');pageIndicator.textContent='Page '+(totalPages?currentPage:0)+' of '+totalPages;previousPage.disabled=currentPage<=1||!totalPages;nextPage.disabled=!totalPages||currentPage>=totalPages;pagination.hidden=totalPages<=1}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',()=>{currentPage=1;update()}));previousPage.addEventListener('click',()=>{if(currentPage>1){currentPage--;update()}});nextPage.addEventListener('click',()=>{currentPage++;update()});const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()}));cards.forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a,button,input,select'))location.href=c.dataset.url}));update();"
-REPORT_STYLESHEET_SHA256 = "34011f7d32fca4414fcf666d9bdaa197c90a27e307ee7f63b8b966c3bee34d1f"
+REPORT_JAVASCRIPT = "const cards=[...document.querySelectorAll('.mod-card')],search=document.querySelector('#search'),source=document.querySelector('#source-filter'),category=document.querySelector('#category-filter'),author=document.querySelector('#author-filter'),sort=document.querySelector('#sort'),nsfw=document.querySelector('#nsfw-toggle'),updateFilter=document.querySelector('#update-filter-toggle'),count=document.querySelector('#results-count'),paginations=[...document.querySelectorAll('.pagination')],previousPages=paginations.map(p=>p.querySelector('[id^=previous-page]')),nextPages=paginations.map(p=>p.querySelector('[id^=next-page]')),pageIndicators=paginations.map(p=>p.querySelector('[id^=page-indicator]')),pinnedGroup=document.querySelector('#pinned-group'),regularGroup=document.querySelector('#regular-group'),pinnedSection=document.querySelector('#pinned-section'),regularSection=document.querySelector('#regular-section'),clearAuthor=document.querySelector('#clear-author-filter');const pageSize=100;let currentPage=1;function normalizeSearch(value){return value.replace(/^[ \\t\\n\\r\\f\\v]+|[ \\t\\n\\r\\f\\v]+$/g,'').toLowerCase().replace(/[ \\t\\n\\r\\f\\v]+/g,' ')}function matchingCards(group,q){const key='sort'+sort.value.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('');return [...group.children].filter(c=>c.dataset.search.includes(q)&&(!source.value||c.dataset.source===source.value)&&(!category.value||JSON.parse(c.dataset.categories).includes(category.value))&&(!author||!author.value||c.dataset.authorCanonical===author.value)&&(nsfw.checked||c.dataset.nsfw!=='true')&&(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')).sort((a,b)=>sort.value==='updated'?b.dataset[key].localeCompare(a.dataset[key]):Number(b.dataset[key])-Number(a.dataset[key]))}function update(){document.body.classList.toggle('show-nsfw',nsfw.checked);const q=normalizeSearch(search.value),pinned=matchingCards(pinnedGroup,q),regular=matchingCards(regularGroup,q);pinned.forEach(c=>pinnedGroup.appendChild(c));regular.forEach(c=>regularGroup.appendChild(c));const matching=[...pinned,...regular];const totalPages=Math.ceil(matching.length/pageSize);if(totalPages)currentPage=Math.min(currentPage,totalPages);else currentPage=1;const start=(currentPage-1)*pageSize;const pageCards=matching.slice(start,start+pageSize);const pageSet=new Set(pageCards);cards.forEach(c=>c.hidden=!pageSet.has(c));pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup);regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup);count.textContent=matching.length+' result'+(matching.length===1?'':'s');pageIndicators.forEach(i=>i.textContent='Page '+(totalPages?currentPage:0)+' of '+totalPages);previousPages.forEach(b=>b.disabled=currentPage<=1||!totalPages);nextPages.forEach(b=>b.disabled=!totalPages||currentPage>=totalPages);paginations.forEach(p=>p.hidden=totalPages<=1);document.querySelectorAll('.author-button').forEach(b=>{const active=!!author&&b.dataset.authorCanonical===author.value;b.classList.toggle('author-filter-active',active);b.setAttribute('aria-pressed',String(active))});if(clearAuthor){clearAuthor.hidden=!author||!author.value}}[search,source,category,sort,nsfw,...(updateFilter?[updateFilter]:[])].forEach(x=>x.addEventListener('input',()=>{currentPage=1;update()}));if(author)author.addEventListener('input',()=>{currentPage=1;update()});previousPages.forEach(b=>b.addEventListener('click',()=>{if(currentPage>1){currentPage--;update()}}));nextPages.forEach(b=>b.addEventListener('click',()=>{currentPage++;update()}));const tags=[...document.querySelectorAll('.tag[data-category]')];tags.forEach(tag=>tag.addEventListener('click',e=>{e.stopPropagation();category.value=tag.dataset.category;currentPage=1;update();category.focus()}));const authorButtons=[...document.querySelectorAll('.author-button[data-author-canonical]')];authorButtons.forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(author){author.value=author.value===b.dataset.authorCanonical?'':b.dataset.authorCanonical;currentPage=1;update();author.focus()}}));if(clearAuthor)clearAuthor.addEventListener('click',e=>{e.stopPropagation();author.value='';currentPage=1;update();author.focus()});update();"
+REPORT_STYLESHEET_SHA256 = "99cf97bf15f5ba9b2f47a5e80428e1815fd6c32ce64b0b2f1a29493dd1f43e73"
 
 
 def render_report(
@@ -1208,6 +1218,22 @@ def render_report(
         % (escape(value, quote=True), escape(categories[value]))
         for value in sorted(categories)
     )
+    author_options = {}
+    if author_reputation is not None:
+        for group in _report_groups(mods):
+            primary = max(group, key=lambda m: (timestamp_sort_key(m.get("updated_at") or ""), m.get("key", "")))
+            profile = author_reputation["authors"].get(reputation_author_key(primary))
+            if profile is not None:
+                canonical = str(profile["canonical_author_id"])
+                author_options.setdefault(canonical, str(profile.get("display_name") or primary.get("author") or canonical))
+    author_filter = ""
+    if author_options:
+        author_filter = (
+            '<label class="control">Author<select id="author-filter">'
+            '<option value="">All authors</option>'
+            + "".join('<option value="%s">%s</option>' % (escape(key, quote=True), escape(author_options[key])) for key in sorted(author_options))
+            + '</select></label><button type="button" id="clear-author-filter" hidden>Clear author filter</button>'
+        )
     def card(members):
         members = sorted(members, key=lambda m: m['source'])
         primary = max(
@@ -1270,15 +1296,17 @@ def render_report(
         metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
         author_html = render_author_name(primary, author_reputation)
-        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-categories="%s" data-search-title="%s" data-search-author="%s" data-search-description="%s" data-search="%s" data-url="%s" tabindex="0" role="link" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
+        author_profile = author_reputation["authors"].get(reputation_author_key(primary)) if author_reputation is not None else None
+        author_canonical = str(author_profile["canonical_author_id"]) if author_profile is not None else ""
+        return '''<article class="mod-card source-%s%s" data-source="%s" data-nsfw="%s" data-update-filter="%s" data-categories="%s" data-author-canonical="%s" data-search-title="%s" data-search-author="%s" data-search-description="%s" data-search="%s" data-sort-lifetime-rate="%s" data-sort-version-rate="%s" data-sort-updated="%s" data-sort-downloads="%s">
 <div class="media">%s</div><div class="body"><div class="badges"><span class="source %s">%s</span>%s%s</div><h2><a href="%s">%s</a></h2><p class="by">by %s · v%s</p><p class="summary">%s</p><div class="tags">%s</div><p class="source-links">%s</p><div class="dates"><div class="date-row"><span class="date-label">Updated</span><time datetime="%s">%s</time></div><div class="date-row"><span class="date-label">Uploaded</span><time datetime="%s">%s</time></div></div></div><dl class="metrics">%s<div><dt>%s</dt><dd>%s</dd></div></dl></article>''' % (
-            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), category_data, escape(title_search,quote=True), escape(author_search,quote=True), escape(description_search,quote=True), escape(search,quote=True), escape(primary['canonical_url'],quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<button type="button" class="tag" data-category="%s">%s</button>' % (escape(" ".join(str(x).split()).casefold(), quote=True), escape(str(x))) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
+            source, ' pinned' if pinned else '', source, str(adult).lower(), str(matches_update_filter(updated, update_filter)).lower(), category_data, escape(author_canonical,quote=True), escape(title_search,quote=True), escape(author_search,quote=True), escape(description_search,quote=True), escape(search,quote=True), _sort_number(lifetime), _sort_number(version_rate), escape(updated,quote=True), _sort_number(total_downloads), images, source, label, '<span class="pin">Pinned</span>' if pinned else '', '<span class="nsfw">NSFW</span>' if adult else '', escape(primary['canonical_url'],quote=True), escape(primary.get('title','')), author_html, escape(str(primary.get('version') or '—')), escape(primary.get('summary') or ''), ''.join('<button type="button" class="tag" data-category="%s">%s</button>' % (escape(" ".join(str(x).split()).casefold(), quote=True), escape(str(x))) for x in cats), links, escape(updated,quote=True), escape(updated[:10] or 'unknown'), escape(created,quote=True), escape(created[:10] or 'unknown'), metrics, lifetime_label, f"{lifetime:,.1f}")
     groups = _report_groups(mods)
     pinned = ''.join(card(g) for g in groups if any(m.get('pinned') for m in g)); regular = ''.join(card(g) for g in groups if not any(m.get('pinned') for m in g))
     initial_visible = sum(not any(m.get('adult_content') for m in group) for group in groups)
     page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valheim Mod Tracker</title><style>
-:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-common:#f2f4f7;--author-uncommon:#4ade80;--author-rare:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-common{color:var(--author-common)}.author-tier-uncommon{color:var(--author-uncommon);text-shadow:0 0 7px rgba(74,222,128,.28)}.author-tier-rare{color:var(--author-rare);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.mod-card:focus{outline:2px solid #7cb7ff}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}.pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px 0}.pagination button{min-height:44px;padding:10px 16px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;font:inherit;font-weight:700;cursor:pointer}.pagination button:disabled{opacity:.5;cursor:not-allowed}.page-indicator{min-width:92px;text-align:center;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{position:static;padding:10px 14px;max-height:none;overflow:visible;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
-</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, description"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label><div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section id="regular-section"><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><nav class="pagination" id="pagination" aria-label="Report pages"><button type="button" id="previous-page">Previous</button><span class="page-indicator" id="page-indicator" aria-live="polite">Page 1 of 1</span><button type="button" id="next-page">Next</button></nav><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>{REPORT_JAVASCRIPT}</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
+:root{--bg:#090b0e;--panel:#171a1f;--line:#30353d;--text:#f2f4f7;--muted:#9ca3ad;--ts-bg:#202c3d;--ts-line:#4d6b91;--nx-bg:#3b2922;--nx-line:#9a5e3b;--author-common:#f2f4f7;--author-uncommon:#4ade80;--author-rare:#4da3ff;--author-epic:#c084fc;--author-legendary:#fb923c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}header,main{max-width:1320px;margin:auto;padding:28px}header{border-bottom:1px solid var(--line)}h1{font-size:clamp(30px,5vw,52px);margin:0}.subtitle{color:var(--muted)}.toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px max(28px,calc((100vw - 1320px)/2 + 28px));background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 8px 18px rgba(0,0,0,.3)}.results{font-weight:700;margin-right:auto;min-height:44px;display:flex;align-items:center}.control{display:grid;gap:4px;color:var(--muted);font-size:12px}.toggle-row{display:flex;gap:16px;align-items:center;min-height:44px;flex-wrap:wrap}.toggle-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.toggle-control input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 auto;accent-color:#2587e8}.author{font-weight:750}.author-button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.author-button.author-filter-active{outline:2px solid #f3d76b;outline-offset:3px;border-radius:3px}.author-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.author-legend strong{margin-right:2px}.author-legend span{font-weight:750}.author-tier-common{color:var(--author-common)}.author-tier-uncommon{color:var(--author-uncommon);text-shadow:0 0 7px rgba(74,222,128,.28)}.author-tier-rare{color:var(--author-rare);text-shadow:0 0 7px rgba(77,163,255,.28)}.author-tier-epic{color:var(--author-epic);text-shadow:0 0 8px rgba(192,132,252,.32)}.author-tier-legendary{color:var(--author-legendary);text-shadow:0 0 9px rgba(251,146,60,.38)}.body h2 a,.body h2 a:visited{color:var(--text);text-decoration:none}.body h2 a:hover{text-decoration:underline}input,select{min-height:44px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.mod-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px}.mod-card[data-nsfw="true"]{display:none}.show-nsfw .mod-card[data-nsfw="true"]{display:grid}.mod-card.source-thunderstore{background:var(--ts-bg);border-color:var(--ts-line)}.mod-card.source-nexus{background:var(--nx-bg);border-color:var(--nx-line)}.mod-card.source-both{background:linear-gradient(110deg,var(--ts-bg),var(--nx-bg));border-color:#75614d}.mod-card:hover{border-color:#d5dbe3}.media{aspect-ratio:16/8;background:#222}.thumb{width:100%%;height:100%%;object-fit:cover}.body{padding:15px;min-width:0;overflow-wrap:anywhere}.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.source,.pin,.nsfw,.tag{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:750}.source{background:#1b6c9e;border:1px solid #8ed0ff}.source.nexus{background:#9a4d27;border-color:#ffc09b}.source.both{background:linear-gradient(90deg,#236e9e,#9a4d27);border-color:#f0d0a2}.nsfw{background:#671d35;border:1px solid #ff9abb}.pin{background:#705b18;border:1px solid #f3d76b}.tags{display:flex;flex-wrap:wrap;gap:4px}.tag{background:#252a31;color:var(--muted);border:0;font:inherit;font-size:11px;font-weight:750;margin:2px;max-width:100%%;overflow-wrap:anywhere;cursor:pointer}.tag:focus-visible{outline:2px solid #7cb7ff;outline-offset:2px}.source-link{color:#b9dbff;margin-right:12px;font-weight:700}.dates{display:grid;gap:4px;margin:1em 0}.date-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}.date-label{color:var(--muted);font-weight:600}.date-row time{white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}.metrics div{padding:10px 12px;border-right:1px solid var(--line)}dt{color:var(--muted);font-size:11px}dd{margin:3px 0;font-weight:700}.pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px 0}.pagination button{min-height:44px;padding:10px 16px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;font:inherit;font-weight:700;cursor:pointer}.pagination button:disabled{opacity:.5;cursor:not-allowed}.page-indicator{min-width:92px;text-align:center;font-weight:700}[hidden]{display:none!important}@media(max-width:520px){header,main{padding:18px 14px}.toolbar{position:static;padding:10px 14px;max-height:none;overflow:visible;align-items:stretch}.control{width:100%%}.toggle-row{width:100%%;justify-content:flex-start}.grid{display:block}.mod-card{display:grid;grid-template-columns:88px minmax(0,1fr);margin-bottom:12px}.media{grid-column:1;grid-row:1;aspect-ratio:1;margin:12px}.body{grid-column:2;grid-row:1;padding:12px 12px 12px 0}.summary,.tags,.dates,.source-links{grid-column:1/-1}.metrics{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:360px){.date-row{grid-template-columns:1fr;gap:0}}
+</style></head><body><header><h1>Valheim Mod Tracker</h1><p class="subtitle">Discover and compare recently updated Valheim mods across Thunderstore and Nexus Mods.</p></header><div class="toolbar" role="region" aria-label="Mod filters"><span class="results" id="results-count">%d results</span><label class="control">Search<input id="search" type="search" placeholder="Title, author, description"></label><label class="control">Filter<select id="source-filter"><option value="">All sources</option><option value="thunderstore">Thunderstore</option><option value="nexus">Nexus Mods</option><option value="both">Both</option></select></label><label class="control">Category<select id="category-filter">{CATEGORY_OPTIONS}</select></label>{AUTHOR_FILTER}<div class="toggle-row"><label class="toggle-control"><input id="nsfw-toggle" type="checkbox"><span>Show NSFW mods</span></label>{UPDATE_FILTER_CONTROL}</div><label class="control">Sort<select id="sort"><option value="lifetime-rate">Lifetime downloads/day</option><option value="version-rate">Current version observed downloads/day</option><option value="updated">Last updated</option><option value="downloads">Total downloads</option></select></label></div><main><p>Generated %s.</p>{AUTHOR_LEGEND}<div class="report-pagination-top">{PAGINATION_TOP}</div><section id="pinned-section"%s><h2>Pinned Thunderstore mods</h2><div class="grid" id="pinned-group">%s</div></section><section id="regular-section"><h2>All other mods</h2><div class="grid" id="regular-group">%s</div></section><div class="report-pagination-bottom">{PAGINATION_BOTTOM}</div><noscript><p>Filtering requires JavaScript; NSFW content remains hidden when JavaScript is disabled.</p></noscript></main><script>{REPORT_JAVASCRIPT}</script></body></html>''' % (initial_visible, generated_label, ' hidden' if not pinned else '', pinned, regular)
     report_title = escape(f"{game_name} Mod Tracker")
     source_names = [
         label for source, label in (("thunderstore", "Thunderstore"), ("nexus", "Nexus Mods"))
@@ -1299,6 +1327,9 @@ def render_report(
     page = page.replace(
         "{UPDATE_FILTER_CONTROL}", render_update_filter_control(update_filter)
     )
+    page = page.replace("{AUTHOR_FILTER}", author_filter)
+    page = page.replace("{PAGINATION_TOP}", render_pagination("top"))
+    page = page.replace("{PAGINATION_BOTTOM}", render_pagination("bottom"))
     page = page.replace("{CATEGORY_OPTIONS}", category_options)
     page = page.replace("{REPORT_JAVASCRIPT}", REPORT_JAVASCRIPT)
     page = page.replace("{AUTHOR_LEGEND}", render_author_legend(author_reputation))
@@ -1327,8 +1358,14 @@ class ReportVerifier(HTMLParser):
         self.missing_search = 0
         self.card_update_metadata = []
         self.update_filter_controls = 0
+        self.author_filter_controls = 0
+        self.author_options = []
+        self._in_author_filter = False
+        self.clear_author_filter_controls = 0
+        self.author_buttons = []
         self.author_metadata = []
         self.card_author_metadata = []
+        self.card_author_canonical = []
         self._current_card_authors = None
         self._current_author_metadata = None
         self.report_generated_at = None
@@ -1342,10 +1379,10 @@ class ReportVerifier(HTMLParser):
         self._in_category_filter = False
         self.sticky_toolbars = 0
         self.pagination_semantics = {
-            "pagination": 0,
-            "previous-page": 0,
-            "next-page": 0,
-            "page-indicator": 0,
+            key: 0 for key in (
+                "pagination-top", "previous-page-top", "next-page-top", "page-indicator-top",
+                "pagination-bottom", "previous-page-bottom", "next-page-bottom", "page-indicator-bottom",
+            )
         }
         self._in_script = False
         self._in_style = False
@@ -1362,27 +1399,33 @@ class ReportVerifier(HTMLParser):
             self.ids.add(attrs["id"])
         element_id = attrs.get("id")
         if (
-            element_id == "pagination"
-            and tag == "nav"
-            and attrs.get("aria-label") == "Report pages"
+            element_id in {"pagination-top", "pagination-bottom"}
+            and tag == "nav" and attrs.get("aria-label") == "Report pages"
             and "pagination" in (attrs.get("class") or "").split()
-        ):
-            self.pagination_semantics["pagination"] += 1
-        if (
-            element_id in {"previous-page", "next-page"}
-            and tag == "button"
-            and attrs.get("type") == "button"
         ):
             self.pagination_semantics[element_id] += 1
         if (
-            element_id == "page-indicator"
-            and tag == "span"
-            and attrs.get("aria-live") == "polite"
+            element_id in {"previous-page-top", "previous-page-bottom", "next-page-top", "next-page-bottom"}
+            and tag == "button" and attrs.get("type") == "button"
+        ):
+            self.pagination_semantics[element_id] += 1
+        if (
+            element_id in {"page-indicator-top", "page-indicator-bottom"}
+            and tag == "span" and attrs.get("aria-live") == "polite"
             and "page-indicator" in (attrs.get("class") or "").split()
         ):
-            self.pagination_semantics["page-indicator"] += 1
+            self.pagination_semantics[element_id] += 1
         if tag == "input" and attrs.get("id") == "update-filter-toggle":
             self.update_filter_controls += 1
+        if tag == "select" and attrs.get("id") == "author-filter":
+            self.author_filter_controls += 1
+            self._in_author_filter = True
+        if tag == "option" and self._in_author_filter:
+            self.author_options.append(attrs.get("value"))
+        if tag == "button" and attrs.get("id") == "clear-author-filter":
+            self.clear_author_filter_controls += 1
+        if tag == "button" and "author-button" in (attrs.get("class") or "").split():
+            self.author_buttons.append(attrs)
         if tag == "select" and attrs.get("id") == "category-filter":
             self.category_controls += 1
             self._in_category_filter = True
@@ -1399,6 +1442,7 @@ class ReportVerifier(HTMLParser):
             self.cards += 1
             self._current_card_authors = []
             self.card_author_metadata.append(self._current_card_authors)
+            self.card_author_canonical.append(attrs.get("data-author-canonical"))
             self._current_card_category_buttons = []
             self.card_category_buttons.append(self._current_card_category_buttons)
             raw_categories = attrs.get("data-categories")
@@ -1415,7 +1459,7 @@ class ReportVerifier(HTMLParser):
             except (TypeError, ValueError, json.JSONDecodeError):
                 parsed_categories = None
             self.card_category_metadata.append(parsed_categories)
-            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-url", "data-source", "data-nsfw", "data-update-filter", "data-categories"}
+            required = {"data-sort-lifetime-rate", "data-sort-version-rate", "data-sort-updated", "data-sort-downloads", "data-source", "data-nsfw", "data-update-filter", "data-categories"}
             if not required.issubset(attrs):
                 self.missing_sort += 1
             search_required = {
@@ -1452,6 +1496,8 @@ class ReportVerifier(HTMLParser):
             self._current_card_category_buttons = None
         if tag == "select" and self._in_category_filter:
             self._in_category_filter = False
+        if tag == "select" and self._in_author_filter:
+            self._in_author_filter = False
         if tag == "script":
             self._in_script = False
         if tag == "style":
@@ -1490,7 +1536,10 @@ def verify_report(
         "pinned-group", "regular-group", "pinned-section", "regular-section",
         "search", "source-filter", "category-filter", "sort", "nsfw-toggle",
     }
-    pagination_ids = {"pagination", "previous-page", "next-page", "page-indicator"}
+    pagination_ids = {
+        "pagination-top", "previous-page-top", "next-page-top", "page-indicator-top",
+        "pagination-bottom", "previous-page-bottom", "next-page-bottom", "page-indicator-bottom",
+    }
     expected_control = render_update_filter_control(update_filter)
     if update_filter is not None:
         required_ids.add("update-filter-toggle")
@@ -1577,8 +1626,11 @@ def verify_report(
         "pinnedSection.hidden=!pageCards.some(c=>c.parentElement===pinnedGroup)",
         "regularSection.hidden=!pageCards.some(c=>c.parentElement===regularGroup)",
         "currentPage=1;update()",
-        "previousPage.addEventListener('click'",
-        "nextPage.addEventListener('click'",
+        "previousPages.forEach(b=>b.addEventListener('click'",
+        "nextPages.forEach(b=>b.addEventListener('click'",
+        "pageIndicators.forEach(i=>i.textContent",
+        "previousPages.forEach(b=>b.disabled",
+        "nextPages.forEach(b=>b.disabled",
     )
     if script_text != REPORT_JAVASCRIPT or any(
         fragment not in script_text for fragment in pagination_javascript
@@ -1678,9 +1730,41 @@ def verify_report(
                 errors.append("rendered author identities do not match report cards")
             if len(parser.card_author_metadata) != len(expected_author_keys) or any(
                 len(card_authors) != 1
-                for card_authors in parser.card_author_metadata
+                or parser.card_author_canonical[index] != card_authors[0].get("data-author-canonical")
+                for index, card_authors in enumerate(parser.card_author_metadata)
             ):
                 errors.append("each report card must contain exactly one author metadata entry")
+    if expected_author_reputation is not None:
+        expected_authors = expected_author_reputation.get("authors", {})
+        rendered_identity_keys = (
+            expected_author_keys
+            if expected_author_keys is not None
+            else [attrs.get("data-author-key") for attrs in parser.author_metadata]
+        )
+        rendered_canonicals = {
+            str(expected_authors[identity].get("canonical_author_id"))
+            for identity in rendered_identity_keys
+            if identity in expected_authors
+            and expected_authors[identity].get("canonical_author_id") is not None
+        }
+        if rendered_canonicals:
+            if parser.author_filter_controls != 1 or parser.clear_author_filter_controls != 1:
+                errors.append("author filter controls are missing or invalid")
+            expected_options = [""] + sorted(rendered_canonicals)
+            if parser.author_options != expected_options:
+                errors.append("author filter options do not match report authors")
+            actual_canonicals = {attrs.get("data-author-canonical") for attrs in parser.author_buttons}
+            actual_button_keys = {attrs.get("data-author-key") for attrs in parser.author_buttons}
+            actual_metadata_keys = {attrs.get("data-author-key") for attrs in parser.author_metadata}
+            actual_metadata_canonicals = {attrs.get("data-author-canonical") for attrs in parser.author_metadata}
+            if actual_canonicals != rendered_canonicals or actual_button_keys != actual_metadata_keys or actual_metadata_canonicals != actual_canonicals:
+                errors.append("author filter buttons do not match report authors")
+            if any(attrs.get("type") != "button" or attrs.get("aria-pressed") != "false" for attrs in parser.author_buttons):
+                errors.append("author buttons are not native or lack state semantics")
+        elif parser.author_filter_controls or parser.clear_author_filter_controls or parser.author_buttons:
+            errors.append("unexpected author filter controls")
+    elif parser.author_filter_controls or parser.clear_author_filter_controls or parser.author_buttons:
+        errors.append("unexpected author filter controls")
     required_javascript = (
         "updateFilter=document.querySelector('#update-filter-toggle')",
         "(!updateFilter||!updateFilter.checked||c.dataset.updateFilter==='true')",

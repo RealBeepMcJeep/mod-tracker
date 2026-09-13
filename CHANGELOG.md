@@ -2,6 +2,7 @@
 
 ## 2026-09-12
 
+- Completed a fresh, bounded manual cross-provider mapping pass over all five saved corpora: accepted 30 new Valheim mod pairs, added 29 evidenced author identity groups across Valheim/R.E.P.O./TCG, and assigned pair-scoped creator credit to 15 groups without globally aliasing shared publishers or fork maintainers. Valheim canonical cards fell exactly from 1,066 to 1,036; the final scorer contained only 13 documented rejects plus the suppressed ShelledGhost PlanBuild fork; all 188 tests, deterministic/compile/JSON/stdlib/whitespace gates, strict five-game verification, and an independent fail-closed review passed. Mapping commit: `ba9cac9e0f77ebd99e28fffebbb5254b322d2f5e`.
 - Changed report search to match grouped mod titles, displayed/native author names, and retained descriptions using symmetric lowercase and collapsed ASCII-whitespace normalization, without category-label matching or relevance reordering; the selected numeric/date sort now remains authoritative for both empty and nonempty queries, with strict tamper coverage for field indexes, query normalization, filtering, and sort preservation.
 
 ## 2026-09-11

@@ -40,5 +40,33 @@
       "nexus:ymc_mhz"
     ],
     "method": "manual same-mod shortlist review"
+  },
+  "nexus:dirtygames": {
+    "canonical_author_id": "dirtygames",
+    "matched_to": [
+      "thunderstore:dirtygames"
+    ],
+    "method": "manual exact-handle author audit"
+  },
+  "thunderstore:dirtygames": {
+    "canonical_author_id": "dirtygames",
+    "matched_to": [
+      "nexus:dirtygames"
+    ],
+    "method": "manual exact-handle author audit"
+  },
+  "nexus:wellingtondiascf": {
+    "canonical_author_id": "wellingtondiascf",
+    "matched_to": [
+      "thunderstore:wellingtondiascf"
+    ],
+    "method": "manual exact-handle author audit"
+  },
+  "thunderstore:wellingtondiascf": {
+    "canonical_author_id": "wellingtondiascf",
+    "matched_to": [
+      "nexus:wellingtondiascf"
+    ],
+    "method": "manual exact-handle author audit"
   }
 }

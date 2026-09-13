@@ -27,6 +27,16 @@ Follow-up report inspection added the exact-handle reciprocal alias `nexus:azuma
 
 The 2026-09-11 full pass reviewed a bounded 14-pair refreshed shortlist. It accepted R.E.P.O.'s explicitly attributed `MoneyValueTracker` port plus six Valheim pairs (`StartSpawnOnDeath`, `Spyglass`, `StumpsRegrow`, `CartographySkill`, `XPortal_Patched`, and `PreciseRotation`). The three Advize author decisions reused an existing alias; concrete linked GitHub and Ko-fi evidence added only the new reciprocal `nexus:jd` ↔ `thunderstore:disregardthatisuck` alias. Unsupported uploader identities remained separate.
 
+## 2026-09-12 fresh-corpus pass
+
+The full saved corpus contained PEAK 72 Nexus/174 Thunderstore records, R.E.P.O. 143/166, Retro Rewind 161/0, TCG Card Shop Simulator 167/22, and Valheim 374/815. Two deterministic shortlist runs were byte-identical. Previously mapped records were excluded, and the pass iterated through bounded tranches of at most 20 candidates per game.
+
+This initiative reviewed 37 newly surfaced mod candidates: 30 Valheim pairs were accepted and seven pairs were rejected. The 30 accepted Valheim pairs reduced the canonical card count exactly from 1,066 to 1,036. PEAK remained at 238 cards, R.E.P.O. at 305, Retro Rewind at 161, and TCG Card Shop Simulator at 185.
+
+The independent full-corpus author track added 29 canonical cross-provider identities: 26 Valheim (`blacks7ar`, `cooleyy`, `deathwizsh`, `gemhunter1`, `goathedge`, `goldenrevolver`, `hyleanlegend`, `igentuman`, `kadrio`, `marsarah`, `midnightsfx`, `moddedwolf`, `nandor`, `nightkosh`, `nussbacker`, `ontrigger`, `patocino`, `pattpc`, `randyknapp`, `sakey391`, `spikehimself`, `stonaar`, `treextr`, `trentinidev`, `valheimmodding`, and `zellds`), two R.E.P.O. (`dirtygames`, `wellingtondiascf`), and one TCG (`definitezer0`). The `moddedwolf` identity contains two evidenced Nexus handles and one Thunderstore handle. Shared publisher, port-maintainer, and fork-maintainer accounts remain source-scoped rather than globally aliased.
+
+Fifteen canonical groups gained pair-scoped creator attribution: Valheim `equipmentsheet`, `feastmaster`, `here-comes-the-vein`, `instant-monster-loot-drop`, `inventorylink`, `no-rain-damage`, `not-so-needy-crafting-station`, `planbuild`, `radialrebind`, `ship-config`, `station-range-plus`, `terrain-shaper-plus`, `terramizer`, and `terramizerserver`; plus R.E.P.O. `map-value-tracker`. Attribution is reciprocal within each mod pair and credits the evidenced creator without globally merging unrelated publisher profiles.
+
 ## Rejected pairs
 
 These remain deliberately unmapped after fail-closed review:
@@ -38,15 +48,22 @@ These remain deliberately unmapped after fail-closed review:
 - Valheim `nexus:1356` ↔ `thunderstore:Azumatt/AzuExtendedPlayerInventory`: generic inventory-expansion similarity does not establish the same implementation.
 - Valheim `nexus:2625` ↔ `thunderstore:fedorovdgap/PlantEverything`: a translation and an unofficial rebuild/fork are not the same canonical artifact.
 - Valheim `nexus:174` ↔ `thunderstore:Azumatt/AzuAutoStore`: related functionality but different titles, authors, and feature scope.
+- PEAK `nexus:25` (`PeakLobbies`) ↔ `thunderstore:tony4twenty/PEAK_Zombies`: scorer collision on the generic game-name token; unrelated lobby and zombie systems.
+- Valheim `nexus:1068` ↔ `thunderstore:Muindor/DeathTweaks`: Thunderstore explicitly identifies a from-scratch reimplementation of aedenthorn's original, not the same artifact.
+- Valheim `nexus:2394` ↔ `thunderstore:Iandmygears/Agility`: identical generic title but different authors, language, mechanics, and implementation scope.
+- Valheim `nexus:3670` ↔ `thunderstore:MilkyTeam/EliteCreatures`: matching title/description/date but the rejected Thunderstore listing exposes no concrete source or creator provenance sufficient for fail-closed mapping.
+- Valheim `nexus:3535` ↔ `thunderstore:Wynston/Hearthfolk`: independently authored packages with differing implementation scope; the corresponding Thunderstore package for the Nexus creator is under `Hadorn96`.
+- Valheim `nexus:1125` ↔ `thunderstore:ShelledGhost/PlanBuild`: explicit Valheim 1.0 compatibility fork; the official `MathiasDecrock/PlanBuild` package is mapped instead.
+- Valheim `nexus:332` ↔ `thunderstore:PONEIS/SmartContainers`: explicit unofficial community rebuild/maintenance fork; its corresponding Nexus fork is mod 3656, not original mod 332.
 
 ## Exhaustion and verification
 
-After accepted pairs were applied, the scorer was rerun. The final all-game shortlist contained exactly the seven rejected pairs above and no unseen pair at or above `0.45`. R.E.P.O. had no remaining candidates, and Retro Rewind remained explicitly `single-source`.
+After accepted pairs were applied, the scorer was rerun. The final all-game shortlist contained exactly 13 documented rejected pairs—three PEAK, two TCG Card Shop Simulator, and eight Valheim—and no unseen pair at or above `0.45`. The reviewed `ShelledGhost/PlanBuild` fork is additionally suppressed from the scorer because the official cross-provider PlanBuild pair is now mapped. R.E.P.O. had no remaining candidates, and Retro Rewind remained explicitly `single-source`.
 
-Regeneration and strict verification succeeded for all five local reports after applying the refreshed mappings. These generated release artifacts and `data/author-reputation.json` files are intentionally gitignored; the authoritative mapping inputs are the staged reciprocal JSON files.
+Regeneration and strict verification succeeded for both report variants across all five games after applying the refreshed mod mappings, author aliases, and pair-scoped attribution. Generated release artifacts and `data/author-reputation.json` files are intentionally gitignored; the reciprocal JSON inputs are authoritative.
 
-- PEAK: 222 canonical cards;
-- R.E.P.O.: 299 canonical cards;
-- Retro Rewind: 160 canonical cards;
-- TCG Card Shop Simulator: 178 canonical cards;
-- Valheim: 746 canonical cards.
+- PEAK: 238 canonical cards;
+- R.E.P.O.: 305 canonical cards;
+- Retro Rewind: 161 canonical cards;
+- TCG Card Shop Simulator: 185 canonical cards;
+- Valheim: 1,036 canonical cards.

@@ -12,5 +12,19 @@
       "nexus:ghostnarwhal"
     ],
     "method": "manual same-mod shortlist review"
+  },
+  "nexus:definitezer0": {
+    "canonical_author_id": "definitezer0",
+    "matched_to": [
+      "thunderstore:definitezer0"
+    ],
+    "method": "manual exact-handle author audit"
+  },
+  "thunderstore:definitezer0": {
+    "canonical_author_id": "definitezer0",
+    "matched_to": [
+      "nexus:definitezer0"
+    ],
+    "method": "manual exact-handle author audit"
   }
 }

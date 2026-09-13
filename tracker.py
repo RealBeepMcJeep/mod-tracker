@@ -1293,7 +1293,34 @@ def render_report(
         )
         search = " ".join((title_search, author_search, description_search))
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
-        metrics = ''.join('<div><dt>%s downloads</dt><dd>%s</dd></div><div><dt>Endorsements / likes</dt><dd>%s / %s</dd></div>' % ('Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods', f"{int(m.get('total_downloads') or 0):,}", f"{int(m.get('endorsements') or 0):,}", f"{int(m.get('likes') or 0):,}") for m in members)
+        def source_metrics(member):
+            source_name = (
+                "Thunderstore" if member["source"] == "thunderstore" else "Nexus Mods"
+            )
+            engagement_name = (
+                "likes" if member["source"] == "thunderstore" else "endorsements"
+            )
+            engagement_value = member.get(
+                "likes" if member["source"] == "thunderstore" else "endorsements"
+            )
+            blocks = [
+                '<div><dt>%s downloads</dt><dd>%s</dd></div>'
+                % (
+                    source_name,
+                    f"{int(member.get('total_downloads') or 0):,}",
+                )
+            ]
+            if engagement_value is not None:
+                blocks.append(
+                    '<div><dt>%s %s</dt><dd>%s</dd></div>'
+                    % (
+                        source_name,
+                        engagement_name,
+                        f"{int(engagement_value):,}",
+                    )
+                )
+            return "".join(blocks)
+        metrics = ''.join(source_metrics(member) for member in members)
         images = ''.join('<img class="thumb" src="%s" alt="" loading="lazy">' % escape(_thumbnail_src(m, embed_thumbnails, thumbnail_fetch), quote=True) for m in members)
         author_html = render_author_name(primary, author_reputation)
         author_profile = author_reputation["authors"].get(reputation_author_key(primary)) if author_reputation is not None else None

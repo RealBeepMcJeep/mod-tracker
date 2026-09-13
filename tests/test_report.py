@@ -667,11 +667,41 @@ class ReportTests(unittest.TestCase):
         self.assertIn('class="media"', page)
         self.assertIn('class="tag"', page)
         self.assertIn("Uploaded", page)
-        self.assertIn("Endorsements / likes", page)
+        self.assertIn("Thunderstore likes", page)
+        self.assertIn("Nexus Mods endorsements", page)
         self.assertIn("minmax(280px,1fr)", page)
         self.assertIn("min-height:44px", page)
         self.assertIn("@media(max-width:520px)", page)
 
+
+    def test_report_uses_source_specific_endorsement_and_like_metrics(self):
+        nexus = sample("nexus", "79", title="Nexus")
+        nexus.update(endorsements=2345, likes=None)
+        thunderstore = sample("thunderstore", "A/B", title="Thunderstore")
+        thunderstore.update(endorsements=None, likes=6789)
+
+        page = tracker.render_report(
+            [nexus, thunderstore], "2026-09-09T20:00:00Z"
+        )
+
+        self.assertIn("<dt>Nexus Mods endorsements</dt><dd>2,345</dd>", page)
+        self.assertIn("<dt>Thunderstore likes</dt><dd>6,789</dd>", page)
+        self.assertNotIn("Endorsements / likes", page)
+        self.assertNotIn("Nexus Mods likes", page)
+        self.assertNotIn("Thunderstore endorsements", page)
+
+    def test_report_omits_unavailable_engagement_but_preserves_numeric_zero(self):
+        missing_nexus = sample("nexus", "missing", title="Missing Nexus")
+        missing_nexus.update(endorsements=None, likes=None)
+        zero_thunderstore = sample("thunderstore", "A/Zero", title="Zero Thunderstore")
+        zero_thunderstore.update(endorsements=None, likes=0)
+
+        page = tracker.render_report(
+            [missing_nexus, zero_thunderstore], "2026-09-09T20:00:00Z"
+        )
+
+        self.assertNotIn("Nexus Mods endorsements", page)
+        self.assertIn("<dt>Thunderstore likes</dt><dd>0</dd>", page)
 
     def test_report_cards_use_explicit_links_without_nested_pseudo_link_wrapper(self):
         page = tracker.render_report(
@@ -1440,8 +1470,8 @@ class ReportTests(unittest.TestCase):
     def test_report_formats_display_numbers_but_keeps_raw_sort_values(self):
         thunderstore = sample("thunderstore", "A/B", title="Shared")
         nexus = sample("nexus", "79", title="Shared")
-        thunderstore.update(total_downloads=787350, endorsements=12345, likes=6789)
-        nexus.update(total_downloads=33203, endorsements=2345, likes=0)
+        thunderstore.update(total_downloads=787350, endorsements=None, likes=6789)
+        nexus.update(total_downloads=33203, endorsements=2345, likes=None)
         for mod, match in ((thunderstore, "nexus:79"), (nexus, "thunderstore:A/B")):
             mod["canonical_group_id"] = "shared"
             mod["match"] = {"method": "manual", "matched_to": [match]}
@@ -1450,7 +1480,8 @@ class ReportTests(unittest.TestCase):
 
         self.assertIn('<dt>Nexus Mods downloads</dt><dd>33,203</dd>', page)
         self.assertIn('<dt>Thunderstore downloads</dt><dd>787,350</dd>', page)
-        self.assertIn('<dd>12,345 / 6,789</dd>', page)
+        self.assertIn('<dt>Nexus Mods endorsements</dt><dd>2,345</dd>', page)
+        self.assertIn('<dt>Thunderstore likes</dt><dd>6,789</dd>', page)
         self.assertRegex(page, r'<dt>Combined lifetime / day</dt><dd>[0-9,]+\.\d</dd>')
         self.assertIn('data-sort-downloads="820553"', page)
 

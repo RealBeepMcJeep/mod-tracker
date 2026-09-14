@@ -88,30 +88,14 @@ Rules:
 
 ### Work
 
-1. Load and validate `github-repositories.json` during report generation through one shared interface.
-2. Resolve at most one repository per card using the fixed single-source/mapped-card rules above.
-3. Render a simple `GitHub` anchor beside existing provider links; do not add badges, icons, related links, card-level click behavior, or JavaScript.
-4. Extend strict report verification to derive expected per-card links from validated decisions and mappings. Reject missing, added, duplicate, wrong-card, profile, deep-path, conflicting, or altered repository links.
-5. Cover current and stale approvals, `no_repository`, unreviewed records, one-sided mapped evidence, matching mapped approvals, and mapped conflicts.
-6. Verify the Nexus API-key file is nonempty and mode `0600` without logging its value.
-7. Run one normal fresh all-game pass. It must use the repaired parser/refresh behavior but must not invoke an LLM or modify tracked review files.
-8. Run the manual review scan once more for evidence changed by the fresh pass; apply validated high-confidence results and leave ambiguity queued.
-9. Regenerate and strictly verify all five reports.
-10. Commit/push the tracker milestone, stage the complete six-route publication tree, dry-run once, publish atomically once, and push public-artifacts.
-11. Verify all six canonical HTTPS routes return 200 and exact committed bytes; verify an unknown route returns 404.
-12. Browser-check representative Nexus, Thunderstore, mapped-agreement, and mapped-conflict cards while confirming search, filters, pagination, and author controls still work.
-13. Add final exact counts and verification results to `CHANGELOG.md`, reconcile only genuinely outstanding `TODO.md` work, and delete this file.
-
-### Required RED→GREEN coverage
-
-- One approved single-source repository link.
-- Deep evidence URL displayed as repository root.
-- No link for unreviewed or `no_repository` records.
-- Stale approved link retained.
-- One-sided mapped approval accepted when no conflicting approval exists.
-- Matching mapped approvals deduplicated.
-- Conflicting mapped approvals hidden.
-- Tampering: changed href, deep path, profile URL, duplicate, wrong card, missing link, and label-only spoof.
+1. Verify the Nexus API-key file is nonempty and mode `0600` without logging its value.
+2. Run one normal fresh all-game pass. It must use the repaired parser/refresh behavior but must not invoke an LLM or modify tracked review files.
+3. Run the manual review scan once more for evidence changed by the fresh pass; apply validated high-confidence results and leave ambiguity queued.
+4. Regenerate and strictly verify all five reports.
+5. Commit/push the completed tracker milestone, stage the complete six-route publication tree, dry-run once, publish atomically once, and push public-artifacts.
+6. Verify all six canonical HTTPS routes return 200 and exact committed bytes; verify an unknown route returns 404.
+7. Browser-check representative Nexus, Thunderstore, mapped-agreement, and mapped-conflict cards while confirming search, filters, pagination, and author controls still work.
+8. Add final exact counts and verification results to `CHANGELOG.md`, reconcile only genuinely outstanding `TODO.md` work, and delete this file.
 
 ### Final gates
 

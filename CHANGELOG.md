@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-14
+
+- Added fail-closed reviewed GitHub repository links to report cards through one shared state loader, mapped-card resolver, renderer, and strict verifier. Approved current and stale decisions render at most one canonical repository-root `GitHub` anchor; unreviewed and `no_repository` records remain unlinked; mapped agreements deduplicate and conflicts remain hidden. Verification rejects missing, added, duplicate, swapped, altered, deep/profile, wrong-label, wrong-class, and label-only links, unknown game prefixes, unbound selected-game state, and explicitly missing state files. The focused 16-test and full 265-test suites passed; all five saved-data reports generated and strictly verified at 279 PEAK, 310 R.E.P.O., 163 Retro Rewind, 192 TCG Card Shop Simulator, and 1,236 Valheim cards with 402 exact GitHub anchors, and independent review found no implementation issues.
+
 ## 2026-09-13
 
 - Completed a fail-closed legacy re-audit of all 169 authoritative mod groups and 57 author groups across five games. Removed four fork/port/provenance-uncertain mappings, added seven stable evidence/confidence entries to `PENDING_MAPPING_REVIEW.md`, added two omitted source-handle variants to confirmed author identities, and assigned MassFarming pair-scoped credit to Xeio without aliasing publisher k942.

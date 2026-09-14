@@ -19,6 +19,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import parse_qs, urljoin, urlparse
+
+from github_evidence import extract_github_evidence
 from zoneinfo import ZoneInfo
 
 
@@ -1126,6 +1128,131 @@ def _report_groups(mods):
     return singles + [groups[k] for k in sorted(groups)]
 
 
+def load_github_repositories(path: Path) -> dict:
+    """Load the tracked review state, rejecting every malformed entry."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid GitHub review state: {path}") from exc
+    if not isinstance(payload, dict) or set(payload) != {"version", "records"} or payload["version"] != 1 or not isinstance(payload["records"], dict):
+        raise ValueError("invalid GitHub review state schema")
+    required = {"status", "repository_url", "reviewed_fingerprint", "evidence_urls", "review_method", "rationale"}
+    for key, record in payload["records"].items():
+        key_match = (
+            re.fullmatch(
+                r"([A-Za-z0-9-]+):(?:nexus:\d+|thunderstore:[^/:]+/[^/:]+)",
+                key,
+            )
+            if isinstance(key, str)
+            else None
+        )
+        if key_match is None or key_match.group(1) not in GAME_CONFIGS:
+            raise ValueError(f"invalid GitHub review key: {key!r}")
+        if not isinstance(record, dict) or set(record) != required:
+            raise ValueError(f"invalid GitHub review record: {key}")
+        if record["status"] not in {"approved", "no_repository"}:
+            raise ValueError(f"invalid GitHub review status: {key}")
+        if record["status"] == "no_repository":
+            if record["repository_url"] is not None:
+                raise ValueError(f"no_repository has a URL: {key}")
+        else:
+            url = record["repository_url"]
+            if not isinstance(url, str) or not re.fullmatch(
+                r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", url
+            ):
+                raise ValueError(f"invalid approved GitHub root: {key}")
+            evidence = extract_github_evidence({"url": url})
+            if len(evidence["candidates"]) != 1 or evidence["candidates"][0]["repository_url"] != url:
+                raise ValueError(f"invalid approved GitHub root: {key}")
+        if not isinstance(record["reviewed_fingerprint"], str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", record["reviewed_fingerprint"]):
+            raise ValueError(f"invalid GitHub fingerprint: {key}")
+        if (
+            not isinstance(record["evidence_urls"], list)
+            or not record["evidence_urls"]
+            or any(not isinstance(value, str) or not value.strip() for value in record["evidence_urls"])
+            or len(set(record["evidence_urls"])) != len(record["evidence_urls"])
+        ):
+            raise ValueError(f"invalid GitHub evidence URLs: {key}")
+        if any(
+            not isinstance(record[field], str) or not record[field].strip()
+            for field in ("review_method", "rationale")
+        ):
+            raise ValueError(f"invalid GitHub review text: {key}")
+    return payload
+
+
+def _github_decision(decisions, mod, game_key=None):
+    keys = []
+    if game_key:
+        keys.append(f"{game_key}:{mod.get('key', '')}")
+    if not game_key:
+        keys.append(mod.get("key"))
+    else:
+        return decisions.get(keys[0])
+    for key in keys:
+        if key in decisions:
+            return decisions[key]
+    suffix = ":" + str(mod.get("key", ""))
+    matches = [decision for key, decision in decisions.items() if isinstance(key, str) and key.endswith(suffix)]
+    return matches[0] if len(matches) == 1 else None
+
+
+def resolve_github_repository(members, decisions, *, game_key=None):
+    """Resolve one reviewed repository for a rendered card, or suppress it."""
+    approvals = set()
+    for mod in members:
+        decision = _github_decision(decisions, mod, game_key)
+        if isinstance(decision, dict) and decision.get("status") == "approved":
+            url = decision.get("repository_url")
+            if isinstance(url, str):
+                approvals.add(url)
+    return next(iter(approvals)) if len(approvals) == 1 else None
+
+
+def report_github_links(mods, decisions, *, game_key=None):
+    """Return the expected repository root in exact card-rendering order."""
+    groups = _report_groups(mods)
+    ordered = [
+        *[group for group in groups if any(mod.get("pinned") for mod in group)],
+        *[group for group in groups if not any(mod.get("pinned") for mod in group)],
+    ]
+    return [
+        resolve_github_repository(group, decisions, game_key=game_key)
+        for group in ordered
+    ]
+
+
+def validate_github_game_scope(mods, decisions, game_key):
+    """Require every reviewed key for the selected game to bind to a record."""
+    if game_key is None:
+        return
+    prefix = f"{game_key}:"
+    expected = {prefix + str(mod.get("key", "")) for mod in mods}
+    actual = {key for key in decisions if key.startswith(prefix)}
+    unknown = sorted(actual - expected)
+    if unknown:
+        raise ValueError(
+            f"GitHub review state has unknown {game_key} records: "
+            + ", ".join(unknown)
+        )
+
+
+def _github_state_path(root: Path, explicit: Path | None = None) -> Path | None:
+    """Find review state at the output root or its bounded project parent."""
+    if explicit is not None:
+        explicit = Path(explicit)
+        if not explicit.is_file():
+            raise ValueError(f"missing GitHub review state: {explicit}")
+        return explicit
+    candidates = [root / "github-repositories.json", root.parent / "github-repositories.json"]
+    if root.parent.name == "games":
+        candidates.append(root.parent.parent / "github-repositories.json")
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def report_author_keys(mods: list[dict], author_reputation: dict | None):
     """Return the rendered primary author identity for each authored report card."""
     if author_reputation is None:
@@ -1280,6 +1407,8 @@ def render_report(
     sources=("thunderstore", "nexus"),
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     author_reputation: dict | None = None,
+    github_decisions: dict | None = None,
+    github_game: str | None = None,
 ):
     now = parse_datetime(generated_at)
     arizona_now = now.astimezone(ZoneInfo("America/Phoenix"))
@@ -1389,6 +1518,9 @@ def render_report(
         )
         search = " ".join((title_search, author_search, description_search))
         links = ''.join('<a class="source-link" href="%s">%s</a>' % (escape(m['canonical_url'],quote=True), 'Thunderstore' if m['source']=='thunderstore' else 'Nexus Mods') for m in members)
+        github_root = resolve_github_repository(members, github_decisions or {}, game_key=github_game)
+        if github_root:
+            links += '<a class="github-link" href="%s">GitHub</a>' % escape(github_root, quote=True)
         def source_metrics(member):
             source_name = (
                 "Thunderstore" if member["source"] == "thunderstore" else "Nexus Mods"
@@ -1491,6 +1623,11 @@ class ReportVerifier(HTMLParser):
         self.card_author_canonical = []
         self._current_card_authors = None
         self._current_author_metadata = None
+        self._current_card_categories = None
+        self.github_links = []
+        self._current_card_github_links = None
+        self._in_anchor = False
+        self._anchor_text = ""
         self.report_generated_at = None
         self.report_data_last_updated_at = None
         self.report_data_last_updated_count = 0
@@ -1563,6 +1700,8 @@ class ReportVerifier(HTMLParser):
             self.sticky_toolbars += 1
         if tag == "article" and "mod-card" in (attrs.get("class") or "").split():
             self.cards += 1
+            self._current_card_github_links = []
+            self.github_links.append(self._current_card_github_links)
             self._current_card_authors = []
             self.card_author_metadata.append(self._current_card_authors)
             self.card_author_canonical.append(attrs.get("data-author-canonical"))
@@ -1594,6 +1733,13 @@ class ReportVerifier(HTMLParser):
             self.card_update_metadata.append(
                 (attrs.get("data-sort-updated", ""), attrs.get("data-update-filter"))
             )
+        if tag == "a" and self._current_card_github_links is not None:
+            href = attrs.get("href") or ""
+            if "github.com" in href.lower() or "github-link" in (attrs.get("class") or "").split():
+                self._in_anchor = True
+                self._anchor_href = href
+                self._anchor_class = attrs.get("class")
+                self._anchor_text = ""
         if tag == "span" and (
             attrs.get("data-author-tier") or attrs.get("data-author-key")
         ):
@@ -1617,6 +1763,13 @@ class ReportVerifier(HTMLParser):
         if tag == "article":
             self._current_card_authors = None
             self._current_card_category_buttons = None
+            self._current_card_github_links = None
+        if tag == "a" and self._in_anchor:
+            if self._current_card_github_links is not None:
+                self._current_card_github_links.append(
+                    (self._anchor_href, self._anchor_text.strip(), self._anchor_class)
+                )
+            self._in_anchor = False
         if tag == "select" and self._in_category_filter:
             self._in_category_filter = False
         if tag == "select" and self._in_author_filter:
@@ -1627,6 +1780,8 @@ class ReportVerifier(HTMLParser):
             self._in_style = False
 
     def handle_data(self, data):
+        if self._in_anchor:
+            self._anchor_text += data
         if self._current_author_metadata is not None:
             self._current_author_metadata["_visible_text"] = (
                 str(self._current_author_metadata.get("_visible_text") or "") + data
@@ -1645,6 +1800,8 @@ def verify_report(
     expected_author_reputation: dict | None = None,
     expected_author_keys: list[str] | None = None,
     expected_card_categories: list[list[str]] | None = None,
+    expected_github_links: list[str | None] | None = None,
+    github_decisions: dict | None = None,
 ) -> dict:
     text = path.read_text(encoding="utf-8")
     parser = ReportVerifier()
@@ -1655,6 +1812,26 @@ def verify_report(
     errors = []
     if expected_cards is not None and parser.cards != expected_cards:
         errors.append(f"expected {expected_cards} cards, found {parser.cards}")
+    if expected_github_links is None and github_decisions is not None:
+        expected_github_links = []
+    if expected_github_links is not None:
+        actual = []
+        for index, card_links in enumerate(parser.github_links):
+            if len(card_links) > 1:
+                errors.append(f"card {index + 1} has duplicate GitHub links")
+            actual.append(card_links[0][0] if card_links else None)
+            for href, label, css_class in card_links:
+                if label != "GitHub":
+                    errors.append("GitHub link label is invalid")
+                if css_class != "github-link":
+                    errors.append("GitHub link class is invalid")
+                if not re.fullmatch(
+                    r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", href
+                ):
+                    errors.append("GitHub link is not a canonical repository root")
+        if actual != expected_github_links:
+            errors.append("GitHub links do not match expected cards")
+
     required_ids = {
         "pinned-group", "regular-group", "pinned-section", "regular-section",
         "search", "source-filter", "category-filter", "sort", "nsfw-toggle",
@@ -1925,10 +2102,15 @@ def generate_report(
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     author_tiers: dict | None = None,
     thumbnail_fetch=http_fetch,
+    github_game: str | None = None,
+    github_state_path: Path | None = None,
 ) -> dict:
     mods_path = root / "data/mods.json"
     mods = _load_json(mods_path, [])
     mods = apply_manual_mappings(mods, _load_json(root / "mappings.json", {}))
+    state_path = _github_state_path(root, github_state_path)
+    github_decisions = load_github_repositories(state_path)["records"] if state_path else {}
+    validate_github_game_scope(mods, github_decisions, github_game)
     now = parse_datetime(generated_at)
     for mod in mods:
         mod["rates"] = compute_rates(mod, now)
@@ -1950,6 +2132,8 @@ def generate_report(
         sources=sources,
         update_filter=update_filter,
         author_reputation=author_reputation,
+        github_decisions=github_decisions,
+        github_game=github_game,
     )
     atomic_write_bytes(root / "report.html", page.encode("utf-8"))
     hotlinked_page = page if not embed_thumbnails else render_report(
@@ -1960,6 +2144,8 @@ def generate_report(
         sources=sources,
         update_filter=update_filter,
         author_reputation=author_reputation,
+        github_decisions=github_decisions,
+        github_game=github_game,
     )
     atomic_write_bytes(root / "report-hotlinked.html", hotlinked_page.encode("utf-8"))
     result = verify_report(
@@ -1969,6 +2155,7 @@ def generate_report(
         expected_author_reputation=author_reputation,
         expected_author_keys=report_author_keys(mods, author_reputation),
         expected_card_categories=report_category_sets(mods),
+        expected_github_links=report_github_links(mods, github_decisions, game_key=github_game),
     )
     if not result["ok"]:
         raise RuntimeError("generated report failed verification: " + "; ".join(result["errors"]))
@@ -1984,6 +2171,8 @@ def verify_output(
     update_filter: dict | None = DEFAULT_UPDATE_FILTER,
     author_tiers: dict | None = None,
     require_reports: bool = False,
+    github_game: str | None = None,
+    github_state_path: Path | None = None,
 ) -> dict:
     errors = []
     ts_appearances = 0
@@ -2147,6 +2336,10 @@ def verify_output(
     elif reputation_path.exists():
         errors.append("unexpected author reputation artifact")
     expected_author_keys = report_author_keys(mods, expected_author_reputation)
+    state_path = _github_state_path(root, github_state_path)
+    github_decisions = load_github_repositories(state_path)["records"] if state_path else {}
+    validate_github_game_scope(mods, github_decisions, github_game)
+    expected_github_links = report_github_links(mods, github_decisions, game_key=github_game)
     report_result = None
     report_path = root / "report.html"
     hotlinked_path = root / "report-hotlinked.html"
@@ -2158,6 +2351,7 @@ def verify_output(
             expected_author_reputation=expected_author_reputation,
             expected_author_keys=expected_author_keys,
             expected_card_categories=report_category_sets(mods),
+            expected_github_links=expected_github_links,
         )
         errors.extend(report_result["errors"])
     elif require_reports:
@@ -2171,6 +2365,7 @@ def verify_output(
             expected_author_reputation=expected_author_reputation,
             expected_author_keys=expected_author_keys,
             expected_card_categories=report_category_sets(mods),
+            expected_github_links=expected_github_links,
         )
         errors.extend(hotlinked_result["errors"])
         local_text = report_path.read_text(encoding="utf-8") if report_path.exists() else ""
@@ -2356,6 +2551,8 @@ def _run_game_collection(args, game_key: str, collected_at: str) -> dict:
             sources=config["sources"],
             update_filter=config["update_filter"],
             author_tiers=config["author_tiers"],
+            github_game=game_key,
+            github_state_path=_default_github_state_path(args.output_root),
         )
     return {**manifest, "report_cards": report["cards"] if report else None}
 
@@ -2378,6 +2575,11 @@ def run_collection(args) -> dict:
     return {"ok": True, "collected_at": collected_at, "games": results}
 
 
+def _default_github_state_path(output_root: Path) -> Path | None:
+    path = output_root.resolve() / "github-repositories.json"
+    return path if path.is_file() else None
+
+
 def _generate_selected_reports(args, generated_at: str) -> dict:
     results = {}
     for key in _game_keys(args.game):
@@ -2391,6 +2593,8 @@ def _generate_selected_reports(args, generated_at: str) -> dict:
             sources=config["sources"],
             update_filter=config["update_filter"],
             author_tiers=config["author_tiers"],
+            github_game=key,
+            github_state_path=_default_github_state_path(args.output_root),
         )
     if args.game != "all":
         return results[args.game]
@@ -2411,6 +2615,8 @@ def _verify_selected_outputs(args) -> dict:
             update_filter=config["update_filter"],
             author_tiers=config["author_tiers"],
             require_reports=True,
+            github_game=key,
+            github_state_path=_default_github_state_path(args.output_root),
         )
     if args.game != "all":
         return results[args.game]

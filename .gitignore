@@ -24,6 +24,9 @@ games/*/*
 !scripts/manual-pass.py
 !scripts/mapping_candidates.py
 !scripts/unattended_run.py
+!scripts/github-review.py
+!github-repositories.json
+!PENDING_GITHUB_REVIEW.md
 !tests/
 !tests/**
 

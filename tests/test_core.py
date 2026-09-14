@@ -39,6 +39,38 @@ class CoreModelTests(unittest.TestCase):
         self.assertIsNone(merged["canonical_group_id"])
         self.assertIsNone(merged["credited_author"])
         self.assertIsNone(merged["match"])
+
+    def test_merge_advances_listing_seen_and_preserves_cached_detail_fetch_time(self):
+        old = [{
+            "key": "nexus:79",
+            "total_downloads": 1,
+            "listing_seen_at": "2026-09-09T20:00:00Z",
+            "detail_fetched_at": "2026-09-09T20:00:00Z",
+        }]
+        fresh = [{
+            "key": "nexus:79",
+            "total_downloads": 2,
+            "listing_seen_at": "2026-09-10T20:00:00Z",
+            "detail_fetched_at": None,
+        }]
+
+        merged = tracker.merge_mods(old, fresh, "2026-09-10T20:00:00Z")[0]
+
+        self.assertEqual(merged["listing_seen_at"], "2026-09-10T20:00:00Z")
+        self.assertEqual(merged["detail_fetched_at"], "2026-09-09T20:00:00Z")
+
+    def test_merge_backfills_historical_listing_time_but_not_detail_fetch_time(self):
+        old = [{
+            "key": "nexus:1",
+            "collected_at": "2026-09-08T20:00:00Z",
+            "total_downloads": 1,
+        }]
+
+        merged = tracker.merge_mods(old, [], "2026-09-10T20:00:00Z")[0]
+
+        self.assertEqual(merged["listing_seen_at"], "2026-09-08T20:00:00Z")
+        self.assertIsNone(merged["detail_fetched_at"])
+
     def test_normalizes_nexus_graphql_and_detail_fields(self):
         node = {
             "modId": 79, "name": "Improved Dverger Circlet", "summary": "White light",
@@ -56,6 +88,8 @@ class CoreModelTests(unittest.TestCase):
         self.assertEqual(mod["source_id"], "79")
         self.assertEqual(mod["canonical_url"], "https://www.nexusmods.com/valheim/mods/79")
         self.assertEqual(mod["categories"], ["Gameplay"])
+        self.assertEqual(mod["listing_seen_at"], "2026-09-09T20:00:00Z")
+        self.assertIsNone(mod["detail_fetched_at"])
         self.assertEqual(mod["total_downloads"], 10737)
         self.assertEqual(mod["unique_downloads"], 7059)
         self.assertEqual(mod["views"], 61114)

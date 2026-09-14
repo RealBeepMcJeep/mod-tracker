@@ -318,6 +318,7 @@ def normalize_nexus(
     collected_at: str,
     *,
     game_domain: str = "valheim",
+    detail_fetched_at: str | None = None,
 ) -> dict:
     """Map Nexus GraphQL and v1 detail payloads to the common record."""
     detail = detail or {}
@@ -348,6 +349,8 @@ def normalize_nexus(
         "ranks": {"last-updated": rank},
         "pinned": False,
         "collected_at": collected_at,
+        "listing_seen_at": collected_at,
+        "detail_fetched_at": detail_fetched_at,
         "raw_page_capture": detail.get("_raw_page_capture", {
             "status": "unavailable",
             "reason": "no authenticated cookie source supplied",
@@ -394,7 +397,12 @@ def compute_rates(mod: dict, now: datetime) -> dict:
 
 def merge_mods(old: list[dict], fresh: list[dict], observed_at: str) -> list[dict]:
     """Merge fresh records and append idempotent download observations."""
-    by_key = {item["key"]: dict(item) for item in old}
+    by_key = {}
+    for item in old:
+        migrated = dict(item)
+        migrated.setdefault("listing_seen_at", migrated.get("collected_at"))
+        migrated.setdefault("detail_fetched_at", None)
+        by_key[item["key"]] = migrated
     for incoming in fresh:
         previous = by_key.get(incoming["key"], {})
         observations = list(previous.get("observations", []))
@@ -408,7 +416,10 @@ def merge_mods(old: list[dict], fresh: list[dict], observed_at: str) -> list[dic
         merged = dict(previous)
         for key, value in incoming.items():
             if (
-                key in {"canonical_group_id", "credited_author", "match"}
+                key in {
+                    "canonical_group_id", "credited_author", "match",
+                    "detail_fetched_at",
+                }
                 and value is None
                 and previous.get(key) is not None
             ):
@@ -582,7 +593,12 @@ def _nexus_listing_freshness(node: dict) -> datetime | None:
 
 
 def normalize_thunderstore(
-    card: dict, detail: dict, metrics: dict, ranks: dict, collected_at: str
+    card: dict,
+    detail: dict,
+    metrics: dict,
+    ranks: dict,
+    collected_at: str,
+    detail_fetched_at: str | None = None,
 ) -> dict:
     path = [part for part in urlparse(card["package_url"]).path.split("/") if part]
     namespace, name = path[-2:]
@@ -611,6 +627,8 @@ def normalize_thunderstore(
         "pinned": bool(card.get("pinned")),
         "adult_content": False,
         "collected_at": collected_at,
+        "listing_seen_at": collected_at,
+        "detail_fetched_at": detail_fetched_at,
         "raw_page_capture": {"status": "captured", "kind": "public-package-html"},
         "canonical_group_id": None,
         "match": None,
@@ -728,13 +746,16 @@ def collect_thunderstore(
         pause()
         metrics = json.loads(metrics_body)
         atomic_write_json(metrics_path, metrics)
+        detail_fetched_at = None
         if (not detail_path.exists()) or old_metrics.get("latest_version") != metrics.get("latest_version"):
             detail_body = fetch(found[source_id]["card"]["package_url"])
             pause()
             atomic_write_bytes(detail_path, detail_body)
+            detail_fetched_at = collected_at
         detail = parse_thunderstore_detail(detail_path.read_text(encoding="utf-8"))
         mod = normalize_thunderstore(
-            found[source_id]["card"], detail, metrics, found[source_id]["ranks"], collected_at
+            found[source_id]["card"], detail, metrics, found[source_id]["ranks"],
+            collected_at, detail_fetched_at,
         )
         mod["appearances"] = found[source_id]["appearances"]
         normalized.append(mod)
@@ -862,6 +883,7 @@ def collect_nexus(
                 rank,
                 collected_at,
                 game_domain=game_domain,
+                detail_fetched_at=collected_at if refresh else None,
             )
         )
     return normalized

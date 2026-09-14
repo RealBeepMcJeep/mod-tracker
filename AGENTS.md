@@ -38,6 +38,7 @@ Deterministic stdlib-only collection and reporting for five games across Thunder
 - Python standard library only.
 - Follow RED → GREEN → REFACTOR for behavior changes.
 - Save raw responses before parsing where practical and write canonical JSON atomically.
+- Track provider-data freshness separately: `listing_seen_at` records the latest successful listing observation, while `detail_fetched_at` records only a successful Nexus detail API or Thunderstore package-page fetch. Preserve `collected_at` for compatibility; backfill historical `listing_seen_at` from it, but leave unknown historical detail-fetch times null rather than inferring them from file metadata.
 - Run Nexus and Thunderstore concurrently only within the same dual-source game, preserve each provider's own pacing, aggregate both failures deterministically, and do not merge or render unless both succeed.
 - Remove stale listing pages beyond the actual fetched scope and keep Thunderstore listing-manifest counts synchronized with `snapshots/latest.json`.
 - Read the Nexus API key only at runtime from an external file; default: `~/.config/nexus-mods/api-key`.

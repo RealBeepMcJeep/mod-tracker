@@ -72,9 +72,13 @@ class CollectorTests(unittest.TestCase):
             root = Path(tmp)
             (root / "raw/nexus/mods").mkdir(parents=True)
             (root / "raw/nexus/mods/79.json").write_text(json.dumps(detail))
-            tracker.collect_nexus(root, "key", "2026-09-09T20:00:00Z", pages=1,
-                                  require_full_pages=False, fetch=fetch, pause=lambda: None)
+            result = tracker.collect_nexus(
+                root, "key", "2026-09-09T20:00:00Z", pages=1,
+                require_full_pages=False, fetch=fetch, pause=lambda: None,
+            )
         self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url in calls), 0)
+        self.assertEqual(result[0]["listing_seen_at"], "2026-09-09T20:00:00Z")
+        self.assertIsNone(result[0]["detail_fetched_at"])
 
     def test_nexus_invalid_or_advanced_freshness_refreshes_once(self):
         listing = {"data": {"mods": {"nodes": [{
@@ -91,9 +95,13 @@ class CollectorTests(unittest.TestCase):
             path = root / "raw/nexus/mods/79.json"
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps({"description": "stale", "updated_timestamp": 999999999999999999999}))
-            tracker.collect_nexus(root, "key", "2026-09-10T20:00:00Z", pages=1,
-                                  require_full_pages=False, fetch=fetch, pause=lambda: None)
+            result = tracker.collect_nexus(
+                root, "key", "2026-09-10T20:00:00Z", pages=1,
+                require_full_pages=False, fetch=fetch, pause=lambda: None,
+            )
         self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url in calls), 1)
+        self.assertEqual(result[0]["listing_seen_at"], "2026-09-10T20:00:00Z")
+        self.assertEqual(result[0]["detail_fetched_at"], "2026-09-10T20:00:00Z")
 
     def test_nexus_invalid_listing_freshness_refreshes_once(self):
         listing = {"data": {"mods": {"nodes": [{"modId": 79, "updatedAt": "bad"}]}}}
@@ -157,6 +165,8 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(mod["version"], "18.4.1")
         self.assertEqual(mod["updated_at"], "2026-09-09T12:30:43.920443Z")
         self.assertTrue(mod["pinned"])
+        self.assertEqual(mod["listing_seen_at"], "2026-09-09T20:00:00Z")
+        self.assertIsNone(mod["detail_fetched_at"])
 
     def test_thunderstore_collection_saves_raw_and_fetches_detail_only_for_new_version(self):
         calls = []
@@ -180,6 +190,10 @@ class CollectorTests(unittest.TestCase):
 
             self.assertEqual(len(first), 1)
             self.assertEqual(len(second), 1)
+            self.assertEqual(first[0]["listing_seen_at"], "2026-09-09T20:00:00Z")
+            self.assertEqual(first[0]["detail_fetched_at"], "2026-09-09T20:00:00Z")
+            self.assertEqual(second[0]["listing_seen_at"], "2026-09-09T21:00:00Z")
+            self.assertIsNone(second[0]["detail_fetched_at"])
             self.assertTrue((root / "raw/thunderstore/listings/last-updated/page-1.html").exists())
             self.assertFalse(stale.exists())
             self.assertTrue((root / "raw/thunderstore/metrics/ExampleAuthor/ExampleMod.json").exists())

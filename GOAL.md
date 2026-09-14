@@ -82,55 +82,6 @@ Rules:
 
 ---
 
-## Milestone 1 — Provider descriptions and deterministic candidates
-
-**Outcome:** Current provider pages yield complete retained descriptions and a small pure interface extracts review evidence from those descriptions.
-
-### Work
-
-1. Repair `parse_thunderstore_detail()` for current `.package-listing__content .markdown-wrapper .markdown` markup while retaining legacy `.markdown-body` support.
-2. Bound extraction to the first complete README, handle HTML void elements correctly, exclude navigation/footer content, and fail closed on malformed nesting without losing timestamps.
-3. Change Nexus detail reuse so an existing detail is refreshed only when the listing's provider update timestamp advances. Missing or invalid freshness evidence refreshes once rather than silently reusing stale content.
-4. Preserve existing observations, manual mapping fields, creator attribution, and metrics when refreshed normalized records merge.
-5. Add a pure candidate-extraction interface that:
-   - reads HTML anchors, Nexus BBCode URLs, and plaintext URLs;
-   - accepts only HTTPS `github.com` links with owner and repository components;
-   - rejects profiles, gists, lookalike hosts, credentials, and malformed paths;
-   - normalizes deep links and `.git` suffixes to the repository root;
-   - retains original evidence URL, link type, source field, and bounded context;
-   - deduplicates deterministically and computes the relevant evidence fingerprint.
-6. Keep candidates derived on demand; do not add them to `data/mods.json`.
-
-### Likely files
-
-- `tracker.py`
-- `github_evidence.py` only if a separate deep module produces a meaningfully smaller interface
-- `tests/test_collectors.py`
-- `tests/test_core.py`
-- `tests/test_github_evidence.py`
-
-### Required RED→GREEN coverage
-
-- Legacy README and a sanitized current README containing ordinary non-self-closing `<img>` tags.
-- First-README-only, no README, truncated README, mismatched closing tag, and navigation/footer exclusion.
-- Real Nexus detail shape: integer `updated_timestamp` plus ISO `updated_time`; unchanged reuse, advanced refresh, and missing/invalid timestamp refresh.
-- Incoming normalized `None` mapping fields do not erase persisted mapping/attribution state.
-- Root, release, issue/PR, tree/blob, BBCode, plaintext, profile, malformed, non-GitHub, duplicate, multiple-root, and context/fingerprint cases.
-
-### Verification and completion
-
-```bash
-python3 -m unittest tests.test_collectors tests.test_core tests.test_github_evidence
-python3 -m unittest discover -s tests
-python3 -m py_compile tracker.py github_evidence.py
-python3 -m json.tool games.json >/dev/null
-git diff --check
-```
-
-If no separate module is created, omit `github_evidence.py` from the compile command. Independently review real saved Thunderstore markup and Nexus timestamp shapes before commit.
-
----
-
 ## Milestone 2 — Offline backfill and reviewed repository decisions
 
 **Outcome:** Saved descriptions are repaired, all current candidates receive a durable reviewed outcome or stable pending entry, and the process is repeatable without runtime LLM dependencies.

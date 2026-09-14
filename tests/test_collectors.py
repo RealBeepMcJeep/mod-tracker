@@ -17,6 +17,103 @@ DETAIL_HTML = r'''<html><script>"package_created\",\"2021-02-14T18:07:34.498403Z
 
 
 class CollectorTests(unittest.TestCase):
+    def test_thunderstore_current_readme_keeps_void_tags_and_excludes_page_chrome(self):
+        source = '''<nav>Ignore nav</nav><div class="package-listing__content"><div class="markdown-wrapper"><div class="markdown"><h1>Current</h1><img src="x"><br>Body</div></div></div><footer>Ignore footer</footer>'''
+        detail = tracker.parse_thunderstore_detail(source)
+        self.assertEqual(detail["readme_html"], '<h1>Current</h1><img src="x"><br>Body')
+
+    def test_thunderstore_readme_uses_first_complete_candidate_and_fails_closed(self):
+        first = '<div class="markdown-body"><p>First</p></div><div class="markdown-body"><p>Second</p></div>'
+        self.assertEqual(tracker.parse_thunderstore_detail(first)["readme_html"], '<p>First</p>')
+        for source in (
+            '<script>package_created 2021-02-14T18:07:34Z</script><div class="markdown-body"><p>Truncated',
+            '<script>package_created 2021-02-14T18:07:34Z</script><div class="markdown-body"><p>Wrong</div></p>',
+            '<script>package_created 2021-02-14T18:07:34Z</script><div class="markdown-body">No close',
+        ):
+            detail = tracker.parse_thunderstore_detail(source)
+            self.assertEqual(detail["readme_html"], "")
+            self.assertEqual(detail["package_created"], "2021-02-14T18:07:34Z")
+
+    def test_thunderstore_readme_skips_malformed_candidate_before_complete_readme(self):
+        sources = (
+            (
+                '<div class="markdown-body"><p>Broken</div></p>'
+                '<div class="markdown-body"><p>Complete</p></div>'
+            ),
+            (
+                '<div class="package-listing__content"><div class="markdown-wrapper">'
+                '<div class="markdown"><p>Broken</div></p>'
+                '<div class="markdown"><p>Complete</p></div>'
+                '</div></div>'
+            ),
+        )
+        for source in sources:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    tracker.parse_thunderstore_detail(source)["readme_html"],
+                    "<p>Complete</p>",
+                )
+
+    def test_nexus_detail_refreshes_only_when_listing_freshness_changes(self):
+        listing = {"data": {"mods": {"nodes": [{
+            "modId": 79, "name": "Circlet", "updatedAt": "2026-09-09T19:23:08Z",
+        }]}}}
+        detail = {"description": "old", "updated_timestamp": 1788981788,
+                  "updated_time": "2026-09-09T19:23:08Z"}
+        calls = []
+
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if url.endswith("/v2/graphql"):
+                return json.dumps(listing).encode()
+            return json.dumps({**detail, "description": "new"}).encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "raw/nexus/mods").mkdir(parents=True)
+            (root / "raw/nexus/mods/79.json").write_text(json.dumps(detail))
+            tracker.collect_nexus(root, "key", "2026-09-09T20:00:00Z", pages=1,
+                                  require_full_pages=False, fetch=fetch, pause=lambda: None)
+        self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url in calls), 0)
+
+    def test_nexus_invalid_or_advanced_freshness_refreshes_once(self):
+        listing = {"data": {"mods": {"nodes": [{
+            "modId": 79, "name": "Circlet", "updatedAt": "2026-09-10T19:23:08Z",
+        }]}}}
+        calls = []
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if url.endswith("/v2/graphql"):
+                return json.dumps(listing).encode()
+            return json.dumps({"description": "fresh", "updated_time": "2026-09-10T19:23:08Z"}).encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "raw/nexus/mods/79.json"
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({"description": "stale", "updated_timestamp": 999999999999999999999}))
+            tracker.collect_nexus(root, "key", "2026-09-10T20:00:00Z", pages=1,
+                                  require_full_pages=False, fetch=fetch, pause=lambda: None)
+        self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url in calls), 1)
+
+    def test_nexus_invalid_listing_freshness_refreshes_once(self):
+        listing = {"data": {"mods": {"nodes": [{"modId": 79, "updatedAt": "bad"}]}}}
+        calls = []
+
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if url.endswith("/v2/graphql"):
+                return json.dumps(listing).encode()
+            return json.dumps({"description": "fresh", "updated_timestamp": 1}).encode()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "raw/nexus/mods/79.json"
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({"description": "stale", "updated_timestamp": 1}))
+            tracker.collect_nexus(root, "key", "2026-09-10T20:00:00Z", pages=1,
+                                  require_full_pages=False, fetch=fetch, pause=lambda: None)
+        self.assertEqual(sum("/v1/games/valheim/mods/79.json" in url for url in calls), 1)
+
     def test_http_fetch_retries_transient_timeout(self):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b"ok"
@@ -204,7 +301,8 @@ class CollectorTests(unittest.TestCase):
             "version": "1.0.7", "fileSize": 349, "category": "Gameplay",
             "pictureUrl": "https://staticdelivery.nexusmods.com/79.png",
         }]}}}
-        detail = {"unique_downloads": 7059, "views": 61114, "description": "Full"}
+        detail = {"unique_downloads": 7059, "views": 61114, "description": "Full",
+                  "updated_time": "2026-09-09T19:23:08Z"}
 
         def fetch(url, **kwargs):
             calls.append((url, kwargs))

@@ -14,6 +14,31 @@ NOW = datetime(2026, 9, 9, 20, 0, tzinfo=timezone.utc)
 
 
 class CoreModelTests(unittest.TestCase):
+    def test_merge_preserves_manual_fields_when_fresh_record_has_none(self):
+        old = [{"key": "nexus:79", "canonical_group_id": "group-1",
+                "credited_author": "nexus:randy", "match": {"method": "manual"},
+                "description": "old", "total_downloads": 1}]
+        fresh = [{"key": "nexus:79", "canonical_group_id": None,
+                  "credited_author": None, "match": None,
+                  "description": "new", "total_downloads": 2}]
+        merged = tracker.merge_mods(old, fresh, "2026-09-09T20:00:00Z")[0]
+        self.assertEqual(merged["canonical_group_id"], "group-1")
+        self.assertEqual(merged["credited_author"], "nexus:randy")
+        self.assertEqual(merged["match"], {"method": "manual"})
+        self.assertEqual(merged["description"], "new")
+        self.assertEqual(merged["total_downloads"], 2)
+
+    def test_merge_keeps_explicit_empty_mapping_fields_on_new_record(self):
+        fresh = [{"key": "nexus:79", "canonical_group_id": None,
+                  "credited_author": None, "match": None,
+                  "description": "new", "total_downloads": 2}]
+        merged = tracker.merge_mods([], fresh, "2026-09-09T20:00:00Z")[0]
+        self.assertIn("canonical_group_id", merged)
+        self.assertIn("credited_author", merged)
+        self.assertIn("match", merged)
+        self.assertIsNone(merged["canonical_group_id"])
+        self.assertIsNone(merged["credited_author"])
+        self.assertIsNone(merged["match"])
     def test_normalizes_nexus_graphql_and_detail_fields(self):
         node = {
             "modId": 79, "name": "Improved Dverger Circlet", "summary": "White light",

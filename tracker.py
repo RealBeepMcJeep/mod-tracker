@@ -404,7 +404,14 @@ def merge_mods(old: list[dict], fresh: list[dict], observed_at: str) -> list[dic
         if not any(item.get("observed_at") == observed_at for item in observations):
             observations.append(observation)
         merged = dict(previous)
-        merged.update(incoming)
+        for key, value in incoming.items():
+            if (
+                key in {"canonical_group_id", "credited_author", "match"}
+                and value is None
+                and previous.get(key) is not None
+            ):
+                continue
+            merged[key] = value
         merged["observations"] = sorted(observations, key=lambda item: item["observed_at"])
         by_key[incoming["key"]] = merged
     return [by_key[key] for key in sorted(by_key)]
@@ -449,26 +456,80 @@ def http_fetch(url: str, *, headers: dict | None = None, data: bytes | None = No
 
 
 class ReadmeParser(HTMLParser):
+    """Capture the first structurally complete README container."""
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.depth = 0
-        self.parts: list[str] = []
+        self.open_tags: list[dict] = []
+        self.candidate: dict | None = None
+        self.result: str | None = None
+        self.invalid = False
+
+    @staticmethod
+    def _render(tag, attrs):
+        rendered = "".join(
+            f' {name}="{value}"' for name, value in attrs if value is not None
+        )
+        return f"<{tag}{rendered}>"
 
     def handle_starttag(self, tag, attrs):
+        attrs = list(attrs)
         classes = set((dict(attrs).get("class") or "").split())
-        if self.depth or "markdown-body" in classes:
-            self.depth += 1
-            rendered = "".join(f' {name}="{value}"' for name, value in attrs if value is not None)
-            self.parts.append(f"<{tag}{rendered}>")
+        ancestor_classes = [frame["classes"] for frame in self.open_tags]
+        is_legacy = "markdown-body" in classes
+        is_current = (
+            "markdown" in classes
+            and any("markdown-wrapper" in c for c in ancestor_classes)
+            and any("package-listing__content" in c for c in ancestor_classes)
+        )
+        if self.candidate is None and self.result is None and (is_legacy or is_current):
+            self.invalid = False
+            self.candidate = {
+                "tag": tag, "opening": self._render(tag, attrs),
+                "parts": [], "stack": [],
+            }
+        if self.candidate is not None:
+            self.candidate["parts"].append(self._render(tag, attrs))
+            if tag not in VOID_TAGS:
+                self.candidate["stack"].append(tag)
+        if tag not in VOID_TAGS:
+            self.open_tags.append({"tag": tag, "classes": classes})
+
+    def handle_startendtag(self, tag, attrs):
+        if self.candidate is not None:
+            self.candidate["parts"].append(self._render(tag, attrs)[:-1] + "/>" )
 
     def handle_endtag(self, tag):
-        if self.depth:
-            self.parts.append(f"</{tag}>")
-            self.depth -= 1
+        if self.candidate is not None:
+            stack = self.candidate["stack"]
+            if not stack or stack[-1] != tag:
+                self.invalid = True
+                self.candidate = None
+            else:
+                self.candidate["parts"].append(f"</{tag}>")
+                stack.pop()
+                if not stack:
+                    if not self.invalid and self.result is None:
+                        # The container itself is not part of the README payload.
+                        rendered = "".join(self.candidate["parts"])
+                        opening = self.candidate["opening"]
+                        self.result = rendered[len(opening): -len(f"</{tag}>")]
+                    self.candidate = None
+                    self.invalid = False
+        if self.open_tags:
+            for index in range(len(self.open_tags) - 1, -1, -1):
+                if self.open_tags[index]["tag"] == tag:
+                    del self.open_tags[index:]
+                    break
 
     def handle_data(self, data):
-        if self.depth:
-            self.parts.append(data)
+        if self.candidate is not None:
+            self.candidate["parts"].append(data)
+
+    def close(self):
+        super().close()
+        if self.candidate is not None:
+            self.candidate = None
+            self.result = ""
 
 
 def parse_thunderstore_detail(source: str) -> dict:
@@ -486,8 +547,36 @@ def parse_thunderstore_detail(source: str) -> dict:
         result[target_name] = match.group(1) if match else None
     parser = ReadmeParser()
     parser.feed(source)
-    result["readme_html"] = "".join(parser.parts)
+    parser.close()
+    result["readme_html"] = parser.result or ""
     return result
+
+
+def _nexus_freshness(detail: dict) -> datetime | None:
+    """Read Nexus detail freshness, preferring ISO and safely handling epochs."""
+    updated_time = detail.get("updated_time")
+    if isinstance(updated_time, str):
+        try:
+            return parse_datetime(updated_time)
+        except (TypeError, ValueError, OverflowError):
+            pass
+    timestamp = detail.get("updated_timestamp")
+    if isinstance(timestamp, int) and not isinstance(timestamp, bool):
+        try:
+            return datetime.fromtimestamp(timestamp, timezone.utc)
+        except (OSError, OverflowError, ValueError):
+            pass
+    return None
+
+
+def _nexus_listing_freshness(node: dict) -> datetime | None:
+    value = node.get("updatedAt")
+    if not isinstance(value, str):
+        return None
+    try:
+        return parse_datetime(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 def normalize_thunderstore(
@@ -736,7 +825,14 @@ def collect_nexus(
         seen.add(mod_id)
         detail_path = _safe_child(root, "raw", "nexus", "mods", f"{mod_id}.json")
         is_new = not detail_path.exists()
-        if is_new:
+        detail = _load_json(detail_path, {})
+        listing_freshness = _nexus_listing_freshness(node)
+        saved_freshness = _nexus_freshness(detail) if isinstance(detail, dict) else None
+        refresh = is_new or listing_freshness is None or saved_freshness is None
+        if not refresh and listing_freshness is not None and saved_freshness is not None:
+            if listing_freshness > saved_freshness:
+                refresh = True
+        if refresh:
             body = fetch(
                 f"https://api.nexusmods.com/v1/games/{game_domain}/mods/{mod_id}.json",
                 headers={"apikey": api_key},

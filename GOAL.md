@@ -88,14 +88,10 @@ Rules:
 
 ### Work
 
-1. Verify the Nexus API-key file is nonempty and mode `0600` without logging its value.
-2. Run one normal fresh all-game pass. It must use the repaired parser/refresh behavior but must not invoke an LLM or modify tracked review files.
-3. Run the manual review scan once more for evidence changed by the fresh pass; apply validated high-confidence results and leave ambiguity queued.
-4. Regenerate and strictly verify all five reports.
-5. Commit/push the completed tracker milestone, stage the complete six-route publication tree, dry-run once, publish atomically once, and push public-artifacts.
-6. Verify all six canonical HTTPS routes return 200 and exact committed bytes; verify an unknown route returns 404.
-7. Browser-check representative Nexus, Thunderstore, mapped-agreement, and mapped-conflict cards while confirming search, filters, pagination, and author controls still work.
-8. Add final exact counts and verification results to `CHANGELOG.md`, reconcile only genuinely outstanding `TODO.md` work, and delete this file.
+1. Commit/push the completed tracker milestone, stage the complete six-route publication tree, dry-run once, publish atomically once, and push public-artifacts.
+2. Verify all six canonical HTTPS routes return 200 and exact committed bytes; verify an unknown route returns 404.
+3. Browser-check representative Nexus, Thunderstore, mapped-agreement, and mapped-conflict cards while confirming search, filters, pagination, and author controls still work.
+4. Add final exact counts and verification results to `CHANGELOG.md`, reconcile only genuinely outstanding `TODO.md` work, and delete this file.
 
 ### Final gates
 

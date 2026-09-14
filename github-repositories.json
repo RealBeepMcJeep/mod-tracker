@@ -213,10 +213,10 @@
       "evidence_urls": [
         "https://github.com/abra9987/Peak-Hiking-GPS"
       ],
-      "rationale": "The listing identifies this repository as the source, issues, and MIT-licensed code.",
+      "rationale": "The description identifies this GitHub project as the source, issues, and MIT-licensed code for the fan project.",
       "repository_url": "https://github.com/abra9987/peak-hiking-gps",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:4e0506751d18ed595fe582d95140fb2e6378200d9a2b8ea59b3b856f17f611c4",
+      "reviewed_fingerprint": "sha256:2b3614e281bdca24cad641778c2c5573fd36c446c1e6d44589d1a76a4079227d",
       "status": "approved"
     },
     "peak:nexus:37": {
@@ -1051,6 +1051,16 @@
       "reviewed_fingerprint": "sha256:a844c90f73891612dcfc5d8d934dbfd6d29dffa6fa186e9b052d3afca29bb8fd",
       "status": "approved"
     },
+    "repo:nexus:27": {
+      "evidence_urls": [
+        "https://github.com/N0edL/R.E.P.O-Save-Editor"
+      ],
+      "rationale": "The description names R.E.P.O Save Editor and gives this repository as its download source.",
+      "repository_url": "https://github.com/n0edl/r.e.p.o-save-editor",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:c9393d61adda892d051e3dcea596c0e6d70ce7e5c26dda49c72e704f0602e7a3",
+      "status": "approved"
+    },
     "repo:nexus:28": {
       "evidence_urls": [
         "https://github.com/BepInEx/BepInEx",
@@ -1190,6 +1200,16 @@
       "reviewed_fingerprint": "sha256:f1311bf29ee7b1c7f9741cc4a4cb9ce2af1565eae3abc731fafc80a00acc90ca",
       "status": "approved"
     },
+    "repo:nexus:48": {
+      "evidence_urls": [
+        "https://github.com/ZiedYT/chats-revenge-public/releases/latest"
+      ],
+      "rationale": "The description explicitly directs users to this repository for the Chats Revenge PC application and its download.",
+      "repository_url": "https://github.com/ziedyt/chats-revenge-public",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:13435d0c22c1c4cf84d1e04b14324a6b5735af9ff7a70c51037645ae5aeca26c",
+      "status": "approved"
+    },
     "repo:nexus:49": {
       "evidence_urls": [
         "https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.2"
@@ -1199,6 +1219,17 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:ed50f05648c57ced6ad6afb2d5c925efecee60b2a3e04fd47d2e80831a95774c",
       "status": "no_repository"
+    },
+    "repo:nexus:51": {
+      "evidence_urls": [
+        "https://github.com/BepInEx/BepInEx/releases/tag/v5.4.21",
+        "https://github.com/OWODevelopers/OWO_REPO/releases/latest"
+      ],
+      "rationale": "The installation instructions explicitly call the linked repository release the latest release of this mod; the BepInEx link is only a dependency.",
+      "repository_url": "https://github.com/owodevelopers/owo_repo",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:40d1443af6d0cff080bb925cc8a65fb98a1a46dc0540d1f65db9ed5b2e5ba2da",
+      "status": "approved"
     },
     "repo:nexus:52": {
       "evidence_urls": [
@@ -1439,6 +1470,16 @@
       "repository_url": "https://github.com/nekomimiowo/ainocompanion",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:ff3b8b8f4acec133c1a4cef7508d1d6c12a7145b0c00399c45bf1319f7f7b6a1",
+      "status": "approved"
+    },
+    "repo:thunderstore:MarceloOwO/SillyValuablesFix": {
+      "evidence_urls": [
+        "https://github.com/NekomimiOwO/SillyValuablesFix"
+      ],
+      "rationale": "The description calls this the GitHub of the mod and provides it for contact and installation.",
+      "repository_url": "https://github.com/nekomimiowo/sillyvaluablesfix",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:8615d954114c217e912e7e74d9d4a64b86ef7510e07ed1e89866b78c2a53b7c3",
       "status": "approved"
     },
     "repo:thunderstore:MonoDetour/MonoDetour": {
@@ -1774,6 +1815,17 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:a5125f8fd1e68ff6bd353d707c42a6790145cd78b9d1528b2086634234a79d53",
       "status": "no_repository"
+    },
+    "repo:thunderstore:mattymatty/AsyncLoggers": {
+      "evidence_urls": [
+        "https://github.com/mattymatty97/LTC_AsyncLoggers/releases",
+        "https://github.com/mattymatty97/LTC_AsyncLoggers/releases/latest"
+      ],
+      "rationale": "The Async Loggers heading and GitHub release badges point to this repository, whose project name matches the mod.",
+      "repository_url": "https://github.com/mattymatty97/ltc_asyncloggers",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:2b164aa4996419af118026d000be26290f80bd7f10b0c38c158f9fde6c2a79a0",
+      "status": "approved"
     },
     "repo:thunderstore:nickklmao/MenuLib": {
       "evidence_urls": [
@@ -2229,6 +2281,16 @@
       "repository_url": "https://github.com/kesomannen/gale",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:06b98ff73a8ed94572195f4db2f9abe3938e66ca9cc24db6ea25cb881628decf",
+      "status": "approved"
+    },
+    "tcg-card-shop-simulator:thunderstore:TCGPatch/TCGShopExpansionMod_0703_Patch": {
+      "evidence_urls": [
+        "https://github.com/cspencer49519/asset-port/releases"
+      ],
+      "rationale": "The supplied GitHub Releases links are for this package, and the repository README identifies it as the TCG Card Shop Simulator 0.70.3 compatibility patch and install tooling.",
+      "repository_url": "https://github.com/cspencer49519/asset-port",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:1e574c631f41e1cf25edf1402d74d6f00d0c320e1ffd5dc40f57fd89a936405d",
       "status": "approved"
     },
     "tcg-card-shop-simulator:thunderstore:ebkr/r2modman": {
@@ -2771,12 +2833,40 @@
     "valheim:nexus:2204": {
       "evidence_urls": [
         "https://github.com/Vapok/AdventureBackpacks",
-        "https://github.com/Vapok/AdventureBackpacks/blob/main/CHANGELOG.md"
+        "https://github.com/Vapok/AdventureBackpacks#%E2%80%8D-created-by-vapok-gaming",
+        "https://github.com/Vapok/AdventureBackpacks#%EF%B8%8F-advanced-mechanics--safeguards",
+        "https://github.com/Vapok/AdventureBackpacks#%EF%B8%8F-controls--interaction-modes",
+        "https://github.com/Vapok/AdventureBackpacks#-adventure-backpacks",
+        "https://github.com/Vapok/AdventureBackpacks#-adventure-backpacks-api-abapi",
+        "https://github.com/Vapok/AdventureBackpacks#-available-translations",
+        "https://github.com/Vapok/AdventureBackpacks#-backpack-catalogue",
+        "https://github.com/Vapok/AdventureBackpacks#-coming-soon-ashlands--deep-north-backpacks",
+        "https://github.com/Vapok/AdventureBackpacks#-how-to-use-adventure-backpacks",
+        "https://github.com/Vapok/AdventureBackpacks#-installation--server-setup",
+        "https://github.com/Vapok/AdventureBackpacks#-status-effects--passive-perks",
+        "https://github.com/Vapok/AdventureBackpacks#-verified-mod-compatibility",
+        "https://github.com/Vapok/AdventureBackpacks#a-progression-based-adventuring-backpack-mod-for-valheim",
+        "https://github.com/Vapok/AdventureBackpacks#api-capabilities",
+        "https://github.com/Vapok/AdventureBackpacks#dedicated-servers",
+        "https://github.com/Vapok/AdventureBackpacks#mod-manager-recommended",
+        "https://github.com/Vapok/AdventureBackpacks/blob/main/CHANGELOG.md",
+        "https://github.com/Vapok/AdventureBackpacks/blob/main/Docs/AdventureBackpacksAPI.md",
+        "https://github.com/Vapok/AdventureBackpacks/releases"
       ],
-      "rationale": "The supplied description explicitly identifies the candidate GitHub repository or its repository issue/contribution/source context as the mod\u2019s own source.",
+      "rationale": "The repository README explicitly identifies Adventure Backpacks as a Valheim mod, matching the supplied source-code and author links.",
       "repository_url": "https://github.com/vapok/adventurebackpacks",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:9d87ba77bc142737e7be081fa995e551f19f9b1eadcddd075d3edd953ed0ae1f",
+      "reviewed_fingerprint": "sha256:47ed368235fe421f864a8de793c426ad7395fbda5c0e29e59fa652dbcee6f73b",
+      "status": "approved"
+    },
+    "valheim:nexus:221": {
+      "evidence_urls": [
+        "https://github.com/ASharpPen/Valheim.DropThat/wiki"
+      ],
+      "rationale": "The repository README explicitly identifies Drop That! as the Valheim mod described by the supplied documentation link.",
+      "repository_url": "https://github.com/asharppen/valheim.dropthat",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:bb91cd0cdc16e6dcd58610f17cc3fe11cc2068d20fa89670a8a760f9cf32c068",
       "status": "approved"
     },
     "valheim:nexus:2239": {
@@ -2792,6 +2882,17 @@
       "reviewed_fingerprint": "sha256:fe216b2fe2a9ded4af82f566d5a131cd76750b0ea0a0cf9d317f807f6c1ccfb9",
       "status": "approved"
     },
+    "valheim:nexus:2250": {
+      "evidence_urls": [
+        "https://github.com/Vapok/FastItemTransfer",
+        "https://github.com/Vapok/FastItemTransfer/blob/main/PATCHNOTES.md"
+      ],
+      "rationale": "The repository README explicitly identifies Fast Item Transfer as the Valheim mod, and the supplied source link names the same repository.",
+      "repository_url": "https://github.com/vapok/fastitemtransfer",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:b3438bf00796b0da9f27df28abca3b3143deb91793c2038da1c8d735721c4cc9",
+      "status": "approved"
+    },
     "valheim:nexus:2272": {
       "evidence_urls": [
         "https://github.com/Vapok/ShieldMeBruh",
@@ -2801,6 +2902,19 @@
       "repository_url": "https://github.com/vapok/shieldmebruh",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:4e6956524ca6057255dde55a51ca7d3bd843866d29d1a6681d7d78dfe1ea6a08",
+      "status": "approved"
+    },
+    "valheim:nexus:2285": {
+      "evidence_urls": [
+        "https://github.com/BepInEx/BepInEx.ConfigurationManager",
+        "https://github.com/Vapok/NoFogBruh",
+        "https://github.com/Vapok/NoFogBruh/blob/main/CHANGELOG.md",
+        "https://github.com/Vapok/NoFogBruh/releases"
+      ],
+      "rationale": "NoFogBruh is explicitly identified as the source repository for the mod; the BepInEx Configuration Manager link is only an optional dependency.",
+      "repository_url": "https://github.com/vapok/nofogbruh",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:d599c40482701b8b4902fe67f2d767145e330db23a4f57bd15d3f9dcc56e21d4",
       "status": "approved"
     },
     "valheim:nexus:2301": {
@@ -2814,6 +2928,17 @@
       "repository_url": "https://github.com/digitalroot-valheim/digitalroot.valheim.lightningarrowsjvl",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:5cc7db57919408d3b4960d738872b24031c33e7abb69ebb38e6448b4cb967530",
+      "status": "approved"
+    },
+    "valheim:nexus:2315": {
+      "evidence_urls": [
+        "https://github.com/Vapok/ConsoleBuddy",
+        "https://github.com/Vapok/ConsoleBuddy/blob/main/PATCHNOTES.md"
+      ],
+      "rationale": "The supplied source link names the repository, and its README explicitly identifies Console Buddy as a Valheim mod by Vapok.",
+      "repository_url": "https://github.com/vapok/consolebuddy",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:922d40f3035065b5afffc192d273b840484a42cb2ff40c1f3c5f6323b07afbd4",
       "status": "approved"
     },
     "valheim:nexus:2323": {
@@ -2891,6 +3016,17 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:e2d55abf6e04fdc675034d2bb3b0c0a8e63d5e54174a5eae0140d4dfb6e008d4",
       "status": "no_repository"
+    },
+    "valheim:nexus:2506": {
+      "evidence_urls": [
+        "https://github.com/Vapok/DoorOpenerBruh",
+        "https://github.com/Vapok/DoorOpenerBruh/blob/main/CHANGELOG.md"
+      ],
+      "rationale": "The supplied source link names the repository, and its README explicitly identifies DoorOpenerBruh as the Valheim mod.",
+      "repository_url": "https://github.com/vapok/dooropenerbruh",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:da389fc763c988bba9ed63bc5bfab77b6550c113e11a6b5830a9650ec192d739",
+      "status": "approved"
     },
     "valheim:nexus:2518": {
       "evidence_urls": [
@@ -3044,10 +3180,30 @@
         "https://github.com/Digitalroot-Valheim/Digitalroot.Valheim.EternalFire/issues",
         "https://github.com/Digitalroot-Valheim/Digitalroot.Valheim.EternalFire?tab=readme-ov-file#configuration"
       ],
-      "rationale": "Explicit source repository with configuration, discussions, and bug-report links.",
+      "rationale": "The supplied Source link names the repository, whose README explicitly identifies Eternal Fire and its Valheim mod behavior.",
       "repository_url": "https://github.com/digitalroot-valheim/digitalroot.valheim.eternalfire",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:1be4e566898ef7b470790c5056a69b29a31ae5bd51ff493aae088646554b8670",
+      "reviewed_fingerprint": "sha256:076989958f5a9977b7e76ab8535d0dec87d40418d94b5f11be6411ff8c596487",
+      "status": "approved"
+    },
+    "valheim:nexus:278": {
+      "evidence_urls": [
+        "https://github.com/ASharpPen/Valheim.CustomRaids/wiki"
+      ],
+      "rationale": "The supplied documentation link names the repository, whose README explicitly identifies Custom Raids as the mod.",
+      "repository_url": "https://github.com/asharppen/valheim.customraids",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:147371456baf2d80ea03effddea6748a6eadac446b79f9ba7b47da2f19b0a79b",
+      "status": "approved"
+    },
+    "valheim:nexus:2832": {
+      "evidence_urls": [
+        "https://github.com/shudnal/Waystones/issues"
+      ],
+      "rationale": "The supplied repository is explicitly identified as the Waystones Valheim mod in its README.",
+      "repository_url": "https://github.com/shudnal/waystones",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:35260b3d364f947da19bbef0fc3c61b866ed92a0c84fe40d9ac685c41048190e",
       "status": "approved"
     },
     "valheim:nexus:2840": {
@@ -3057,10 +3213,20 @@
         "https://github.com/Digitalroot-Valheim/Digitalroot.Valheim.EarlyWishbone/discussions",
         "https://github.com/Digitalroot-Valheim/Digitalroot.Valheim.EarlyWishbone/issues"
       ],
-      "rationale": "Explicit source repository with issue and discussion links.",
+      "rationale": "The supplied Source link names the repository, whose README explicitly identifies Early Wishbone and its Valheim mod behavior.",
       "repository_url": "https://github.com/digitalroot-valheim/digitalroot.valheim.earlywishbone",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:f96d98d2c53c4c9f62423dbc63f6e73f603f7bfc8763ffad1472bc598b8c0c20",
+      "reviewed_fingerprint": "sha256:5227d5448ff9f7a0d767a42399040c9e78bddc223a4466d3f298382ebac86099",
+      "status": "approved"
+    },
+    "valheim:nexus:2845": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/Valheim_Mistward"
+      ],
+      "rationale": "The supplied GitHub link names the repository, whose README explicitly identifies Mistward as the Valheim mod.",
+      "repository_url": "https://github.com/midnightsfx/valheim_mistward",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:d86d9d34b9298a365016d13ec06006e346019325d8ed06aba21cb1d5852acd29",
       "status": "approved"
     },
     "valheim:nexus:2870": {
@@ -3097,6 +3263,18 @@
       "reviewed_fingerprint": "sha256:4f0cad34e13cff64c4b69c4d464101165bfef137d368d59b8abfaaf3fcef4b9b",
       "status": "approved"
     },
+    "valheim:nexus:2901": {
+      "evidence_urls": [
+        "https://github.com/shudnal/ExtraSlots",
+        "https://github.com/shudnal/ExtraSlots/issues",
+        "https://github.com/shudnal/ExtraSlots/releases/download/ExtraSlotsAPI/ExtraSlotsAPI.dll"
+      ],
+      "rationale": "The supplied GitHub links name the repository, whose README explicitly identifies Extra Slots as the Valheim mod.",
+      "repository_url": "https://github.com/shudnal/extraslots",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:448ce3c45fd2f89c642901b823c42255a8df6180c4d69d2b9676ebb4687d7574",
+      "status": "approved"
+    },
     "valheim:nexus:2906": {
       "evidence_urls": [
         "https://github.com/gittywithexcitement/ValheimBuildCamera"
@@ -3129,6 +3307,57 @@
       "reviewed_fingerprint": "sha256:b2107f8e957c030fab34b52036d894bec9f15819c21afe9673902943c4f6619b",
       "status": "approved"
     },
+    "valheim:nexus:3017": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Hauling_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Hauling_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Hauling_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Jump_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Jump_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Jump_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Run_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Run_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Run_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Voyager_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Voyager_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Voyager_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Woodcutting_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Woodcutting_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/Woodcutting_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/farming_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/farming_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/farming_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/pickaxe_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/pickaxe_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/pickaxe_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sneak_0.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sneak_100.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sneak_50.gif?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sword_0.png?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sword_100.png?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Impactful_Skills/blob/master/ImpactfulSkills/Art/sword_50.png?raw=true[/img"
+      ],
+      "rationale": "The supplied repository\u2019s README explicitly identifies ImpactfulSkills as a Valheim mod and describes its skill-progression behavior.",
+      "repository_url": "https://github.com/midnightsfx/valheim_impactful_skills",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:15cb5724cf84d97e4cb26ae9c48c0b091b3a6f7a3726d14390807b440edcdc93",
+      "status": "approved"
+    },
+    "valheim:nexus:3137": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded/blob/master/art/Header.png?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded/blob/master/art/TitleHeader.png?raw=true[/img",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded/tree/master/StarLevelSystem/API",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded?tab=readme-ov-file#starlevelsystem"
+      ],
+      "rationale": "The supplied repository\u2019s README explicitly identifies StarLevelSystem/Star Levels Expanded and describes its Valheim star-system behavior.",
+      "repository_url": "https://github.com/midnightsfx/valheim_star_levels_expanded",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:49642db6130e21858538636f49bda79a468753e980c7424a7f8dcdb87aa513b7",
+      "status": "approved"
+    },
     "valheim:nexus:3170": {
       "evidence_urls": [
         "https://github.com/AdvizeGH/Advize_ValheimMods"
@@ -3137,6 +3366,35 @@
       "repository_url": "https://github.com/advizegh/advize_valheimmods",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:33991f59e4d4ebe2627b882e7b4c8999c33faa7f08d7bf058bfc2d01b4910d27",
+      "status": "approved"
+    },
+    "valheim:nexus:3195": {
+      "evidence_urls": [
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/BottomRightHorizontal.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Chest.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/ChestScanner.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/ConfigurationManager.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/ControlsInfo.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/GatheringList.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/GroupCompactPin.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/GroupMembers.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/GroupPinN.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Horizontal.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Inventory.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/MyLittleUI.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/MyPinsPanel.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Pages.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/PinGroups.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Sailing.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/assets/images/Vertical.jpg?raw=true[/img][/center",
+        "https://github.com/KadrioS/RecipePinner/blob/main/docs/CHANGELOG.md",
+        "https://github.com/KadrioS/RecipePinner/issues",
+        "https://github.com/Kesomannen/gale/releases"
+      ],
+      "rationale": "The supplied repository\u2019s README explicitly identifies Recipe Pinner as the Valheim mod; Gale is unrelated mod-manager evidence.",
+      "repository_url": "https://github.com/kadrios/recipepinner",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:1e646630d100a83de1517cf69e99f1d3ca1f9d2a8bc4268f10b8b08152809ba9",
       "status": "approved"
     },
     "valheim:nexus:3200": {
@@ -3263,6 +3521,17 @@
       "repository_url": "https://github.com/miskamero/vikingeditor",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:bdc3fff7d88286d72e2bb9e3a26cb69ddbeb88f1d1c354e3f8847995ff1e1402",
+      "status": "approved"
+    },
+    "valheim:nexus:3549": {
+      "evidence_urls": [
+        "https://github.com/AlekseiSkr/CSand-DynamicCrosshair",
+        "https://github.com/AlekseiSkr/CSand-DynamicCrosshair/blob/main/assets/dynamic-aim-point.gif?raw=true[/img"
+      ],
+      "rationale": "The supplied repository\u2019s README explicitly identifies TrueFlight Crosshair, a Valheim projectile-crosshair mod, matching the supplied source link.",
+      "repository_url": "https://github.com/alekseiskr/csand-dynamiccrosshair",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0d203bf2e6fbf5021c8640f1f9a6166de1c7619e1b94715b491e58a7d1f36962",
       "status": "approved"
     },
     "valheim:nexus:3559": {
@@ -3394,6 +3663,26 @@
       "reviewed_fingerprint": "sha256:3b498c08436408a37c9e64787e3326465305db07fe0ff39b68e4bb4ba222807e",
       "status": "no_repository"
     },
+    "valheim:nexus:3637": {
+      "evidence_urls": [
+        "https://github.com/Vansinnet/Scoreboard"
+      ],
+      "rationale": "Scoreboard repository is directly linked from the mod description and the repository is specifically named Scoreboard.",
+      "repository_url": "https://github.com/vansinnet/scoreboard",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:a6b9aea026250d24d676998ea35710d7b29253b41fc3cbb3ae472ed67bc8dbf6",
+      "status": "approved"
+    },
+    "valheim:nexus:3654": {
+      "evidence_urls": [
+        "https://github.com/Zellds/SmartCraft-Storage"
+      ],
+      "rationale": "SmartCraft-Storage repository is directly linked from the mod description and the repository name matches the mod.",
+      "repository_url": "https://github.com/zellds/smartcraft-storage",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:74c9241c7c9b020a83b8fb0b5951c71fb4e555ac8720918f608935c6e9b78937",
+      "status": "approved"
+    },
     "valheim:nexus:3660": {
       "evidence_urls": [
         "https://github.com/Valheim-Modding/Wiki/wiki",
@@ -3435,27 +3724,28 @@
     "valheim:nexus:3688": {
       "evidence_urls": [
         "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#%EF%B8%8F-changelog-v431-summary",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#%EF%B8%8F-changelog-v432",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#%EF%B8%8F-important-community-notice--as-is-disclaimer",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-attribution--open-source-history",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-community--source-code",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-controls-quick-reference",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-installation",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-requirements--dependencies",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#-support-the-project",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#option-a-thunderstore--r2modman--gale-recommended",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#option-b-nexusmods--vortex--manual-installation",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#sails-propulsion--visuals",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#stability--multi-zone-loading",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#usability--quality-of-life",
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12#valheimraft-v432-valheim-1012-compatibility--polish-update",
         "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12/blob/main/LICENSE",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#%EF%B8%8F-changelog-v431",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#%EF%B8%8F-important-community-notice--as-is-disclaimer",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-attribution--open-source-history",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-community--source-code",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-controls-quick-reference",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-installation",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-requirements--dependencies",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#-support-the-project",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#controls--physics-polish",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#engine--platform-upgrades",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#option-a-thunderstore--r2modman--gale-recommended",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#option-b-nexusmods--vortex--manual-installation",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#stability--bug-fixes",
-        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12?tab=readme-ov-file#valheimraft-v431-valheim-1012-compatibility-update",
         "https://github.com/zolantris/ValheimMods"
       ],
-      "rationale": "The selected fork explicitly provides community/source-code and maintenance information for the mod; the other root is upstream.",
+      "rationale": "The evidence explicitly identifies the JNDEV0 repository as the maintained ValheimRAFT fork; the Zolantris repository is identified as upstream and is not selected.",
       "repository_url": "https://github.com/jndev0/valheimraft-zolantrisfork-1.0.12",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:f5c114a87738edfae564726c3a4570e6be364b46f19d83a48b782e930417cb46",
+      "reviewed_fingerprint": "sha256:9440a24f47a7a45f3c9f624a7bacd8d85b3de25b32200162c387ba59db10d066",
       "status": "approved"
     },
     "valheim:nexus:3719": {
@@ -3604,6 +3894,26 @@
       "reviewed_fingerprint": "sha256:660dbc0aee60f65fae3ce4b352815c4f0b41440e487710b8083c10e4983db4d3",
       "status": "approved"
     },
+    "valheim:thunderstore:ASharpPen/Custom_Raids": {
+      "evidence_urls": [
+        "https://github.com/ASharpPen/Valheim.CustomRaids/wiki"
+      ],
+      "rationale": "The Custom Raids wiki is the repository\u2019s own documentation and explicitly identifies the Valheim.CustomRaids mod.",
+      "repository_url": "https://github.com/asharppen/valheim.customraids",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:7003703fd24abebeeb27f18cb53e9d89786b0aa986419a72b1d69f6da44d437d",
+      "status": "approved"
+    },
+    "valheim:thunderstore:ASharpPen/Drop_That": {
+      "evidence_urls": [
+        "https://github.com/ASharpPen/Valheim.DropThat/wiki"
+      ],
+      "rationale": "The Drop That! wiki is the repository\u2019s own documentation and explicitly identifies the Valheim.DropThat mod.",
+      "repository_url": "https://github.com/asharppen/valheim.dropthat",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:70d67f5617ecf8761abfe11ab01d62b03021cfccf85906f38eca9e16fff3c527",
+      "status": "approved"
+    },
     "valheim:thunderstore:AWLGaming/BeastsOfBurden": {
       "evidence_urls": [
         "https://github.com/AWL-Gaming/BeastsOfBurden",
@@ -3728,6 +4038,16 @@
       "reviewed_fingerprint": "sha256:1bcb9dce681b39db314d7f5e93645bb449bb43776611538f63a9bd4395fc8f78",
       "status": "approved"
     },
+    "valheim:thunderstore:Akoozie/ValheimTune": {
+      "evidence_urls": [
+        "https://github.com/Akoozie/ValheimTune/releases"
+      ],
+      "rationale": "The linked ValheimTune releases page lists ValheimTune releases in the matching repository, explicitly tying the repository to this mod.",
+      "repository_url": "https://github.com/akoozie/valheimtune",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:9028c1d7a717c095a66d174fb6750b541416c30cd429f2ab1b126d34f87c4c38",
+      "status": "approved"
+    },
     "valheim:thunderstore:Amyxandrite/Quick_Stack_Store_Sort_Trash_Restock_Temp": {
       "evidence_urls": [
         "https://github.com/Goldenrevolver/QuickStackStore"
@@ -3820,6 +4140,24 @@
       "reviewed_fingerprint": "sha256:3ae964605e81ee39150466e427614bd7e550b5306a881e658c71f1bb3680d3e1",
       "status": "approved"
     },
+    "valheim:thunderstore:AugusDogus/Buildheim": {
+      "evidence_urls": [
+        "https://github.com/AugusDogus/Buildheim/actions",
+        "https://github.com/AugusDogus/Buildheim/blob/main/CHANGELOG.md",
+        "https://github.com/AugusDogus/Buildheim/blob/main/LICENSE.md",
+        "https://github.com/AugusDogus/Buildheim/blob/main/docs/DEVELOPMENT.md",
+        "https://github.com/AugusDogus/Buildheim/blob/main/docs/REPOSITORY.md",
+        "https://github.com/AugusDogus/Buildheim/blob/main/src/Buildheim/Client",
+        "https://github.com/AugusDogus/Buildheim/releases",
+        "https://github.com/Valheim-Modding/Jotunn",
+        "https://github.com/sirskunkalot/PlanBuild"
+      ],
+      "rationale": "The Buildheim evidence explicitly describes this project, its releases, source layout, and build; PlanBuild and Jotunn are separately identified as upstream/dependency projects.",
+      "repository_url": "https://github.com/augusdogus/buildheim",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:c937aa095eebbd55c183b512b7aa560a9d0352bf5b8b1209a410ba91aa6793a9",
+      "status": "approved"
+    },
     "valheim:thunderstore:AugusDogus/ComfortViewReforged": {
       "evidence_urls": [
         "https://github.com/AugusDogus/ComfortView/actions",
@@ -3860,6 +4198,17 @@
       "reviewed_fingerprint": "sha256:585a5d5e985d0249ad9bc8ccc5f9d846fbee694cc18f06982682382c1fbd58e8",
       "status": "approved"
     },
+    "valheim:thunderstore:Azumatt/Build_Camera_Custom_Hammers_Edition": {
+      "evidence_urls": [
+        "https://github.com/AzumattDev/BuildCameraCustomHammersEdition",
+        "https://github.com/gittywithexcitement/ValheimBuildCamera"
+      ],
+      "rationale": "The evidence explicitly says current source can be found in the AzumattDev BuildCameraCustomHammersEdition repository; the other repository is identified as original source.",
+      "repository_url": "https://github.com/azumattdev/buildcameracustomhammersedition",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:b33ac7ce00a1f47026bba462b7f5f0d909e86df2320f4245c2d7cd37239ee805",
+      "status": "approved"
+    },
     "valheim:thunderstore:Azumatt/Official_BepInEx_ConfigurationManager": {
       "evidence_urls": [
         "https://github.com/BepInEx/BepInEx.ConfigurationManager",
@@ -3879,6 +4228,28 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:b4050e5a62373efedb97c99f518d595666b70f456ad0a5584f2ec608f7879f2b",
       "status": "no_repository"
+    },
+    "valheim:thunderstore:BentoG/MissingPieces": {
+      "evidence_urls": [
+        "https://github.com/OrianaVenture/Valheim-MissingPieces"
+      ],
+      "rationale": "The linked repository is explicitly named Valheim-MissingPieces, matching the mod identity.",
+      "repository_url": "https://github.com/orianaventure/valheim-missingpieces",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:404dfde11cdd7d3d5ed6c0e1b4570780afec4b772a5e5fa2155cf29222c910c0",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Blockheim/LetMeSleep": {
+      "evidence_urls": [
+        "https://github.com/RinseV/valheim-skipsleep",
+        "https://github.com/Valheim-Modding/JotunnModStub",
+        "https://github.com/blockchaaain/LetMeSleep"
+      ],
+      "rationale": "The evidence explicitly labels blockchaaain/LetMeSleep as the source repository; SkipSleep and JotunnModStub are credits/dependencies.",
+      "repository_url": "https://github.com/blockchaaain/letmesleep",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:f8e01357645a54cecc46142a2ed1a63a86ddf07c48748a9b70a0e890b5ab84d5",
+      "status": "approved"
     },
     "valheim:thunderstore:CarromeTeam/BetterGrapplingHook": {
       "evidence_urls": [
@@ -3921,6 +4292,46 @@
       "reviewed_fingerprint": "sha256:0ff5fff78fe922822064a3ee487559672d5accb2af7f13cec17893c62b3a6f06",
       "status": "approved"
     },
+    "valheim:thunderstore:ComfyMods/ComfyAutoRepair": {
+      "evidence_urls": [
+        "https://github.com/redseiko/ComfyMods/tree/main/ComfyAutoRepair"
+      ],
+      "rationale": "The evidence explicitly points to the ComfyAutoRepair source at the matching ComfyMods/ComfyAutoRepair path.",
+      "repository_url": "https://github.com/redseiko/comfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:8838497b6c1eb192987d89164626eb388ff02b1af4af990127345d46957df0fe",
+      "status": "approved"
+    },
+    "valheim:thunderstore:ComfyMods/DyeHard": {
+      "evidence_urls": [
+        "https://github.com/redseiko/ComfyMods/tree/main/DyeHard"
+      ],
+      "rationale": "The evidence explicitly points to the DyeHard source at the matching ComfyMods/DyeHard path.",
+      "repository_url": "https://github.com/redseiko/comfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:d8d7e5b6eaa147b70f14c710f1deb757383dc1b268158041b89c13c481cb8a69",
+      "status": "approved"
+    },
+    "valheim:thunderstore:ComfyMods/GetOffMyLawn": {
+      "evidence_urls": [
+        "https://github.com/redseiko/ComfyMods/tree/main/GetOffMyLawn"
+      ],
+      "rationale": "The evidence explicitly points to the GetOffMyLawn source at the matching ComfyMods/GetOffMyLawn path.",
+      "repository_url": "https://github.com/redseiko/comfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:19ddee95a7231c290df948eae45a9c49452f86bf416051e48a720ec35cc4e156",
+      "status": "approved"
+    },
+    "valheim:thunderstore:ComfyMods/Gizmo": {
+      "evidence_urls": [
+        "https://github.com/BruceOfTheBow/BruceComfyMods/tree/main/ComfyGizmo"
+      ],
+      "rationale": "The evidence explicitly points to the Gizmo source at the matching BruceComfyMods/ComfyGizmo path.",
+      "repository_url": "https://github.com/bruceofthebow/brucecomfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:433f77355d9950d57b928face37a25d413a025debdda375de40b766e0d406699",
+      "status": "approved"
+    },
     "valheim:thunderstore:ComfyMods/SearsCatalog": {
       "evidence_urls": [
         "https://github.com/redseiko/ComfyMods/tree/main/SearsCatalog"
@@ -3931,6 +4342,16 @@
       "reviewed_fingerprint": "sha256:1a2a87770462772ead5071688b0f0dbbc69acfcabcb75c51f78b61a5d803b375",
       "status": "approved"
     },
+    "valheim:thunderstore:ComfyMods/Shortcuts": {
+      "evidence_urls": [
+        "https://github.com/redseiko/ComfyMods/tree/main/Shortcuts"
+      ],
+      "rationale": "The evidence explicitly points to the Shortcuts source at the matching ComfyMods/Shortcuts path.",
+      "repository_url": "https://github.com/redseiko/comfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:bd320c0b7063d312478238360f375c7ae58ea925a588a292328b4cec0aa6d6e1",
+      "status": "approved"
+    },
     "valheim:thunderstore:ComfyMods/Unstrippable": {
       "evidence_urls": [
         "https://github.com/redseiko/ComfyMods/tree/main/Unstrippable"
@@ -3939,6 +4360,16 @@
       "repository_url": "https://github.com/redseiko/comfymods",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:7400368b721f6a53d9238a822a0370f376feb5affa9d0cbbe0b18805f495d974",
+      "status": "approved"
+    },
+    "valheim:thunderstore:ComfyMods/ZoneScouter": {
+      "evidence_urls": [
+        "https://github.com/redseiko/ComfyMods/tree/main/ZoneScouter"
+      ],
+      "rationale": "The evidence explicitly points to the ZoneScouter source at the matching ComfyMods/ZoneScouter path.",
+      "repository_url": "https://github.com/redseiko/comfymods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:cd9a5a00348ed8ec71765a264ea353a2034350de1d14722b91fcc6460f9183fd",
       "status": "approved"
     },
     "valheim:thunderstore:Creaton/Valheim_Viet_Hoa": {
@@ -3980,6 +4411,16 @@
       "repository_url": "https://github.com/dadxisxbored/dadsezcontainers",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:891ec1dd7531d8d7c26f9f92cdcde56638f3c71fd3cf0a2129b3375c6b8cc6ff",
+      "status": "approved"
+    },
+    "valheim:thunderstore:DaiMinhTri/SkilledCarryWeight": {
+      "evidence_urls": [
+        "https://github.com/searica/SkilledCarryWeight"
+      ],
+      "rationale": "The linked repository is explicitly named SkilledCarryWeight, matching the mod identity.",
+      "repository_url": "https://github.com/searica/skilledcarryweight",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:7ed2996c77f6771c102842a2be80b5f6aa90aabb897598bca2df4389f6933289",
       "status": "approved"
     },
     "valheim:thunderstore:Dasone/QuickSwap": {
@@ -4051,6 +4492,17 @@
       "repository_url": "https://github.com/matthb1/valheim-no-poison",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:6f2f9a4cb72945d95833d227539816248c2f561e896c01f447dd7522f0e8c216",
+      "status": "approved"
+    },
+    "valheim:thunderstore:DevDonkey/Warm": {
+      "evidence_urls": [
+        "https://github.com/MattHB1/valheim-warm",
+        "https://github.com/MattHB1/valheim-warm/blob/main/CHANGELOG.md"
+      ],
+      "rationale": "Direct source link names this mod and points to its repository; the changelog is in the same repository.",
+      "repository_url": "https://github.com/matthb1/valheim-warm",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:fa32550cf9e0c25735aee6f347637365b4ec5b2aa0e3e9c15c75c60a15901906",
       "status": "approved"
     },
     "valheim:thunderstore:Digitalroot/Better_Clubs": {
@@ -4204,6 +4656,30 @@
       "reviewed_fingerprint": "sha256:887591d6408bf0a39603a4dd054e7fac7d7443f25a2533c514a050c32fa77f3f",
       "status": "approved"
     },
+    "valheim:thunderstore:Ezomic/Lur": {
+      "evidence_urls": [
+        "https://github.com/Ezomic/valheim-core",
+        "https://github.com/Ezomic/valheim-dvala",
+        "https://github.com/Ezomic/valheim-lur/issues"
+      ],
+      "rationale": "The evidence links the mod's own issue tracker; the other candidates are related mods or a shared core.",
+      "repository_url": "https://github.com/ezomic/valheim-lur",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:2934f68550d5cb16df7b6610143abdb7126956e06fcfa273ca60023908f39f69",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Ezomic/Rist": {
+      "evidence_urls": [
+        "https://github.com/Ezomic/valheim-dyrr",
+        "https://github.com/Ezomic/valheim-rist",
+        "https://github.com/Ezomic/valheim-rist/blob/main/DESIGN.md"
+      ],
+      "rationale": "The evidence links the mod's own repository and its DESIGN.md; this directly identifies the source repository.",
+      "repository_url": "https://github.com/ezomic/valheim-rist",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:e1b6e6ad047fb80b0678682d1e3566984f0657aa744cda9d33240e999aeeb640",
+      "status": "approved"
+    },
     "valheim:thunderstore:Ezomic/Sinka": {
       "evidence_urls": [
         "https://github.com/Ezomic/valheim-sinka"
@@ -4284,6 +4760,20 @@
       "reviewed_fingerprint": "sha256:1d9a0d4a5931b148f17d8818327b040008e19d718e9d7f2f741bda99abdfe17b",
       "status": "no_repository"
     },
+    "valheim:thunderstore:Fellowship_of_the_Ring/NoVikingLeftBehind": {
+      "evidence_urls": [
+        "https://github.com/AzumattDev/AzuCraftyBoxes",
+        "https://github.com/MJensen01/NoVikingLeftBehind",
+        "https://github.com/MJensen01/SmoothServer",
+        "https://github.com/blaxxun-boop/ServerSync",
+        "https://github.com/shudnal/ExtraSlots"
+      ],
+      "rationale": "The description explicitly labels this repository as the source and issues location for No Viking Left Behind.",
+      "repository_url": "https://github.com/mjensen01/novikingleftbehind",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:5afe6fb1b8b670e4122439c8a112a2cee1449bd80817306c867cb5fab26226e3",
+      "status": "approved"
+    },
     "valheim:thunderstore:GBV/Highseat": {
       "evidence_urls": [
         "https://github.com/JereKuusela/valheim-dev"
@@ -4324,6 +4814,20 @@
       "reviewed_fingerprint": "sha256:56ead8bef9362d9fc84a881ba94e06653f804ca6f2a81da7d9d0f923858edec7",
       "status": "approved"
     },
+    "valheim:thunderstore:Grantapher/ValheimPlus_Grantapher_Temporary": {
+      "evidence_urls": [
+        "https://github.com/BepInEx/BepInEx.ConfigurationManager",
+        "https://github.com/Grantapher/ValheimPlus/blob/grantapher-development/INSTALL.md",
+        "https://github.com/Grantapher/ValheimPlus/releases/latest/",
+        "https://github.com/Nimdy/Dedicated_Valheim_Server_Script",
+        "https://github.com/Nimdy/Dedicated_Valheim_Server_Script/issues"
+      ],
+      "rationale": "The installation evidence directs users to ValheimPlus release packages and install documentation in this repository.",
+      "repository_url": "https://github.com/grantapher/valheimplus",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:3bffc2e48f64a1bbc3ac49bbe9b7e459f4daeeb4c7d2922d35bf96faa443a423",
+      "status": "approved"
+    },
     "valheim:thunderstore:Grillspett/GrillspettAzuAutoStoreCompat": {
       "evidence_urls": [
         "https://github.com/aborigen19961202/AzuAutoStoreCompat"
@@ -4356,6 +4860,46 @@
       "reviewed_fingerprint": "sha256:24d5bf9f295712fa42bce0cdc656ac296e430d5987f2d370acb1c5437fb43e62",
       "status": "approved"
     },
+    "valheim:thunderstore:Harchytek/HudStar": {
+      "evidence_urls": [
+        "https://github.com/Harchytek/HudStar/issues"
+      ],
+      "rationale": "The evidence links this mod's own GitHub issue tracker and identifies the author's contribution.",
+      "repository_url": "https://github.com/harchytek/hudstar",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:850983a13043ced01fef933a0e264b1eff8a9481cae692647d5da23550969093",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Harchytek/SellTrophies": {
+      "evidence_urls": [
+        "https://github.com/Harchytek/SellTrophies/issues"
+      ],
+      "rationale": "The evidence links this mod's own GitHub issue tracker and identifies the author's contribution.",
+      "repository_url": "https://github.com/harchytek/selltrophies",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:7334b3d1f0b3233123b37060fafb63896d30055b2a973509fde4d36d74fc4691",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Harchytek/SkillNotifier": {
+      "evidence_urls": [
+        "https://github.com/Harchytek/SkillNotifier/issues"
+      ],
+      "rationale": "The evidence links this mod's own GitHub issue tracker and identifies the author's contribution.",
+      "repository_url": "https://github.com/harchytek/skillnotifier",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:b13aacc5a633b4062744597dbd0de2336c132321d0e7ef91b11a7582f82b8693",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Harchytek/TrophyEater": {
+      "evidence_urls": [
+        "https://github.com/Harchytek/TrophyEater/issues"
+      ],
+      "rationale": "The evidence links this mod's own GitHub issue tracker and identifies the author's contribution.",
+      "repository_url": "https://github.com/harchytek/trophyeater",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:7d004edc0105cb292024b104b05be9d850dfec45bae13a332b7a6b4d4a794cdf",
+      "status": "approved"
+    },
     "valheim:thunderstore:Hardwire99/ComfortMe": {
       "evidence_urls": [
         "https://github.com/cdjensen99-sudo/ComfortMe"
@@ -4364,6 +4908,16 @@
       "repository_url": "https://github.com/cdjensen99-sudo/comfortme",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:a126726ad0063da0b808892693c4a08ce70dd37b3579003e72140d8baa5431cc",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Hardwire99/DvergrCraftsmanship": {
+      "evidence_urls": [
+        "https://github.com/cdjensen99-sudo/DvergrCraftsmanship/issues"
+      ],
+      "rationale": "The evidence explicitly identifies the repository as the GitHub issue tracker for Dvergr Craftsmanship.",
+      "repository_url": "https://github.com/cdjensen99-sudo/dvergrcraftsmanship",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:a7736f8dda3821369015a830917180f1f167e23325e315636b74abee3cdc214c",
       "status": "approved"
     },
     "valheim:thunderstore:Hardwire99/FletchersForge": {
@@ -4428,6 +4982,16 @@
       "reviewed_fingerprint": "sha256:3f1217f6b44facd82ce927fce315670815a645907658303ac24da5d25d0cea5e",
       "status": "approved"
     },
+    "valheim:thunderstore:HephaestusLabs/AdvancedAdminPanel": {
+      "evidence_urls": [
+        "https://github.com/hldblc/ValheimAdminPanel"
+      ],
+      "rationale": "The evidence explicitly identifies this repository as the source and changelog for Advanced Admin Panel.",
+      "repository_url": "https://github.com/hldblc/valheimadminpanel",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:d9ca6e23f6e0e45cf9b849b6b8d38fb871dfaf99eb4d9ea696043e6b03b35809",
+      "status": "approved"
+    },
     "valheim:thunderstore:Hex_Viking/HexAutoStorage": {
       "evidence_urls": [
         "https://github.com/guillenjgg/valheim-hex-autostorage"
@@ -4456,6 +5020,26 @@
       "repository_url": "https://github.com/guillenjgg/valheim-hex-dev-tools",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:01d67d75e2697cae9076f7394a0fa91c3f179b10ea6b9a8ffc28d7b879bce862",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Hex_Viking/HexQuickStackStorage": {
+      "evidence_urls": [
+        "https://github.com/guillenjgg/valheim-hex-quick-stack-store"
+      ],
+      "rationale": "The description explicitly labels this exact repository as the GitHub source.",
+      "repository_url": "https://github.com/guillenjgg/valheim-hex-quick-stack-store",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:5d1e6944601c90e88b80e1f0c146c482c8852a3dce3af1ef1de917c15effdad6",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Hex_Viking/HexRareScanner": {
+      "evidence_urls": [
+        "https://github.com/guillenjgg/valheim-hex-rare-scanner"
+      ],
+      "rationale": "The description explicitly links this exact repository as the GitHub page for the mod.",
+      "repository_url": "https://github.com/guillenjgg/valheim-hex-rare-scanner",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:86e7553df0b0e598b6f2db8aeeb3bfd032fa81107dfdebcf51296d9b2d2cc4c9",
       "status": "approved"
     },
     "valheim:thunderstore:Hex_Viking/HexResourceTracker": {
@@ -4677,6 +5261,17 @@
       "reviewed_fingerprint": "sha256:dbde989cf81069bddf1144620ad5878bd5cb9fa73fdd89e7b3406a8b844df611",
       "status": "approved"
     },
+    "valheim:thunderstore:KadrioS/RecipePinner": {
+      "evidence_urls": [
+        "https://github.com/KadrioS/RecipePinner/blob/main/docs/CHANGELOG.md",
+        "https://github.com/KadrioS/RecipePinner/issues"
+      ],
+      "rationale": "The evidence links the mod's own GitHub issues and changelog in the same repository.",
+      "repository_url": "https://github.com/kadrios/recipepinner",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0689cc5d90964f5317c39f13f0fc60a240dc9192433f79c3c14dbe2c5d24c53f",
+      "status": "approved"
+    },
     "valheim:thunderstore:Kesomannen/GaleModManager": {
       "evidence_urls": [
         "https://github.com/Calinou/scoop-games",
@@ -4747,6 +5342,116 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:eb4c4004dc6ba89d11483d0632558d9f39450b5207f72c2905ea2ac5af729b78",
       "status": "no_repository"
+    },
+    "valheim:thunderstore:Landoria/GentleDeath": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists GentleDeath as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0b0f6346af6ac5f42bae9341e25e34e87875ebf8992cd1c024265461fcd6fad4",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/GetMyTrophyBack": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists GetMyTrophyBack as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0b0f6346af6ac5f42bae9341e25e34e87875ebf8992cd1c024265461fcd6fad4",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/HammerFreedom": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists HammerFreedom as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0b0f6346af6ac5f42bae9341e25e34e87875ebf8992cd1c024265461fcd6fad4",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/ModSentry": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists ModSentry as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:d02b988f7ea4d191ed9b3fe652194d5149b50599f1f25229c17df45ce434e50b",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/Moderator": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists Moderator as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:3e12e3112eb9a1c5e85517f71ab3ad450b08c1b115c7c4a86c15ffeb3943882e",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/NoServerPassword": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists NoServerPassword as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:483b085d81bd5b060a552279705bbcd036c16c5fc9122a229fa1a54e7ed07dfc",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/QuickLaunch": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists QuickLaunch as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:9546c3b1535a2974fc470a07b90093223025478bd38feb6243329bd330a21752",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/SealedTombstone": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists SealedTombstone as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:aa8d330784c1b89ae963d5ca236c0f918cc8c56da2d7acad2baf07111ad49961",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/Socialize": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists Socialize as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0b0f6346af6ac5f42bae9341e25e34e87875ebf8992cd1c024265461fcd6fad4",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Landoria/StructureProtection": {
+      "evidence_urls": [
+        "https://github.com/landoria-gaming/LandoriaMods/discussions",
+        "https://github.com/landoria-gaming/LandoriaMods/issues"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies LandoriaMods as the public source for Landoria Valheim mods and lists StructureProtection as its own mod directory.",
+      "repository_url": "https://github.com/landoria-gaming/landoriamods",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:aa8d330784c1b89ae963d5ca236c0f918cc8c56da2d7acad2baf07111ad49961",
+      "status": "approved"
     },
     "valheim:thunderstore:Los_Goobers/StationPacks": {
       "evidence_urls": [
@@ -4845,6 +5550,46 @@
       "reviewed_fingerprint": "sha256:512179a29d0b5635d1d3ad2797146d22266970c68d9e3375e27c5735967b0ea3",
       "status": "approved"
     },
+    "valheim:thunderstore:Meldurson/LetMeTameYou": {
+      "evidence_urls": [
+        "https://github.com/meldurson/Let_Me_Tame_You/blob/main/Tamelist_YML_Wiki.md"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the Let_Me_Tame_You repository as the source for the named taming mod.",
+      "repository_url": "https://github.com/meldurson/let_me_tame_you",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:a2f7512df17d2b82b978278d16e03dcb8a0fcb1d65a1031319b4d0053ce5b86b",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Meldurson/MountUpRestored": {
+      "evidence_urls": [
+        "https://github.com/meldurson/MountUpRestored/discussions/1"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the MountUpRestored repository as the source for the named mod and its documentation.",
+      "repository_url": "https://github.com/meldurson/mountuprestored",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:dc27ca7d22035231a03bffc15e9e60b6415f4ae1d9f353106220d60266ff8f7c",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Meldurson/PortablePals": {
+      "evidence_urls": [
+        "https://github.com/meldurson/Portable_Pals/blob/main/API-Wiki.md"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the Portable_Pals repository as the source for the named mod and its API documentation.",
+      "repository_url": "https://github.com/meldurson/portable_pals",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:6b2abb06fd2c6ee867111a1c3320d56352b1a2bf1c0bf7c2c57789449396493a",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/AdjustablePortals": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/Valheim_Adjustable_Portals"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the Valheim_Adjustable_Portals repository as the source for the named mod.",
+      "repository_url": "https://github.com/midnightsfx/valheim_adjustable_portals",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:73f117ff7346ba737ae15fa81161fdcb0de659cfd3f4f77889a5e9d319c2d0f8",
+      "status": "approved"
+    },
     "valheim:thunderstore:MidnightMods/CommunityPatchExtras": {
       "evidence_urls": [
         "https://github.com/MidnightsFX/Valheim-Community-Patch",
@@ -4854,6 +5599,50 @@
       "repository_url": "https://github.com/midnightsfx/valheim-community-patch-extensions",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:9b93c5388c4f2c78c9554b81dfa82f7bd5b749cc4215fd7f1e06d25fc10e0b95",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/EpicJewels": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/epic_jewels_jotunn",
+        "https://github.com/MidnightsFX/epic_jewels_jotunn/blob/master/EpicJewels/AssetsEmbedded/EJConfig.yaml",
+        "https://github.com/MidnightsFX/epic_jewels_jotunn/tree/master/EpicJewels/translations"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the Epic_Jewels repository as a MidnightsFX rebuild of Epic Jewels, with the mod source and implementation present there.",
+      "repository_url": "https://github.com/midnightsfx/epic_jewels_jotunn",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:190fbbf518d55c915d783ccaba6b4f3a493398e57c36fc218863e8d89c24b239",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/NoMapTools": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/Valheim_NoMapConfiguration"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the Valheim_NoMapConfiguration repository as the source for NoMapTools, matching the package identity.",
+      "repository_url": "https://github.com/midnightsfx/valheim_nomapconfiguration",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:b3f4b6191ca8bec0f84b15f290a6d8fda1c73fcd6256017882253149e909ad8d",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/StarLevelSystem": {
+      "evidence_urls": [
+        "https://github.com/JereKuusela/valheim-dev",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded",
+        "https://github.com/MidnightsFX/Valheim_Star_Levels_Expanded/tree/master/StarLevelSystem/API"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies Valheim_Star_Levels_Expanded as the source for StarLevelSystem; valheim-dev is only a server-devcommands dependency.",
+      "repository_url": "https://github.com/midnightsfx/valheim_star_levels_expanded",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:6edc3362665a40103a3e346654a5fc3c0ee6df6d3cdbd0cfe2e8208f345cd9a9",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/ValhallEternal": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/ValhallaEternal"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the ValhallaEternal repository as the source for the named Valheim mod.",
+      "repository_url": "https://github.com/midnightsfx/valhallaeternal",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:16764240ca535ec55428e4114a1fd1d5b241d73f859456595ae37ae8a9db7cdb",
       "status": "approved"
     },
     "valheim:thunderstore:MidnightMods/ValheimArmory": {
@@ -4875,10 +5664,20 @@
         "https://github.com/ontrigger/ValheimPerformanceOptimizations",
         "https://github.com/redseiko/ComfyMods"
       ],
-      "rationale": "Explicit source, repository, issue, release, or contribution context identifies the supplied repository as the mod's own source.",
+      "rationale": "Fresh GitHub repository evidence identifies Valheim-Community-Patch as the source for the named patch; the other candidates are corroborating or related mods, not this mod\u2019s repository.",
       "repository_url": "https://github.com/midnightsfx/valheim-community-patch",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:f3a7f1c34ef3a759273b0243ca0965354d7bb512dbd469e230e94c74de595ceb",
+      "reviewed_fingerprint": "sha256:cef704680e7a23b39df7cba90353545d23423edf065d8c53aa7fe35181326cdc",
+      "status": "approved"
+    },
+    "valheim:thunderstore:MidnightMods/ValheimEnforcer": {
+      "evidence_urls": [
+        "https://github.com/MidnightsFX/valheim_enforcer"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies the valheim_enforcer repository as the source for Valheim Enforcer.",
+      "repository_url": "https://github.com/midnightsfx/valheim_enforcer",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:2c543665b1b38ee440d1233d6ae4fe904a266eb0c46bbbeb3889ac9bea5dc10b",
       "status": "approved"
     },
     "valheim:thunderstore:MilkMediaProductions/ExpertExplorer": {
@@ -5215,6 +6014,56 @@
       "reviewed_fingerprint": "sha256:80d2b5317e2052502703560d76b0562a990dd69994e4e355d651e6fc104fea1f",
       "status": "approved"
     },
+    "valheim:thunderstore:SeasonedProfessionals/OdinEye": {
+      "evidence_urls": [
+        "https://github.com/js-ferguson/odin-eye"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies odin-eye as the source and documentation repository for OdinEye.",
+      "repository_url": "https://github.com/js-ferguson/odin-eye",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:72e0982fd5097fe4afb39fb43a74b788bc3966e300d0a5c2598fca246b0775ed",
+      "status": "approved"
+    },
+    "valheim:thunderstore:SeasonedProfessionals/OdinEyeClient": {
+      "evidence_urls": [
+        "https://github.com/js-ferguson/odin-eye"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies odin-eye as the source for OdinEye.Client and explicitly describes it as the optional client-side companion.",
+      "repository_url": "https://github.com/js-ferguson/odin-eye",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:58541611d2746b1f0594d08794a8e3fd84e680c1a1544a6b17a2087988d4a1fa",
+      "status": "approved"
+    },
+    "valheim:thunderstore:SimplifyDave/AutoRefillFires": {
+      "evidence_urls": [
+        "https://github.com/LabodiDavid/AutoRefillFires/blob/main/Thunderstore/CHANGELOG.md"
+      ],
+      "rationale": "Fresh GitHub repository evidence identifies AutoRefillFires as a Valheim BepInEx mod repository matching the named package.",
+      "repository_url": "https://github.com/labodidavid/autorefillfires",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:29e4414be6c2244a8c034c242a2bebe080e4cfaf68e71448bdeab8dcae915bef",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Smoothbrain/Groups": {
+      "evidence_urls": [
+        "https://github.com/blaxxun-boop/Groups"
+      ],
+      "rationale": "The listing documentation directs users to blaxxun-boop/Groups as the GitHub page for this mod's API and group features.",
+      "repository_url": "https://github.com/blaxxun-boop/groups",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:ed6278df6bd1a0820a90e6d160ed68d1fe2ddc9fd2b91b7ee452c8941c510c13",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Smoothbrain/Jewelcrafting": {
+      "evidence_urls": [
+        "https://github.com/blaxxun-boop/Jewelcrafting"
+      ],
+      "rationale": "The listing documentation links blaxxun-boop/Jewelcrafting as the project's GitHub API/update repository.",
+      "repository_url": "https://github.com/blaxxun-boop/jewelcrafting",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:4359849df5b01cf276d34d78eaf9a4915351c9cef1f281dd393d6f4d1c6de951",
+      "status": "approved"
+    },
     "valheim:thunderstore:Smoothbrain/Lumberjacking": {
       "evidence_urls": [
         "https://github.com/blaxxun-boop/SkillManager"
@@ -5399,6 +6248,22 @@
       "reviewed_fingerprint": "sha256:36879b8faa3d5eb4b781191582d0966fe4a52b6514e76f4ef881fdeee509294d",
       "status": "approved"
     },
+    "valheim:thunderstore:ValMedia/OdinOnDemand": {
+      "evidence_urls": [
+        "https://github.com/Tyrrrz/YoutubeExplode",
+        "https://github.com/jerry08/SoundCloudExplode",
+        "https://github.com/modestimpala/OdinOnDemand",
+        "https://github.com/modestimpala/OdinOnDemand/issues",
+        "https://github.com/modestimpala/OdinOnDemand/tree/main/plugin/Assets",
+        "https://github.com/yt-dlp/yt-dlp",
+        "https://github.com/yt-dlp/yt-dlp/wiki/EJS"
+      ],
+      "rationale": "The listing links modestimpala/OdinOnDemand for GitHub instructions and issue tracking; the other candidates are acknowledged libraries/tools or dependencies.",
+      "repository_url": "https://github.com/modestimpala/odinondemand",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:8359ab3d292e8f77b1da081f669f5da9f40e114ab4a50c4e99ccbb8d1fd97482",
+      "status": "approved"
+    },
     "valheim:thunderstore:Valesthor/Health_Stamina_Eitr_Manager": {
       "evidence_urls": [
         "https://github.com/Valesthor/HSE-Manager/issues",
@@ -5499,10 +6364,69 @@
         "https://github.com/Vapok/AdventureBackpacks/blob/main/Docs/AdventureBackpacksAPI.md",
         "https://github.com/Vapok/AdventureBackpacks/releases"
       ],
-      "rationale": "Explicit source, repository, issue, release, or contribution context identifies the supplied repository as the mod's own source.",
+      "rationale": "The listing identifies Vapok/AdventureBackpacks as its source code GitHub repository and links its releases/API/changelog.",
       "repository_url": "https://github.com/vapok/adventurebackpacks",
       "review_method": "llm-high-confidence",
-      "reviewed_fingerprint": "sha256:1125b0f183bf1de5e7db932e62a9ec941198cf81d6754ea60dbeaf2fe880105a",
+      "reviewed_fingerprint": "sha256:17ad6c7d65b1e5734b10e81a720565647915dc844079439a7775849b996ca372",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/AutoFeedRedux": {
+      "evidence_urls": [
+        "https://github.com/Vapok/AutoFeedRedux",
+        "https://github.com/Vapok/AutoFeedRedux/blob/main/CHANGELOG.md"
+      ],
+      "rationale": "The listing explicitly identifies Vapok/AutoFeedRedux as its GitHub source and changelog.",
+      "repository_url": "https://github.com/vapok/autofeedredux",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:635c889b8deee3179d60fe166e2f5df508500e0afe2d2d1cea93460773f56854",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/ConsoleBuddy": {
+      "evidence_urls": [
+        "https://github.com/Vapok/ConsoleBuddy",
+        "https://github.com/Vapok/ConsoleBuddy/blob/main/CHANGELOG.md",
+        "https://github.com/Vapok/ConsoleBuddy/releases"
+      ],
+      "rationale": "The listing explicitly identifies Vapok/ConsoleBuddy as its GitHub source and links its releases/changelog.",
+      "repository_url": "https://github.com/vapok/consolebuddy",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:93cdb0c2a1d2ab23d01abacaafec03976b3c0e00b46dfccd83040a2e42d23b73",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/DoorOpenerBruh": {
+      "evidence_urls": [
+        "https://github.com/Vapok/DoorOpenerBruh"
+      ],
+      "rationale": "The listing explicitly identifies Vapok/DoorOpenerBruh as its GitHub source.",
+      "repository_url": "https://github.com/vapok/dooropenerbruh",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:295a875454be19dda3a87c80301b57e30080fa511517ccf1e0d5f982c812ce44",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/FastItemTransfer": {
+      "evidence_urls": [
+        "https://github.com/BepInEx/BepInEx.ConfigurationManager",
+        "https://github.com/Vapok/FastItemTransfer",
+        "https://github.com/Vapok/FastItemTransfer/blob/main/CHANGELOG.md",
+        "https://github.com/Vapok/FastItemTransfer/releases"
+      ],
+      "rationale": "The listing identifies Vapok/FastItemTransfer as its GitHub repository/releases; BepInEx ConfigurationManager is only a dependency.",
+      "repository_url": "https://github.com/vapok/fastitemtransfer",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:9d6b53141f61fb14a54bd93b3a65717a76337b49fb03dbd9286ddbbe29e0a92c",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/NoFogBruh": {
+      "evidence_urls": [
+        "https://github.com/BepInEx/BepInEx.ConfigurationManager",
+        "https://github.com/Vapok/NoFogBruh",
+        "https://github.com/Vapok/NoFogBruh/blob/main/CHANGELOG.md",
+        "https://github.com/Vapok/NoFogBruh/releases"
+      ],
+      "rationale": "The listing identifies Vapok/NoFogBruh as its GitHub repository/releases; BepInEx ConfigurationManager is only a dependency.",
+      "repository_url": "https://github.com/vapok/nofogbruh",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:a55da760a111c8025cc4ee867311fa5087658f88fdca221583e19a1cec4aad49",
       "status": "approved"
     },
     "valheim:thunderstore:Vapok/ShieldMeBruh": {
@@ -5514,6 +6438,17 @@
       "repository_url": "https://github.com/vapok/shieldmebruh",
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:b5d9cabe7f6629de73fde4d9f7b48f6fa9341fced366b9d8b91fae5d3d2e9d0e",
+      "status": "approved"
+    },
+    "valheim:thunderstore:Vapok/TheQueensDeadBruh": {
+      "evidence_urls": [
+        "https://github.com/Vapok/TheQueensDeadBruh",
+        "https://github.com/Vapok/TheQueensDeadBruh/blob/main/PATCHNOTES.md"
+      ],
+      "rationale": "The listing explicitly identifies Vapok/TheQueensDeadBruh as its GitHub source and patch-notes repository.",
+      "repository_url": "https://github.com/vapok/thequeensdeadbruh",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:0f5562498a5a87a1aa5cfb2e690cb5ec7bacda6a5752e016c9bf246bdb2f76c7",
       "status": "approved"
     },
     "valheim:thunderstore:Vapok/XPortalNetworks": {
@@ -6598,6 +7533,29 @@
       "reviewed_fingerprint": "sha256:69d9fa00031fa96feb710c9b389b1da7f9f9d7a121dcec8ef8bfda2f3061d200",
       "status": "approved"
     },
+    "valheim:thunderstore:sighsorry/Homestead": {
+      "evidence_urls": [
+        "https://github.com/AzumattDev/BuildCameraCustomHammersEdition",
+        "https://github.com/sighsorry1029/Homestead"
+      ],
+      "rationale": "The listing links sighsorry1029/Homestead as its own GitHub repository; the BuildCamera repository is credited only for reused code.",
+      "repository_url": "https://github.com/sighsorry1029/homestead",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:a6b7e93c317db81eec1af1344ea649e980da07a7a09bc4536c77f7da053cae88",
+      "status": "approved"
+    },
+    "valheim:thunderstore:sighsorry/InventorySlots": {
+      "evidence_urls": [
+        "https://github.com/Goldenrevolver/QuickStackStore",
+        "https://github.com/MSchmoecker/ComfyMods/tree/fork-upload/ContentsWithin",
+        "https://github.com/sighsorry1029/InventorySlots"
+      ],
+      "rationale": "The listing links sighsorry1029/InventorySlots as its own repository; QuickStackStore and ContentsWithin/ComfyMods are credited dependencies or adapted code.",
+      "repository_url": "https://github.com/sighsorry1029/inventoryslots",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:e52a72c017991c24cc38837004adc08e824c87227a355755e287cc0f7f1ed269",
+      "status": "approved"
+    },
     "valheim:thunderstore:sighsorry/STU_Ward": {
       "evidence_urls": [
         "https://github.com/sighsorry1029/STUWard"
@@ -6689,6 +7647,17 @@
       "review_method": "llm-high-confidence",
       "reviewed_fingerprint": "sha256:5e0d26b3281ec89bad717c3fc7b5f150aad56c80ec0df0b457457d48a3e59124",
       "status": "no_repository"
+    },
+    "valheim:thunderstore:team0/ValheimRAFT": {
+      "evidence_urls": [
+        "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12",
+        "https://github.com/zolantris/ValheimMods"
+      ],
+      "rationale": "The listing explicitly labels JNDEV0/ValheimRAFT-zolantrisFork-1.0.12 as its GitHub Repository; zolantris/ValheimMods is separately labeled upstream.",
+      "repository_url": "https://github.com/jndev0/valheimraft-zolantrisfork-1.0.12",
+      "review_method": "llm-high-confidence",
+      "reviewed_fingerprint": "sha256:684148acc9ef202ea9f4c37c68418aafd465c3d5e7b277c8c268dc551c7f229b",
+      "status": "approved"
     },
     "valheim:thunderstore:treextr/PathOfValheiman": {
       "evidence_urls": [

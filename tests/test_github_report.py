@@ -244,6 +244,14 @@ class GithubReportMilestone3RedContract(unittest.TestCase):
         )
         self.assertFalse(result["ok"], result)
 
+    def test_github_link_matches_provider_link_color_in_all_visit_states(self):
+        page = self.render([self.mod()], self.decision())
+        self.assertIn(
+            ".source-link,.source-link:visited,.github-link,.github-link:visited"
+            "{color:#b9dbff;margin-right:12px;font-weight:700}",
+            page,
+        )
+
     def test_verifier_requires_exact_github_link_class(self):
         page = self.render([self.mod()], self.decision())
         for replacement in ('class="other"', 'class="github-link extra"'):

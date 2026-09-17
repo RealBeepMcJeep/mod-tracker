@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-16
+
+- Added `scripts/publish-github.py`, which publishes a staged tree to the GitHub Pages branch as a single orphan commit and force-pushes it, so the branch always holds exactly the current site and nothing from a previous release. It validates the tree first — no symlinks, no nested repository, and an `index.html` at the root and in every published directory — reads its token at runtime from the environment or the credential file without ever putting it on a command line, and skips the push when the remote branch already carries the identical tree so an unchanged pass cannot force a pointless Pages rebuild.
+- Wired that publisher into the unattended full pass, so the six-hour run refreshes GitHub Pages alongside the pre-existing target and verifies the live routes against `https://realbeepmcjeep.github.io`. It runs as its own `publication-github` stage and records a `deployment_github` state, so a failure there is reported honestly instead of being folded into the other deployment.
+- Added nine publisher tests that push to a local bare repository, covering publication, the unchanged skip, replacement after a content change, dry-run isolation, symlinked files and directory roots, and a missing `index.html`. The full 276-test suite, compile, JSON, and whitespace checks passed.
+- Verified the publisher against the live repository: a dry run validated the staged tree, an authenticated push to a scratch branch succeeded and was then removed, and the real branch correctly reported no change for the tree already published there.
+
 ## 2026-09-14
 
 - Added explicit per-record provider freshness timestamps: `listing_seen_at` advances whenever a mod is observed and normalized from current listing data, while `detail_fetched_at` advances only when the Nexus detail API response or Thunderstore package page is actually downloaded. Cache reuse preserves the prior successful detail timestamp; historical listing timestamps are safely migrated from `collected_at`, historical detail-fetch times remain null, and `collected_at` remains for compatibility. Seven focused tests, the 268-test full suite, compile/JSON/whitespace checks, and all five saved-report verifiers passed.

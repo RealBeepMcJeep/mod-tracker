@@ -250,7 +250,8 @@ DEFAULT_PUBLIC_ROOT = PROJECT_ROOT.parent / "public-artifacts"
 DEFAULT_API_KEY_FILE = Path.home() / ".config/nexus-mods/api-key"
 DEFAULT_STATE_ROOT = PROJECT_ROOT / ".unattended-runs"
 DEFAULT_LOCK_FILE = DEFAULT_STATE_ROOT / "run.lock"
-DEFAULT_LIVE_BASE_URL = "https://public-artifacts.xioustic-5f1.workers.dev"
+DEFAULT_GITHUB_REPO = "https://github.com/RealBeepMcJeep/mod-tracker.git"
+DEFAULT_LIVE_BASE_URL = "https://realbeepmcjeep.github.io"
 
 
 def validate_nexus_key(path: Path) -> str:
@@ -416,7 +417,24 @@ def verify_remote_main(root: Path) -> str:
 
 
 def batch_publication_command(manifest: Path, public_root: Path, *, dry_run: bool) -> list[str]:
-    command = [sys.executable, str(Path(public_root) / "scripts/publish-site.py"), "--batch-manifest", str(manifest)]
+    command = [sys.executable, str(Path(public_root) / "scripts" / "publish-site.py"), "--batch-manifest", str(manifest)]
+    if dry_run:
+        command.append("--dry-run")
+    return command
+
+
+def github_publication_command(
+    source: Path, repo: str, *, dry_run: bool, project_root: Path = PROJECT_ROOT
+) -> list[str]:
+    """Push the staged tree to the GitHub Pages branch as its own release."""
+    command = [
+        sys.executable,
+        str(Path(project_root) / "scripts" / "publish-github.py"),
+        "--source",
+        str(source),
+        "--repo",
+        repo,
+    ]
     if dry_run:
         command.append("--dry-run")
     return command
@@ -693,6 +711,23 @@ def run_unattended(args, *, command_runner=None, stage_builder=None, live_verifi
                     if not pushed.get("ok"):
                         raise RuntimeError("public-artifacts push failed")
                     fields["git_shas"]["public"] = verify_remote_main(public_root)
+                    # GitHub Pages is the canonical host for the mod-tracking tree.
+                    # The publisher skips its push when the branch already holds this
+                    # exact tree, so an unchanged pass costs a single ls-remote.
+                    github_command = github_publication_command(
+                        staged_tree, args.github_repo, dry_run=False, project_root=project_root
+                    )
+                    fields["deployment_github"] = {"state": "attempted"}
+                    github_result = command_runner(github_command, cwd=project_root)
+                    _record_command(
+                        run, "publication-github", github_result, github_command, key
+                    )
+                    if not github_result.get("ok"):
+                        fields["deployment_github"] = {
+                            "state": "unknown-after-publisher-failure"
+                        }
+                        raise RuntimeError("github publication failed")
+                    fields["deployment_github"] = {"state": "published"}
                 elif args.dry_run:
                     fields["deployment"] = {"state": "suppressed"}
                     run.record_stage("publication", "dry-run", "", ok=True)
@@ -727,6 +762,7 @@ def parse_args(argv=None):
     parser.add_argument("--state-root", type=Path, default=DEFAULT_STATE_ROOT)
     parser.add_argument("--lock-file", type=Path, default=DEFAULT_LOCK_FILE)
     parser.add_argument("--nexus-api-key-file", type=Path, default=DEFAULT_API_KEY_FILE)
+    parser.add_argument("--github-repo", default=DEFAULT_GITHUB_REPO)
     parser.add_argument("--live-base-url", default=DEFAULT_LIVE_BASE_URL)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--override-anomaly", "--allow-anomaly", dest="override_anomaly", action="store_true")

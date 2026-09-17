@@ -34,6 +34,7 @@ class UnattendedRunTests(unittest.TestCase):
             state_root=root / "state",
             lock_file=root / "lock",
             nexus_api_key_file=key,
+            github_repo="https://example.invalid/mod-tracker.git",
             live_base_url="https://example.invalid",
             dry_run=dry_run,
             override_anomaly=override_anomaly,
@@ -59,6 +60,8 @@ class UnattendedRunTests(unittest.TestCase):
                 return {"ok": True, "returncode": 0, "output": {"ok": True}}
             if command[1].endswith("publish-site.py"):
                 return {"ok": True, "returncode": 0, "output": {"ok": True}}
+            if command[1].endswith("publish-github.py"):
+                return {"ok": True, "returncode": 0, "output": {"ok": True, "changed": True}}
             action, game = command[2], command[4]
             if action == "collect":
                 required = ["nexus"] if game == "retro-rewind" else ["nexus", "thunderstore"]
@@ -213,6 +216,12 @@ class UnattendedRunTests(unittest.TestCase):
             self.assertEqual(len(publisher_calls), 2)
             self.assertEqual(sum(call[:3] == ["git", "push", "origin"] for call in calls), 1)
             self.assertEqual(summary["git_shas"]["public"], "public-sha")
+            # The same staged tree is pushed to the GitHub Pages branch as well.
+            github_calls = [call for call in calls if "publish-github.py" in " ".join(call)]
+            self.assertEqual(len(github_calls), 1)
+            self.assertIn("--source", github_calls[0])
+            self.assertIn("https://example.invalid/mod-tracker.git", github_calls[0])
+            self.assertEqual(summary["deployment_github"]["state"], "published")
 
     def test_publisher_failure_records_an_attempted_deployment(self):
         module = load_module()

@@ -23,6 +23,7 @@ games/*/*
 !scripts/
 !scripts/manual-pass.py
 !scripts/mapping_candidates.py
+!scripts/publish-github.py
 !scripts/unattended_run.py
 !scripts/github-review.py
 !github-repositories.json

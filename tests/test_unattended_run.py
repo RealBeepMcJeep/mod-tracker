@@ -78,6 +78,16 @@ class UnattendedRunTests(unittest.TestCase):
             return {"ok": True, "returncode": 0, "output": {"ok": True}}
         return run
 
+    def test_tracker_repository_fast_forwards_to_origin_main(self):
+        module = load_module()
+        calls = []
+        def git(root, *args):
+            calls.append(args)
+            return "main" if args[0] == "branch" else ""
+        with patch.object(module, "git_output", side_effect=git):
+            module.ensure_clean_repository(Path("/repo"), pull=True)
+        self.assertEqual(calls[-1], ("pull", "--ff-only", "origin", "main"))
+
     def test_unattended_collects_all_games_then_reports_and_verifies_once(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -387,7 +397,8 @@ class UnattendedRunTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             args = self._args(root)
-            with patch.object(tracker, "load_game_registry", side_effect=RuntimeError("registry boom")):
+            with patch.object(tracker, "load_game_registry", side_effect=RuntimeError("registry boom")), \
+                    patch.object(module, "ensure_clean_repository"):
                 try:
                     code, summary = module.run_unattended(args)
                 except RuntimeError as exc:

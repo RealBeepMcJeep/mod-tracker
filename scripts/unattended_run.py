@@ -401,11 +401,14 @@ def git_output(root: Path, *args: str) -> str:
     return completed.stdout.strip()
 
 
-def ensure_clean_repository(root: Path) -> None:
+def ensure_clean_repository(root: Path, *, pull: bool = False) -> None:
     if git_output(root, "status", "--porcelain"):
         raise RuntimeError(f"repository is not clean: {root}")
     if git_output(root, "branch", "--show-current") != "main":
         raise RuntimeError(f"repository is not on main: {root}")
+    if pull:
+        # Pick up commits pushed from other checkouts; diverged history fails here.
+        git_output(root, "pull", "--ff-only", "origin", "main")
 
 
 def verify_remote_main(root: Path) -> str:
@@ -610,13 +613,15 @@ def run_unattended(args, *, command_runner=None, stage_builder=None, live_verifi
             key = validate_nexus_key(api_key_file)
             run._secrets = (key,)
 
+            # Sync before importing so this run uses the latest tracker.py and games.json.
+            ensure_clean_repository(project_root, pull=True)
+
             # Import only the existing tracker module; no collector is copied here.
             sys.path.insert(0, str(project_root))
             import tracker
 
             registry = tracker.load_game_registry(project_root / "games.json")
             game_keys = list(registry)
-            ensure_clean_repository(project_root)
             tracker_sha = verify_remote_main(project_root)
             fields["git_shas"]["tracker"] = tracker_sha
             run.record_stage("tracker-repository", "", "", ok=True)

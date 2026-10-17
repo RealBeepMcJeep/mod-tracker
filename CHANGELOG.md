@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17
+
+- The unattended pass now fast-forwards the tracker checkout with `git pull --ff-only origin main` before importing `tracker.py`, so commits pushed from other checkouts take effect on the next run; a dirty, off-main, or diverged checkout still stops the run before collection.
+
 ## 2026-09-16
 
 - Added `scripts/publish-github.py`, which publishes a staged tree to the GitHub Pages branch as a single orphan commit and force-pushes it, so the branch always holds exactly the current site and nothing from a previous release. It validates the tree first — no symlinks, no nested repository, and an `index.html` at the root and in every published directory — reads its token at runtime from the environment or the credential file without ever putting it on a command line, and skips the push when the remote branch already carries the identical tree so an unchanged pass cannot force a pointless Pages rebuild.
